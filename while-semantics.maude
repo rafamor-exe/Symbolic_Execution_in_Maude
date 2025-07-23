@@ -1,0 +1,43 @@
+fmod WHILE-LANG-INSTS-MOD is
+
+    pr STRING .
+    pr REAL .
+
+    sort Inst .
+    sorts Assignment .
+    subsort Assignment < Inst .
+
+    op _ := _; : String Real -> Assignment [ctor prec 20] .
+
+endfm
+
+view Inst from TRIV to WHILE-LANG-INSTS-MOD is
+  sort Elt to Inst .
+endv
+
+view Real from TRIV to REAL is
+  sort Elt to Real .
+endv
+
+mod WHILE-MAUDE is
+
+    pr WHILE-LANG-INSTS-MOD .
+
+    pr LIST{Inst} .
+    pr MAP{String, Real} .
+
+    sort State .
+    
+    op # _ | _ # : List{Inst} Map{String, Real} -> State [ctor] . 
+
+    var Var : String .
+    var RealVal : Real .
+    var IL : List{Inst} .
+    var STR : Map{String, Real} .
+
+    rl [assign] : 
+        # Var := RealVal ; IL | STR #
+        =>
+        # IL | insert(Var, RealVal, STR) # .
+
+endm
