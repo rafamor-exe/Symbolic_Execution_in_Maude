@@ -1,1 +1,1 @@
-# Symbolic_Executon_in_Maude
+# Symbolic_Execution_in_Maude
