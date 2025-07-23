@@ -1,3 +1,4 @@
+load smt.maude .
 fmod WHILE-LANG-INSTS-MOD is
 
     pr STRING .

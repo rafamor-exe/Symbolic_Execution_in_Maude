@@ -1,0 +1,1 @@
+smt-search [1] # "var1" := p:Real ; | empty # =>* # nil | "var1" |-> p:Real #   such that p:Real > 1 using QF_LRA .
