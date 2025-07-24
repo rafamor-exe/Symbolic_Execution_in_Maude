@@ -5,10 +5,12 @@ fmod WHILE-LANG-INSTS-MOD is
     pr REAL .
 
     sort Inst .
-    sorts Assignment .
-    subsort Assignment < Inst .
+    sorts Skip Assignment .
+    subsort Skip Assignment < Inst .
 
-    op _ := _; : String Real -> Assignment [ctor prec 20] .
+    op skip ; : -> Skip [ctor prec 20] .
+    op _ := _ ; : String Real -> Assignment [ctor prec 20] .
+    ***op _ := _ ; : String String -> Assignment [ctor prec 20] .
 
 endfm
 
@@ -20,25 +22,73 @@ view Real from TRIV to REAL is
   sort Elt to Real .
 endv
 
-mod WHILE-MAUDE is
+fmod WHILE-LANG-BLOCK-MOD is
 
     pr WHILE-LANG-INSTS-MOD .
-
     pr LIST{Inst} .
+
+    sorts IfElse While .
+    subsort IfElse While < Inst .
+
+    op if _ then {_} else {_} : Boolean List{Inst} List{Inst} -> IfElse [ctor prec 20] .
+    op if _ then {_} : Boolean List{Inst} -> IfElse [ctor prec 20] .
+
+    op while _ do {_} : Boolean List{Inst} -> While [ctor prec 20] .
+
+    var B : Boolean .
+    var IL1 : List{Inst} .
+
+    eq if B then {IL1} = if B then {IL1} else {nil} .
+
+endfm
+
+mod WHILE-MAUDE is
+
+    pr WHILE-LANG-BLOCK-MOD .
+
     pr MAP{String, Real} .
 
     sort State .
     
     op # _ | _ # : List{Inst} Map{String, Real} -> State [ctor] . 
 
-    var Var : String .
+    vars Var Var1 Var2 : String .
+    var B : Boolean .
     var RealVal : Real .
-    var IL : List{Inst} .
+    vars IL IL1 IL2 : List{Inst} .
     var STR : Map{String, Real} .
+
+    rl [skip] : 
+        # skip ; IL | STR #
+        =>
+        # IL | STR # .
 
     rl [assign] : 
         # Var := RealVal ; IL | STR #
         =>
         # IL | insert(Var, RealVal, STR) # .
+
+    rl [if..then..else] : 
+        # if B then { IL1 } else { IL2 } IL | STR #
+        =>
+        if B == true then 
+          # IL1 IL | STR #
+        else
+          # IL2 IL | STR #
+        fi .
+    
+    rl [while..do] : 
+        # while B do { IL1 } IL | STR #
+        =>
+        if B == true then 
+          # IL | STR #
+        else
+          # IL1 while B do { IL1 } IL | STR #
+        fi .
+    
+    
+    ***
+    ***op subst : String Real State -> State [ctor] .
+    ***eq subst(Var, RealVal, # Var1 := Var ; IL | STR #) = # Var1 := RealVal ; IL | STR # .
 
 endm
