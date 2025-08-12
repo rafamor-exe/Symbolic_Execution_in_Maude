@@ -1,0 +1,12 @@
+load while-semantics.maude
+mod WHILE-MAUDE-TEST is
+
+    pr WHILE-MAUDE .
+
+    op test : List{Inst} -> State .
+
+    var IL : List{Inst} .
+
+    eq test(IL) = # IL | empty # .
+
+endm

@@ -1,1 +1,92 @@
-smt-search [1] # "var1" := p:Real ; | empty # =>* # nil | "var1" |-> p:Real #   such that p:Real > 1 using QF_LRA .
+MaudeSE> smt-search [1] # "var1" := p:Real ; | empty # =>* # nil | "var1" |-> p:Real #   such that p:Real > toReal(1) using QF_LRA .
+
+Solution 1 (state 1)
+
+Symbolic state:
+ # nil | "var1" |-> #1-V3:Real #
+
+Constraint:
+ V0:Real === p:Real and V1:Real === p:Real and not p:Real <= 1/1 and V0:Real === #2-RealVal:Real and #1-V3:Real === #2-RealVal:Real and V1:Real === #1-V3:Real
+
+Substitution:
+ V1:Real <-- #1-V3:Real
+
+
+Assignment:
+ #1-V3:Real <-- 2/1
+ #2-RealVal:Real <-- 2/1
+ V0:Real <-- 2/1
+ V1:Real <-- 2/1
+ p:Real <-- 2/1
+
+
+Concrete state:
+ # nil | "var1" |-> 2/1 #
+
+
+MaudeSE> smt-search [1] start("var1" := p:Real ;) =>* # nil | "var1" |-> {type real, val val(p:Real)} #  such that p:Real > toReal(1) using QF_LRA .
+
+Solution 1 (state 1)
+
+Symbolic state:
+ # nil | "var1" |-> {type real, val val(#1-V5:Real)} #
+
+Constraint:
+ V0:Real === p:Real and V1:Real === p:Real and not p:Real <= 1/1 and V0:Real === #2-RealVal:Real and #1-V5:Real === #2-RealVal:Real and V1:Real === #1-V5:Real
+
+Substitution:
+ V1:Real <-- #1-V5:Real
+
+
+Assignment:
+ #1-V5:Real <-- 2/1
+ #2-RealVal:Real <-- 2/1
+ V0:Real <-- 2/1
+ V1:Real <-- 2/1
+ p:Real <-- 2/1
+
+
+Concrete state:
+ # nil | "var1" |-> {type real, val val(2/1)} #
+
+
+MaudeSE> smt-search [1] start('var1 := p:Real ;) =>* # nil | 'var1 |-> {type real, val val(p:Real)} #  such that p:Real > toReal(1) using QF_LRA .
+
+Solution 1 (state 1)
+
+Symbolic state:
+ # nil | 'var1 |-> {type real, val val(V0:Real)} #
+
+Constraint:
+ V0:Real === p:Real and V1:Real === p:Real and not p:Real <= 1/1 and V1:Real === V0:Real
+
+Substitution:
+ V1:Real <-- V0:Real
+
+
+Assignment:
+ V0:Real <-- 2/1
+ V1:Real <-- 2/1
+ p:Real <-- 2/1
+
+
+Concrete state:
+ # nil | 'var1 |-> {type real, val val(2/1)} #
+
+
+smt-search [1] start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := toReal(5) ;}) =>* # nil | 'var1 |-> {type real, val val(p:Real)}, 'var2 |-> {type real, val val(toReal(5))} #  such that p:Real > toReal(1) using QF_LRA .
+
+******
+
+smt-search [1] # 'var1 := p:Real ; | empty # =>* # nil | 'var1 |-> p:Real #   such that p:Real > toReal(1) using QF_LRA .
+
+smt-search [1] start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := toReal(5) ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> toReal(5) #   such that p:Real > toReal(1) using QF_LRA .
+
+smt-search [1] start('var1 := p:Real ; if (p:Real < q:Real) then {'var2 := q:Real ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> q:Real #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
+
+
+smt-search [1] start(var("var1") := p:Real ; if (var("var1") < q:Real) then {var("var2") := toReal(5) ;}) =>* # nil | var("var1") |-> p:Real, var("var2") |-> toReal(5) #   such that p:Real > toReal(1) using QF_LRA .
+
+
+********************
+erew start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := toReal(5) ;}) .

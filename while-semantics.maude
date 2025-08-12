@@ -1,25 +1,115 @@
 load smt.maude .
+
+view Real from TRIV to REAL is
+  sort Elt to Real .
+endv
+
+fmod WHILE-LANG-VARSTATE-MOD is
+
+    pr REAL-INTEGER .
+
+    sort AExp BExp .
+    sort VarState .
+    sorts VarType Value .
+    sorts RVal BVal .
+    subsort RVal BVal < Value < AExp .
+    subsort Real < AExp .
+    subsort Boolean < BExp .
+
+    ops boolean real : -> VarType [ctor] .
+
+    op val : Real -> RVal [ctor] .
+    op val : Boolean -> BVal [ctor] .
+
+    op {type _, val _} : VarType Value -> VarState [ctor] .
+
+    var T : VarType .
+    var V : Value .
+    var R : Real .
+    var B : Boolean .
+
+    op getType : VarState -> VarType .
+    eq getType({type T, val V}) = T .
+
+    op getVal : VarState -> Value .
+    eq getVal({type T, val V}) = V .
+
+endfm
+
+view VarState from TRIV to WHILE-LANG-VARSTATE-MOD is
+  sort Elt to VarState .
+endv
+
+fmod WHILE-LANG-VAR-MOD is
+
+    pr QID .
+    pr WHILE-LANG-VARSTATE-MOD .
+
+    sort Var .
+    subsort Qid < Var < AExp .
+
+endfm
+
+view Var from TRIV to WHILE-LANG-VAR-MOD is
+  sort Elt to Var .
+endv
+
+fmod WHILE-LANG-AEXP-MOD is
+
+    pr WHILE-LANG-VAR-MOD .
+    pr MAP{Var, Real} .
+
+    op _+_ : AExp AExp -> AExp [ditto] .
+    op _*_ : AExp AExp -> AExp [ditto] .
+    op _-_ : AExp AExp -> AExp [ditto] .
+    op _/_ : AExp AExp -> AExp [ditto] .
+
+    op _<_ : AExp AExp -> Boolean [ditto] .
+    op _<=_ : AExp AExp -> Boolean [ditto] .
+    op _>_ : AExp AExp -> Boolean [ditto] .
+    op _>=_ : AExp AExp -> Boolean [ditto] .
+
+    op eval : AExp Map{Var, Real} -> Real .
+    op eval : BExp Map{Var, Real} -> Boolean .
+
+    var R R1 : Real .
+    var AExp AExp1 AExp2 : AExp .
+    var B : Boolean .
+    var BExp : BExp .
+    var STR : Map{Var, Real} .
+    var Var : Var .
+
+    eq eval(AExp1 + AExp2, STR) = eval(AExp1, STR) + eval(AExp2, STR) .
+    eq eval(AExp1 * AExp2, STR) = eval(AExp1, STR) * eval(AExp2, STR) .
+    eq eval(AExp1 - AExp2, STR) = eval(AExp1, STR) - eval(AExp2, STR) .
+    eq eval(AExp1 / AExp2, STR) = eval(AExp1, STR) / eval(AExp2, STR) .
+    eq eval(AExp1 < AExp2, STR) = eval(AExp1, STR) < eval(AExp2, STR) .
+    eq eval(AExp1 <= AExp2, STR) = eval(AExp1, STR) <= eval(AExp2, STR) .
+    eq eval(AExp1 > AExp2, STR) = eval(AExp1, STR) > eval(AExp2, STR) .
+    eq eval(AExp1 >= AExp2, STR) = eval(AExp1, STR) >= eval(AExp2, STR) .
+    eq eval(Var, STR) = STR[Var] .
+    eq eval(R, STR) = R .
+    eq eval(B, STR) = B .
+
+endfm
+
 fmod WHILE-LANG-INSTS-MOD is
 
-    pr STRING .
-    pr REAL .
+    pr WHILE-LANG-AEXP-MOD .
 
     sort Inst .
     sorts Skip Assignment .
     subsort Skip Assignment < Inst .
 
     op skip ; : -> Skip [ctor prec 20] .
-    op _ := _ ; : String Real -> Assignment [ctor prec 20] .
+    op _ := _ ; : Var AExp -> Assignment [ctor prec 20] .
+    ***op _ := _ ; : String Boolean -> Assignment [ctor prec 20] .
     ***op _ := _ ; : String String -> Assignment [ctor prec 20] .
 
 endfm
 
 view Inst from TRIV to WHILE-LANG-INSTS-MOD is
   sort Elt to Inst .
-endv
-
-view Real from TRIV to REAL is
-  sort Elt to Real .
 endv
 
 fmod WHILE-LANG-BLOCK-MOD is
@@ -30,10 +120,10 @@ fmod WHILE-LANG-BLOCK-MOD is
     sorts IfElse While .
     subsort IfElse While < Inst .
 
-    op if _ then {_} else {_} : Boolean List{Inst} List{Inst} -> IfElse [ctor prec 20] .
-    op if _ then {_} : Boolean List{Inst} -> IfElse [ctor prec 20] .
+    op if _ then {_} else {_} : BExp List{Inst} List{Inst} -> IfElse [ctor prec 20] .
+    op if _ then {_} : BExp List{Inst} -> IfElse [ctor prec 20] .
 
-    op while _ do {_} : Boolean List{Inst} -> While [ctor prec 20] .
+    op while _ do {_} : BExp List{Inst} -> While [ctor prec 20] .
 
     var B : Boolean .
     var IL1 : List{Inst} .
@@ -46,17 +136,21 @@ mod WHILE-MAUDE is
 
     pr WHILE-LANG-BLOCK-MOD .
 
-    pr MAP{String, Real} .
-
     sort State .
     
-    op # _ | _ # : List{Inst} Map{String, Real} -> State [ctor] . 
+    op # _ | _ # : List{Inst} Map{Var, Real} -> State [ctor] . 
 
-    vars Var Var1 Var2 : String .
+    op start : List{Inst} -> State [ctor] . 
+    eq start(IL) = # IL | empty # .
+
+    vars Var Var1 Var2 : Var .
     var B : Boolean .
+    var BExp : BExp .
     var RealVal : Real .
     vars IL IL1 IL2 : List{Inst} .
-    var STR : Map{String, Real} .
+    var STR : Map{Var, Real} .
+    var VarState : VarState .
+    var AExp : AExp .
 
     rl [skip] : 
         # skip ; IL | STR #
@@ -64,31 +158,47 @@ mod WHILE-MAUDE is
         # IL | STR # .
 
     rl [assign] : 
-        # Var := RealVal ; IL | STR #
+        # Var := AExp ; IL | STR #
         =>
-        # IL | insert(Var, RealVal, STR) # .
-
+        ***# IL | insert(Var, {type real, val eval(AExp, STR)}, STR) # .
+        # IL | insert(Var, eval(AExp, STR), STR) # .
+    
+    ***rl [assign-boolean] : 
+    ***    # Var := B ; IL | STR #
+    ***    =>
+    ***    # IL | insert(Var, {type boolean, val val(B)}, STR) # .
+    ***
+    ***crl [assign-var] : 
+    ***    # Var := Var1 ; IL | STR #
+    ***    =>
+    ***    # IL | insert(Var, {type getType(VarState), val getVal(VarState)}, STR) #
+    ***    if VarState := STR[Var1] .
+    ***crl [if..then] : 
+    ***    # if BExp then { IL1 } else { IL2 } IL | STR #
+    ***    =>
+    ***    # IL1 IL | STR #
+    ***    if eval(BExp, STR) => true .
+    ***crl [if..else] : 
+    ***    # if BExp then { IL1 } else { IL2 } IL | STR #
+    ***    =>
+    ***    # IL2 IL | STR #
+    ***    if eval(BExp, STR) => false .
     rl [if..then..else] : 
-        # if B then { IL1 } else { IL2 } IL | STR #
+        # if BExp then { IL1 } else { IL2 } IL | STR #
         =>
-        if B == true then 
+        if eval(BExp, STR) == true then 
           # IL1 IL | STR #
         else
           # IL2 IL | STR #
         fi .
     
     rl [while..do] : 
-        # while B do { IL1 } IL | STR #
+        # while BExp do { IL1 } IL | STR #
         =>
-        if B == true then 
+        if eval(BExp, STR) == false then 
           # IL | STR #
         else
-          # IL1 while B do { IL1 } IL | STR #
+          # IL1 while BExp do { IL1 } IL | STR #
         fi .
     
-    
-    ***
-    ***op subst : String Real State -> State [ctor] .
-    ***eq subst(Var, RealVal, # Var1 := Var ; IL | STR #) = # Var1 := RealVal ; IL | STR # .
-
 endm
