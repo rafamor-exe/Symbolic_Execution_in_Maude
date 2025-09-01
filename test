@@ -77,6 +77,7 @@ Concrete state:
 smt-search [1] start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := toReal(5) ;}) =>* # nil | 'var1 |-> {type real, val val(p:Real)}, 'var2 |-> {type real, val val(toReal(5))} #  such that p:Real > toReal(1) using QF_LRA .
 
 ******
+***NOTE: errors exiting the execution from Maude configurations => maude-se not parsing some instruction in the file
 
 smt-search [1] # 'var1 := p:Real ; | empty # =>* # nil | 'var1 |-> p:Real #   such that p:Real > toReal(1) using QF_LRA .
 
@@ -84,10 +85,21 @@ smt-search [1] start('var1 := p:Real ; 'var2 := q:Real ;) =>* # nil | 'var1 |-> 
 
 smt-search [1] start('var1 := p:Real ; if (p:Real < q:Real) then {'var2 := q:Real ;}) =>* # if (p:Real < q:Real) then {'var2 := q:Real ;} else {nil} | 'var1 |-> p:Real #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
 
+smt-search [1] start('var1 := p:Real ; if (p:Real < q:Real) then {'var2 := q:Real ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> q:Real #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
+smt-search [1] start('var1 := p:Real ; if (q:Real < p:Real) then {'var2 := q:Real ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> q:Real #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
+
+smt-search [1] start('var1 := p:Real ; if (p:Real < q:Real) then {'var2 := toReal(5) ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> toReal(5) #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
+smt-search [1] start('var1 := p:Real ; if (p:Real < q:Real) then {'var2 := toReal(5) ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> q:Real #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
+
+smt-search [1] start('var1 := p:Real ; if (('var1 |-> p:Real)['var1] < q:Real) then {'var2 := toReal(5) ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> toReal(5) #   such that p:Real > toReal(1) using QF_LRA .
+
 *** Still not working:
+smt-search [1] start('var1 := p:Real ; if (lookup('var1) < q:Real) then {'var2 := toReal(5) ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> toReal(5) #   such that p:Real > toReal(1) using QF_LRA .
+
 smt-search [1] start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := toReal(5) ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> toReal(5) #   such that p:Real > toReal(1) using QF_LRA .
 
-smt-search [1] start('var1 := p:Real ; if (p:Real < q:Real) then {'var2 := q:Real ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> q:Real #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
+smt-search [1] start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := q:Real ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> q:Real #   such that p:Real > toReal(1) using QF_LRA .
+
 
 ***smt-search [1] start(var("var1") := p:Real ; if (var("var1") < q:Real) then {var("var2") := toReal(5) ;}) =>* # nil | var("var1") |-> p:Real, var("var2") |-> toReal(5) #   such that p:Real > toReal(1) using QF_LRA .
 

@@ -7,6 +7,7 @@ endv
 fmod WHILE-LANG-VARSTATE-MOD is
 
     pr REAL-INTEGER .
+    pr BOOLEAN .
 
     sort AExp BExp .
     sort VarState .
@@ -125,7 +126,7 @@ fmod WHILE-LANG-BLOCK-MOD is
 
     op while _ do {_} : BExp List{Inst} -> While [ctor prec 20] .
 
-    var B : Boolean .
+    var B : BExp .
     var IL1 : List{Inst} .
 
     eq if B then {IL1} = if B then {IL1} else {nil} .
@@ -173,32 +174,36 @@ mod WHILE-MAUDE is
     ***    =>
     ***    # IL | insert(Var, {type getType(VarState), val getVal(VarState)}, STR) #
     ***    if VarState := STR[Var1] .
-    ***crl [if..then] : 
-    ***    # if BExp then { IL1 } else { IL2 } IL | STR #
-    ***    =>
-    ***    # IL1 IL | STR #
-    ***    if eval(BExp, STR) => true .
-    ***crl [if..else] : 
-    ***    # if BExp then { IL1 } else { IL2 } IL | STR #
-    ***    =>
-    ***    # IL2 IL | STR #
-    ***    if eval(BExp, STR) => false .
-    rl [if..then..else] : 
+    crl [if..then] : 
         # if BExp then { IL1 } else { IL2 } IL | STR #
         =>
-        if eval(BExp, STR) == true then 
-          # IL1 IL | STR #
-        else
-          # IL2 IL | STR #
-        fi .
-    
-    rl [while..do] : 
-        # while BExp do { IL1 } IL | STR #
+        # IL1 IL | STR #
+        if eval(BExp, STR) = true .
+    crl [if..else] : 
+        # if BExp then { IL1 } else { IL2 } IL | STR #
         =>
-        if eval(BExp, STR) == false then 
-          # IL | STR #
-        else
-          # IL1 while BExp do { IL1 } IL | STR #
-        fi .
-    
+        # IL2 IL | STR #
+        if eval(BExp, STR) = false .
+
+    ***rl [if..then..else] : 
+    ***    # if BExp then { IL1 } else { IL2 } IL | STR #
+    ***    =>
+    ***    if eval(BExp, STR) == true then 
+    ***      # IL1 IL | STR #
+    ***    else
+    ***      # IL2 IL | STR #
+    ***    fi .
+    ***
+    ***rl [while..do] : 
+    ***    # while BExp do { IL1 } IL | STR #
+    ***    =>
+    ***    if eval(BExp, STR) == false then 
+    ***      # IL | STR #
+    ***    else
+    ***      # IL1 while BExp do { IL1 } IL | STR #
+    ***    fi .
+
+    ***op lookup : Var -> Real .
+    ***eq # if (lookup(Var) < RealVal) then { IL1 } else { IL2 } IL | STR # = # if (STR[Var] < RealVal)  then { IL1 } else { IL2 } IL | STR # .
+
 endm
