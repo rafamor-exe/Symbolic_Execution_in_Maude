@@ -79,30 +79,82 @@ smt-search [1] start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := toReal
 ******
 ***NOTE: errors exiting the execution from Maude configurations => maude-se not parsing some instruction in the file
 
-smt-search [1] # 'var1 := p:Real ; | empty # =>* # nil | 'var1 |-> p:Real #   such that p:Real > toReal(1) using QF_LRA .
+smt-search [1] in WHILE-MAUDE : # 'var1 := p:Real ; | empty # =>* # nil | 'var1 |-> p:Real #   such that p:Real > toReal(1) using QF_LRA .
+smt-search [1] in WHILE-MAUDE : # 'var1 := p:Real ; | empty # =>* # nil | STR:Map{Var, Real} #   such that p:Real > toReal(1) using QF_LRA .
 
-smt-search [1] start('var1 := p:Real ; 'var2 := q:Real ;) =>* # nil | 'var1 |-> p:Real, 'var2 |-> q:Real #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
+smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; 'var2 := q:Real ;) =>* # nil | 'var1 |-> p:Real, 'var2 |-> q:Real #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
 
-smt-search [1] start('var1 := p:Real ; if (p:Real < q:Real) then {'var2 := q:Real ;}) =>* # if (p:Real < q:Real) then {'var2 := q:Real ;} else {nil} | 'var1 |-> p:Real #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
+smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; if (p:Real < q:Real) then {'var2 := q:Real ;}) =>* # if (p:Real < q:Real) then {'var2 := q:Real ;} else {nil} | 'var1 |-> p:Real #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
 
-smt-search [1] start('var1 := p:Real ; if (p:Real < q:Real) then {'var2 := q:Real ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> q:Real #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
-smt-search [1] start('var1 := p:Real ; if (q:Real < p:Real) then {'var2 := q:Real ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> q:Real #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
+smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; if (p:Real < q:Real) then {'var2 := q:Real ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> q:Real #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
+smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; if (q:Real < p:Real) then {'var2 := q:Real ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> q:Real #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
 
-smt-search [1] start('var1 := p:Real ; if (p:Real < q:Real) then {'var2 := toReal(5) ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> toReal(5) #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
-smt-search [1] start('var1 := p:Real ; if (p:Real < q:Real) then {'var2 := toReal(5) ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> q:Real #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
+smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; if (p:Real < q:Real) then {'var2 := toReal(5) ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> toReal(5) #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
+smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; if (p:Real < q:Real) then {'var2 := toReal(5) ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> q:Real #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
 
-smt-search [1] start('var1 := p:Real ; if (('var1 |-> p:Real)['var1] < q:Real) then {'var2 := toReal(5) ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> toReal(5) #   such that p:Real > toReal(1) using QF_LRA .
+smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; if (('var1 |-> p:Real)['var1] < q:Real) then {'var2 := toReal(5) ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> toReal(5) #   such that p:Real > toReal(1) using QF_LRA .
 
-*** Still not working:
-smt-search [1] start('var1 := p:Real ; if (lookup('var1) < q:Real) then {'var2 := toReal(5) ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> toReal(5) #   such that p:Real > toReal(1) using QF_LRA .
+smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; if (p:Real < q:Real) then {'var2 := q:Real ;}) =>* # nil | STR:Map{Var, Real} #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
 
-smt-search [1] start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := toReal(5) ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> toReal(5) #   such that p:Real > toReal(1) using QF_LRA .
+smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; if (p:Real < q:Real) then {'var2 := q:Real ;}) =>* # IL:List{Inst} | STR:Map{Var, Real} #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
 
-smt-search [1] start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := q:Real ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> q:Real #   such that p:Real > toReal(1) using QF_LRA .
+smt-search [1] in WHILE-MAUDE : start('var1 := (p:Real + z:Real) ; if ((p:Real + z:Real) < q:Real) then {'var2 := q:Real ;}) =>* # IL:List{Inst} | STR:Map{Var, Real} #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
 
+smt-search [1] in WHILE-MAUDE : start('var1 := (p:Real + z:Real) ; if ((p:Real + z:Real) < q:Real) then {'var2 := q:Real ;}) =>* # nil | STR:Map{Var, Real} #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
+
+smt-search [1] in WHILE-MAUDE : start('var1 := (p:Real + z:Real) ; if ((p:Real + z:Real) < q:Real) then {'var2 := q:Real ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> toReal(5) #   such that p:Real > toReal(1) and q:Real < toReal(6) using QF_LRA .
+
+smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; if (('var1 |-> p:Real)['var1] < q:Real) then {'var2 := toReal(5) ;} while (q:Real < toReal(1)) do {'var2 := toReal(1) ; }) =>* # nil | STR:Map{Var, Real} #   such that p:Real > toReal(1) using QF_LRA .
+
+
+smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; if ('var1 < toReal(5)) then {'var2 := toReal(5) ;}) =>* # nil | STR:Map{Var, Real} #   such that p:Real > toReal(1) using QF_LRA .
+
+smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; if ('var1 < toReal(5)) then {'var2 := toReal(5) ;} else {'var2 := toReal(6) ;} ) =>* # nil | ('var2 |-> toReal(6), STR:Map{Var, Real}) #   such that p:Real > toReal(1) using QF_LRA .
+
+
+smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; if ('var1 < toReal(5)) then {'var2 := toReal(5) ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> toReal(5) #   such that p:Real > toReal(1) using QF_LRA .
+
+smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := toReal(5) ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> toReal(5) #   such that p:Real > toReal(1) using QF_LRA .
+
+smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := q:Real ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> q:Real #   such that p:Real > toReal(1) using QF_LRA .
+
+smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; 'var2 := toReal(1) ; while ('var2 < 'var1) do {'var2 := 'var1 + toReal(1) ; }) =>* # nil | STR:Map{Var, Real} #   such that p:Real > toReal(2) using QF_LRA .
+
+***smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; if (lookup('var1) < q:Real) then {'var2 := toReal(5) ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> toReal(5) #   such that p:Real > toReal(1) using QF_LRA .
 
 ***smt-search [1] start(var("var1") := p:Real ; if (var("var1") < q:Real) then {var("var2") := toReal(5) ;}) =>* # nil | var("var1") |-> p:Real, var("var2") |-> toReal(5) #   such that p:Real > toReal(1) using QF_LRA .
+smt-search [1] downTerm(getTerm(metaReduce(upModule('WHILE-MAUDE, false), upTerm(start(var("var1") := p:Real ; if var("var1") < q:Real then{var("var2") := toReal(5) ;})))), err:State) =>* # nil | var("var1") |-> p:Real, var("var2") |-> toReal(5) #   such that p:Real > toReal(1) using QF_LRA .
 
 
 ********************
 erew start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := toReal(5) ;}) .
+
+
+red downTerm(getTerm(metaReduce(upModule('WHILE-MAUDE, false), upTerm(start(var("var1") := p:Real ; if (var("var1") < q:Real) then {var("var2") := toReal(5) ;})))), err:State) .
+
+start('var1 := (p:Real + z:Real) ; if ('var1 < q:Real) then {'var2 := q:Real ;})
+
+red metaSmtSearch(upModule('WHILE-MAUDE, false),
+                    upTerm(getTerm(metaReduce(upModule('WHILE-MAUDE, false), upTerm(start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := toReal(5) ;}))))),
+                    upTerm(# nil | 'var1 |-> p:Real, 'var2 |-> toReal(5) #),
+                    upTerm(p:Real > toReal(1)) = upTerm((true).Boolean),
+                    '* , unbounded, 1, 'QF_LRA) .
+
+smt-search [1] in WHILE-MAUDE : downTerm(getTerm(metaReduce(upModule('WHILE-MAUDE, false), upTerm(start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := toReal(5) ;})))), errState) =>* # nil | STR:Map{Var, Real} #   such that p:Real > toReal(1) using QF_LRA .
+smt-search [1] in WHILE-MAUDE : downTerm(getTerm(metaRewrite(upModule('WHILE-MAUDE, false), upTerm(start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := toReal(5) ;})), unbounded)), errState) =>* # nil | STR:Map{Var, Real} #   such that p:Real > toReal(1) using QF_LRA .
+
+
+
+
+***crl [if..then] : 
+***    # if BExp then { IL1 } else { IL2 } IL | STR #
+***    =>
+***    # IL1 IL | STR #
+    ***if { 'true.Boolean , Type } := metaReduce(upModule('WHILE-LANG-AEXP-MOD, false), upTerm(eval(BExp, STR)))
+    ***    .
+***crl [if..else] : 
+***    # if BExp then { IL1 } else { IL2 } IL | STR #
+***    =>
+***    # IL2 IL | STR #
+    ***if { 'false.Boolean , Type } := metaReduce(upModule('WHILE-LANG-AEXP-MOD, false), upTerm(eval(BExp, STR)))
+    ***    .

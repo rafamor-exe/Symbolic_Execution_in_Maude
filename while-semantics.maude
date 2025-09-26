@@ -49,6 +49,8 @@ fmod WHILE-LANG-VAR-MOD is
     sort Var .
     subsort Qid < Var < AExp .
 
+    ***op var : String -> Var [ctor] .
+
 endfm
 
 view Var from TRIV to WHILE-LANG-VAR-MOD is
@@ -65,11 +67,14 @@ fmod WHILE-LANG-AEXP-MOD is
     op _-_ : AExp AExp -> AExp [ditto] .
     op _/_ : AExp AExp -> AExp [ditto] .
 
-    op _<_ : AExp AExp -> Boolean [ditto] .
-    op _<=_ : AExp AExp -> Boolean [ditto] .
-    op _>_ : AExp AExp -> Boolean [ditto] .
-    op _>=_ : AExp AExp -> Boolean [ditto] .
+    op _=_ : AExp AExp -> BExp .
+    op _!=_ : AExp AExp -> BExp .
+    op _<_ : AExp AExp -> BExp [ditto] .
+    op _<=_ : AExp AExp -> BExp [ditto] .
+    op _>_ : AExp AExp -> BExp [ditto] .
+    op _>=_ : AExp AExp -> BExp [ditto] .
 
+    op eval : BExp -> Boolean .
     op eval : AExp Map{Var, Real} -> Real .
     op eval : BExp Map{Var, Real} -> Boolean .
 
@@ -84,11 +89,13 @@ fmod WHILE-LANG-AEXP-MOD is
     eq eval(AExp1 * AExp2, STR) = eval(AExp1, STR) * eval(AExp2, STR) .
     eq eval(AExp1 - AExp2, STR) = eval(AExp1, STR) - eval(AExp2, STR) .
     eq eval(AExp1 / AExp2, STR) = eval(AExp1, STR) / eval(AExp2, STR) .
+    eq eval(AExp1 = AExp2, STR) = eval(AExp1, STR) === eval(AExp2, STR) .
+    eq eval(AExp1 != AExp2, STR) = eval(AExp1, STR) =/== eval(AExp2, STR) .
     eq eval(AExp1 < AExp2, STR) = eval(AExp1, STR) < eval(AExp2, STR) .
     eq eval(AExp1 <= AExp2, STR) = eval(AExp1, STR) <= eval(AExp2, STR) .
     eq eval(AExp1 > AExp2, STR) = eval(AExp1, STR) > eval(AExp2, STR) .
     eq eval(AExp1 >= AExp2, STR) = eval(AExp1, STR) >= eval(AExp2, STR) .
-    eq eval(Var, STR) = STR[Var] .
+    eq eval(Var, ((Var |-> R), STR)) = R .
     eq eval(R, STR) = R .
     eq eval(B, STR) = B .
 
@@ -99,13 +106,13 @@ fmod WHILE-LANG-INSTS-MOD is
     pr WHILE-LANG-AEXP-MOD .
 
     sort Inst .
-    sorts Skip Assignment .
-    subsort Skip Assignment < Inst .
+    sorts Skip AssignOp .
+    subsort Skip AssignOp < Inst .
 
     op skip ; : -> Skip [ctor prec 20] .
-    op _ := _ ; : Var AExp -> Assignment [ctor prec 20] .
-    ***op _ := _ ; : String Boolean -> Assignment [ctor prec 20] .
-    ***op _ := _ ; : String String -> Assignment [ctor prec 20] .
+    op _ := _ ; : Var AExp -> AssignOp [ctor prec 20] .
+    ***op _ := _ ; : String Boolean -> AssignOp [ctor prec 20] .
+    ***op _ := _ ; : String String -> AssignOp [ctor prec 20] .
 
 endfm
 
@@ -140,13 +147,14 @@ mod WHILE-MAUDE is
     sort State .
     
     op # _ | _ # : List{Inst} Map{Var, Real} -> State [ctor] . 
+    op errState : -> State [ctor] . 
 
-    op start : List{Inst} -> State [ctor] . 
+    op start : List{Inst} -> State . 
     eq start(IL) = # IL | empty # .
 
     vars Var Var1 Var2 : Var .
     var B : Boolean .
-    var BExp : BExp .
+    var BExp BExp2 : BExp .
     var RealVal : Real .
     vars IL IL1 IL2 : List{Inst} .
     var STR : Map{Var, Real} .
@@ -158,11 +166,12 @@ mod WHILE-MAUDE is
         =>
         # IL | STR # .
 
-    rl [assign] : 
+    crl [assign] : 
         # Var := AExp ; IL | STR #
         =>
         ***# IL | insert(Var, {type real, val eval(AExp, STR)}, STR) # .
-        # IL | insert(Var, eval(AExp, STR), STR) # .
+        # IL | insert(Var, RealVal, STR) #
+        if RealVal := eval(AExp, STR) .
     
     ***rl [assign-boolean] : 
     ***    # Var := B ; IL | STR #
@@ -174,36 +183,29 @@ mod WHILE-MAUDE is
     ***    =>
     ***    # IL | insert(Var, {type getType(VarState), val getVal(VarState)}, STR) #
     ***    if VarState := STR[Var1] .
+
     crl [if..then] : 
         # if BExp then { IL1 } else { IL2 } IL | STR #
         =>
         # IL1 IL | STR #
-        if eval(BExp, STR) = true .
+        if eval(BExp, STR) === true = true .
+
     crl [if..else] : 
         # if BExp then { IL1 } else { IL2 } IL | STR #
         =>
         # IL2 IL | STR #
-        if eval(BExp, STR) = false .
+        if eval(BExp, STR) =/== true = true .
+    
 
-    ***rl [if..then..else] : 
-    ***    # if BExp then { IL1 } else { IL2 } IL | STR #
-    ***    =>
-    ***    if eval(BExp, STR) == true then 
-    ***      # IL1 IL | STR #
-    ***    else
-    ***      # IL2 IL | STR #
-    ***    fi .
-    ***
-    ***rl [while..do] : 
-    ***    # while BExp do { IL1 } IL | STR #
-    ***    =>
-    ***    if eval(BExp, STR) == false then 
-    ***      # IL | STR #
-    ***    else
-    ***      # IL1 while BExp do { IL1 } IL | STR #
-    ***    fi .
-
-    ***op lookup : Var -> Real .
-    ***eq # if (lookup(Var) < RealVal) then { IL1 } else { IL2 } IL | STR # = # if (STR[Var] < RealVal)  then { IL1 } else { IL2 } IL | STR # .
-
+    crl [while..loop] : 
+        # while BExp do { IL1 } IL | STR #
+        =>
+        # IL1 while BExp do { IL1 } IL | STR #
+        if eval(BExp, STR) === true = true .
+        
+    crl [while..exit] : 
+        # while BExp do { IL1 } IL | STR #
+        =>
+        # IL | STR #
+        if eval(BExp, STR) =/== true = true .
 endm
