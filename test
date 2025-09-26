@@ -120,6 +120,16 @@ smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; if ('var1 < q:Real) then
 
 smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; 'var2 := toReal(1) ; while ('var2 < 'var1) do {'var2 := 'var2 + toReal(1) ; }) =>* # nil | STR:Map{Var, Real} #   such that p:Real > toReal(2) using QF_LRA .
 
+smt-search [1] in WHILE-MAUDE : start('n := p:Real ; 'res := toReal(1) ; while ('n >= toReal(1)) do {'res := 'res * 'n ; 'n := 'n - toReal(1) ; }) =>* # nil | ('res |-> toReal(120), STR:Map{Var, Real}) #   such that p:Real > toReal(0) using QF_LRA .
+
+*** Test (not taking advantage of SE): can the factorial of 5 be negative?
+smt-search [1] in WHILE-MAUDE : start('n := toReal(5) ; 'res := toReal(1) ; while ('n >= toReal(1)) do {'res := 'res * 'n ; 'n := 'n - toReal(1) ; }) =>* # nil | ('res |-> q:Real, STR:Map{Var, Real}) #   such that q:Real <= toReal(0) using QF_LRA .
+
+*** Test (taking advantage of SE): can the factorial of any positive real n be negative?
+- Does not terminate!!
+smt-search [1] in WHILE-MAUDE : start('n := p:Real ; 'res := toReal(1) ; while ('n >= toReal(1)) do {'res := 'res * 'n ; 'n := 'n - toReal(1) ; }) =>* # nil | ('res |-> q:Real, STR:Map{Var, Real}) #   such that p:Real > toReal(0) and q:Real <= toReal(0) using QF_LRA .
+
+
 *** Infinite loop
 - Does not terminate:
 smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; 'var2 := toReal(1) ; while (true) do {'var2 := 'var1 + toReal(1) ; }) =>* # nil | STR:Map{Var, Real} #   such that p:Real > toReal(2) using QF_LRA .
