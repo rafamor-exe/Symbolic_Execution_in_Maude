@@ -118,6 +118,10 @@ smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; if ('var1 < q:Real) then
 
 smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := q:Real ;}) =>* # nil | 'var1 |-> p:Real, 'var2 |-> q:Real #   such that p:Real > toReal(1) using QF_LRA .
 
+*** Test conditional paths
+smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := q:Real ;}) =>* # nil | STR:Map{Var, Real} #   such that p:Real > toReal(1) using QF_LRA .
+smt-search [2] in WHILE-MAUDE : start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := q:Real ;}) =>* # nil | STR:Map{Var, Real} #   such that p:Real > toReal(1) using QF_LRA .
+
 smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; 'var2 := toReal(1) ; while ('var2 < 'var1) do {'var2 := 'var2 + toReal(1) ; }) =>* # nil | STR:Map{Var, Real} #   such that p:Real > toReal(2) using QF_LRA .
 
 
