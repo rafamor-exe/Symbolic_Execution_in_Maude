@@ -122,6 +122,14 @@ smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; if ('var1 < q:Real) then
 smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := q:Real ;}) =>* # nil | STR:Map{Var, Real} #   such that p:Real > toReal(1) using QF_LRA .
 smt-search [2] in WHILE-MAUDE : start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := q:Real ;}) =>* # nil | STR:Map{Var, Real} #   such that p:Real > toReal(1) using QF_LRA .
 
+*** Test then-path unfeasible (only solution: else branch)
+smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; if ('var1 < p:Real) then {nil} else {'var2 := p:Real ;}) =>* # nil | STR:Map{Var, Real} #   such that p:Real > toReal(1) using QF_LRA .
+*** No solution:
+smt-search [2] in WHILE-MAUDE : start('var1 := p:Real ; if ('var1 < p:Real) then {nil} else {'var2 := p:Real ;}) =>* # nil | STR:Map{Var, Real} #   such that p:Real > toReal(1) using QF_LRA .
+
+
+smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; 'var2 := toReal(1) ; while ('var2 < 'var1) do {'var2 := 'var2 + toReal(1) ; }) =>* # nil | STR:Map{Var, Real} #   such that p:Real > toReal(2) using QF_LRA .
+
 smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; 'var2 := toReal(1) ; while ('var2 < 'var1) do {'var2 := 'var2 + toReal(1) ; }) =>* # nil | STR:Map{Var, Real} #   such that p:Real > toReal(2) using QF_LRA .
 
 
@@ -141,6 +149,11 @@ smt-search [1] in WHILE-MAUDE : start('n := p:Real ; 'res := toReal(1) ; while (
 *** Infinite loop
 - Does not terminate:
 smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; 'var2 := toReal(1) ; while (true) do {'var2 := 'var1 + toReal(1) ; }) =>* # nil | STR:Map{Var, Real} #   such that p:Real > toReal(2) using QF_LRA .
+
+- Terminates with bounded search
+smt-search [1, 10] in WHILE-MAUDE : start('var1 := p:Real ; 'var2 := toReal(1) ; while (true) do {'var2 := 'var1 + toReal(1) ; }) =>* # IL:List{Inst} | ('var2 |-> toReal(7), STR:Map{Var, Real}) #   such that p:Real > toReal(2) using QF_LRA .
+smt-search [2, 20] in WHILE-MAUDE : start('var1 := p:Real ; 'var2 := toReal(1) ; while (true) do {'var2 := 'var2 + toReal(1) ; }) =>* # IL:List{Inst} | ('var2 |-> toReal(7), STR:Map{Var, Real}) #   such that p:Real > toReal(2) using QF_LRA .
+
 - Terminates (reduces state space with folding):
 {fold} smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; 'var2 := toReal(1) ; while (true) do {'var2 := 'var1 + toReal(1) ; }) =>* # nil | STR:Map{Var, Real} #   such that p:Real > toReal(2) using QF_LRA .
 {fold} smt-search [1] in WHILE-MAUDE : start('var1 := p:Real ; 'var2 := toReal(1) ; while (true) do {'var2 := 'var2 + toReal(1) ; }) =>* # IL:List{Inst} | ('var2 |-> toReal(7), STR:Map{Var, Real}) #   such that p:Real > toReal(2) using QF_LRA .
