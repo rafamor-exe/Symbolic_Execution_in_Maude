@@ -140,41 +140,52 @@ fmod WHILE-LANG-BLOCK-MOD is
 
 endfm
 
+fmod WHILE-LANG-SE-LOCS-MOD is
+    sort Location .
+    ops skip assign if1 if2 while1 while2 : -> Location [ctor] .
+endfm
+
+view Location from TRIV to WHILE-LANG-SE-LOCS-MOD is
+  sort Elt to Location .
+endv
+
 mod WHILE-MAUDE is
 
     pr WHILE-LANG-BLOCK-MOD .
+    pr WHILE-LANG-SE-LOCS-MOD .
+    pr LIST{Location} * (sort List{Location} to Path) .
     pr META-LEVEL * (op _=_ to _=M_) * (op _+_ to _+M_) .
 
-    sort SEState PState .
+    sorts SEState PState .
     
     op # _ | _ # : List{Inst} Map{Var, Real} -> PState [ctor] . 
     op errState : -> PState [ctor] .
 
-    op _ {_} : PState BExp -> SEState [ctor] . 
+    op _ {_} # {_} : PState BExp Path -> SEState [ctor] . 
 
     op start : List{Inst} -> SEState . 
-    eq start(IL) = # IL | empty # {true} .
+    eq start(IL) = # IL | empty # {true} # {nil} .
 
     vars Var Var1 Var2 : Var .
     var B : Boolean .
-    var BExp BExp2 : BExp .
+    var BExp BExp2 Constraints Constraints' : BExp .
     var RealVal : Real .
     vars IL IL1 IL2 : List{Inst} .
     var STR : Map{Var, Real} .
     var VarState : VarState .
     var AExp : AExp .
-    var Constraints Constraints' : BExp .
+    var Path : Path .
 
     rl [skip] : 
-        # skip ; IL | STR #
+        # skip ; IL | STR # {Constraints} # {Path}
         =>
-        # IL | STR # .
+        # IL | STR # {Constraints} # {Path skip} .
 
     crl [assign] : 
-        # Var := AExp ; IL | STR #
+        # Var := AExp ; IL | STR # {Constraints} # {Path}
         =>
         ***# IL | insert(Var, {type real, val eval(AExp, STR)}, STR) # .
-        # IL | insert(Var, RealVal, STR) #
+        # IL | insert(Var, RealVal, STR) # {Constraints} # {Path assign}
         if RealVal := eval(AExp, STR) .
     
     ***rl [assign-boolean] : 
@@ -189,31 +200,31 @@ mod WHILE-MAUDE is
     ***    if VarState := STR[Var1] .
 
     crl [if..then] : 
-        # if BExp then { IL1 } else { IL2 } IL | STR # {Constraints}
+        # if BExp then { IL1 } else { IL2 } IL | STR # {Constraints} # {Path}
         =>
-        # IL1 IL | STR # {Constraints'}
+        # IL1 IL | STR # {Constraints'} # {Path if1}
         if Constraints' := (Constraints and eval(BExp, STR) === (true).Boolean)
            /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints')) .
 
     crl [if..else] : 
-        # if BExp then { IL1 } else { IL2 } IL | STR # {Constraints}
+        # if BExp then { IL1 } else { IL2 } IL | STR # {Constraints} # {Path}
         =>
-        # IL2 IL | STR # {Constraints'}
+        # IL2 IL | STR # {Constraints'} # {Path if2}
         if Constraints' := (Constraints and eval(BExp, STR) =/== (true).Boolean)
            /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints')) .
     
 
     crl [while..loop] : 
-        # while BExp do { IL1 } IL | STR # {Constraints}
+        # while BExp do { IL1 } IL | STR # {Constraints} # {Path}
         =>
-        # IL1 while BExp do { IL1 } IL | STR # {Constraints'}
+        # IL1 while BExp do { IL1 } IL | STR # {Constraints'} # {Path while1}
         if Constraints' := (Constraints and eval(BExp, STR) === (true).Boolean)
            /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints')) .
         
     crl [while..exit] : 
-        # while BExp do { IL1 } IL | STR # {Constraints}
+        # while BExp do { IL1 } IL | STR # {Constraints} # {Path}
         =>
-        # IL | STR # {Constraints'}
+        # IL | STR # {Constraints'} # {Path while2}
         if Constraints' := (Constraints and eval(BExp, STR) =/== (true).Boolean)
            /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints')) .
 endm
