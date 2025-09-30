@@ -157,14 +157,15 @@ mod WHILE-MAUDE is
     pr META-LEVEL * (op _=_ to _=M_) * (op _+_ to _+M_) .
 
     sorts SEState PState .
+    sort ConstrainedStart .
     
     op # _ | _ # : List{Inst} Map{Var, Real} -> PState [ctor] . 
     op errState : -> PState [ctor] .
 
     op _ {_} # {_} : PState BExp Path -> SEState [ctor] . 
 
-    op start : List{Inst} -> SEState . 
-    eq start(IL) = # IL | empty # {true} # {nil} .
+    op _ where _ : List{Inst} BExp -> ConstrainedStart [ctor] .
+
 
     vars Var Var1 Var2 : Var .
     var B : Boolean .
@@ -175,6 +176,11 @@ mod WHILE-MAUDE is
     var VarState : VarState .
     var AExp : AExp .
     var Path : Path .
+
+    op start : List{Inst} -> SEState . 
+    op start : ConstrainedStart -> SEState . 
+    eq start(IL) = # IL | empty # {true} # {nil} .
+    eq start(IL where BExp) = # IL | empty # {BExp} # {nil} .
 
     rl [skip] : 
         # skip ; IL | STR # {Constraints} # {Path}

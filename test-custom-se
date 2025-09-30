@@ -1,4 +1,4 @@
-search in WHILE-MAUDE : start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := q:Real ;}) =>* # nil | STR:Map{Var, Real} # {Const:BExp} .
+search in WHILE-MAUDE : start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := q:Real ;}) =>* # nil | STR:Map{Var, Real} # {Const:BExp} # {P:Path} .
 Solution 1 (state 3)
 states: 4  rewrites: 19 in 8ms cpu (8ms real) (2375 rewrites/second)
 STR --> 'var1 |-> p:Real
@@ -13,3 +13,6 @@ P:Path --> assign if1 assign
 
 No more solutions.
 states: 5  rewrites: 22 in 8ms cpu (8ms real) (2750 rewrites/second)
+
+*** Constrained input
+search in WHILE-MAUDE : start('var1 := p:Real ; if ('var1 < toReal(0)) then {'var2 := q:Real ;} where p:Real > toReal(1)) =>* # nil | STR:Map{Var, Real} # {Const:BExp} # {P:Path} .
