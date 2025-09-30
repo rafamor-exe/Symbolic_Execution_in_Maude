@@ -73,6 +73,7 @@ fmod WHILE-LANG-AEXP-MOD is
     op _<=_ : AExp AExp -> BExp [ditto] .
     op _>_ : AExp AExp -> BExp [ditto] .
     op _>=_ : AExp AExp -> BExp [ditto] .
+    op _and_ : BExp BExp -> BExp [ditto] .
 
     op eval : BExp -> Boolean .
     op eval : AExp Map{Var, Real} -> Real .
