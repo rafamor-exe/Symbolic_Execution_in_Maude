@@ -1,0 +1,12 @@
+search in WHILE-MAUDE : start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := q:Real ;}) =>* # nil | STR:Map{Var, Real} # {Const:BExp} .
+Solution 1 (state 3)
+states: 4  rewrites: 19 in 5ms cpu (13ms real) (3800 rewrites/second)
+STR --> 'var1 |-> p:Real
+Const:BExp --> (true).Boolean and p:Real < q:Real =/== (true).Boolean
+
+Solution 2 (state 4)
+states: 5  rewrites: 22 in 5ms cpu (13ms real) (4400 rewrites/second)
+STR --> 'var1 |-> p:Real, 'var2 |-> q:Real
+Const:BExp --> (true).Boolean and p:Real < q:Real === (true).Boolean
+
+No more solutions.
