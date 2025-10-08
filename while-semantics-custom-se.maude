@@ -150,22 +150,41 @@ view Location from TRIV to WHILE-LANG-SE-LOCS-MOD is
   sort Elt to Location .
 endv
 
+fmod CONCRETE-STATE-MOD is
+    pr RAT .
+    pr MAP{Var, Rat} .
+    sort ConAExp .
+
+    op _ := _ ; : Var ConAExp -> AssignOp [ctor prec 20] .
+endfm
+
+fmod SEMAPHORE is
+    sort Sem .
+    ops ok wait : -> Sem [ctor] .
+endfm
+
 mod WHILE-MAUDE is
 
     pr WHILE-LANG-BLOCK-MOD .
     pr WHILE-LANG-SE-LOCS-MOD .
     pr LIST{Location} * (sort List{Location} to Path) .
     pr META-LEVEL * (op _=_ to _=M_) * (op _+_ to _+M_) .
+    pr CONCRETE-STATE-MOD .
+    pr SEMAPHORE .
 
-    sorts SEState PState .
+    sorts SEState PState ConcreteEState ConcolicState .
     sort ConstrainedStart .
     
-    op # _ | _ # : List{Inst} Map{Var, Real} -> PState [ctor] . 
+    op {_} # _ | _ # : Sem List{Inst} Map{Var, Real} -> PState [ctor] . 
     op errState : -> PState [ctor] .
 
     op _ {_} # {_} : PState BExp Path -> SEState [ctor] . 
 
     op _ where _ : List{Inst} BExp -> ConstrainedStart [ctor] .
+
+    op {_} # _ | _ # : Sem List{Inst} Map{Var, Rat} -> CEState [ctor] .
+
+    op [_] [_] : SEState CEState -> ConcolicState [ctor] .
 
 
     vars Var Var1 Var2 : Var .
@@ -173,65 +192,80 @@ mod WHILE-MAUDE is
     var BExp BExp2 Constraints Constraints' : BExp .
     var RealVal : Real .
     vars IL IL1 IL2 : List{Inst} .
-    var STR : Map{Var, Real} .
+    var SymSTR : Map{Var, Real} .
     var VarState : VarState .
     var AExp : AExp .
     var Path : Path .
+    var ConSTR : Map{Var, Rat} .
+    var ConAExp : ConAExp .
+    var RatVal : Rat .
 
-    op start : List{Inst} -> SEState . 
-    op start : ConstrainedStart -> SEState . 
-    eq start(IL) = # IL | empty # {true} # {nil} .
-    eq start(IL where BExp) = # IL | empty # {BExp} # {nil} .
 
-    rl [skip] : 
-        # skip ; IL | STR # {Constraints} # {Path}
+    op start : List{Inst} -> ConcolicState . 
+    op start : ConstrainedStart -> ConcolicState . 
+    eq start(IL) = [ { wait } # IL | empty # {true} # {nil} ] [ { ok } # IL | empty # ] .
+    eq start(IL where BExp) = [ { wait } # IL | empty # {BExp} # {nil} ] [ { ok } # IL | empty # ] .
+
+    rl [sym-skip] : 
+        {ok} # skip ; IL | SymSTR # {Constraints} # {Path}
         =>
-        # IL | STR # {Constraints} # {Path skip} .
+        {ok} # IL | SymSTR # {Constraints} # {Path skip} .
 
-    crl [assign] : 
-        # Var := AExp ; IL | STR # {Constraints} # {Path}
+    crl [sym-assign] : 
+        {ok} # Var := AExp ; IL | SymSTR # {Constraints} # {Path}
         =>
-        ***# IL | insert(Var, {type real, val eval(AExp, STR)}, STR) # .
-        # IL | insert(Var, RealVal, STR) # {Constraints} # {Path assign}
-        if RealVal := eval(AExp, STR) .
+        ***# IL | insert(Var, {type real, val eval(AExp, SymSTR)}, SymSTR) # .
+        {ok} # IL | insert(Var, RealVal, SymSTR) # {Constraints} # {Path assign}
+        if RealVal := eval(AExp, SymSTR) .
     
     ***rl [assign-boolean] : 
-    ***    # Var := B ; IL | STR #
+    ***    # Var := B ; IL | SymSTR #
     ***    =>
-    ***    # IL | insert(Var, {type boolean, val val(B)}, STR) # .
+    ***    # IL | insert(Var, {type boolean, val val(B)}, SymSTR) # .
     ***
     ***crl [assign-var] : 
-    ***    # Var := Var1 ; IL | STR #
+    ***    # Var := Var1 ; IL | SymSTR #
     ***    =>
-    ***    # IL | insert(Var, {type getType(VarState), val getVal(VarState)}, STR) #
-    ***    if VarState := STR[Var1] .
+    ***    # IL | insert(Var, {type getType(VarState), val getVal(VarState)}, SymSTR) #
+    ***    if VarState := SymSTR[Var1] .
 
-    crl [if..then] : 
-        # if BExp then { IL1 } else { IL2 } IL | STR # {Constraints} # {Path}
+    crl [sym-if..then] : 
+        {ok} # if BExp then { IL1 } else { IL2 } IL | SymSTR # {Constraints} # {Path}
         =>
-        # IL1 IL | STR # {Constraints'} # {Path if1}
-        if Constraints' := (Constraints and eval(BExp, STR) === (true).Boolean)
+        {ok} # IL1 IL | SymSTR # {Constraints'} # {Path if1}
+        if Constraints' := (Constraints and eval(BExp, SymSTR) === (true).Boolean)
            /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints')) .
 
-    crl [if..else] : 
-        # if BExp then { IL1 } else { IL2 } IL | STR # {Constraints} # {Path}
+    crl [sym-if..else] : 
+        {ok} # if BExp then { IL1 } else { IL2 } IL | SymSTR # {Constraints} # {Path}
         =>
-        # IL2 IL | STR # {Constraints'} # {Path if2}
-        if Constraints' := (Constraints and eval(BExp, STR) =/== (true).Boolean)
+        {ok} # IL2 IL | SymSTR # {Constraints'} # {Path if2}
+        if Constraints' := (Constraints and eval(BExp, SymSTR) =/== (true).Boolean)
            /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints')) .
     
 
-    crl [while..loop] : 
-        # while BExp do { IL1 } IL | STR # {Constraints} # {Path}
+    crl [sym-while..loop] : 
+        {ok} # while BExp do { IL1 } IL | SymSTR # {Constraints} # {Path}
         =>
-        # IL1 while BExp do { IL1 } IL | STR # {Constraints'} # {Path while1}
-        if Constraints' := (Constraints and eval(BExp, STR) === (true).Boolean)
+        {ok} # IL1 while BExp do { IL1 } IL | SymSTR # {Constraints'} # {Path while1}
+        if Constraints' := (Constraints and eval(BExp, SymSTR) === (true).Boolean)
            /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints')) .
         
-    crl [while..exit] : 
-        # while BExp do { IL1 } IL | STR # {Constraints} # {Path}
+    crl [sym-while..exit] : 
+        {ok} # while BExp do { IL1 } IL | SymSTR # {Constraints} # {Path}
         =>
-        # IL | STR # {Constraints'} # {Path while2}
-        if Constraints' := (Constraints and eval(BExp, STR) =/== (true).Boolean)
+        {ok} # IL | SymSTR # {Constraints'} # {Path while2}
+        if Constraints' := (Constraints and eval(BExp, SymSTR) =/== (true).Boolean)
            /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints')) .
+    
+    rl [con-skip] : 
+        {ok} # skip ; IL | ConSTR #
+        =>
+        {ok} # IL | ConSTR # .
+    
+    crl [con-assign] : 
+        {ok} # Var := ConAExp ; IL | ConSTR #
+        =>
+        {ok} # IL | insert(Var, RatVal, ConSTR) #
+        if RatVal := eval(ConAExp, ConSTR) .
 endm
