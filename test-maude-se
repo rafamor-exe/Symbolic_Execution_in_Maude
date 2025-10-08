@@ -82,6 +82,12 @@ smt-search [2, 20] in WHILE-MAUDE : start('var1 := p:Real ; 'var2 := toReal(1) ;
 ***smt-search [1] start(var("var1") := p:Real ; if (var("var1") < q:Real) then {var("var2") := toReal(5) ;}) =>* # nil | var("var1") |-> p:Real, var("var2") |-> toReal(5) #   such that p:Real > toReal(1) using QF_LRA .
 smt-search [1] downTerm(getTerm(metaReduce(upModule('WHILE-MAUDE, false), upTerm(start(var("var1") := p:Real ; if var("var1") < q:Real then{var("var2") := toReal(5) ;})))), err:State) =>* # nil | var("var1") |-> p:Real, var("var2") |-> toReal(5) #   such that p:Real > toReal(1) using QF_LRA .
 
+********************
+- Maude metaSmtSearch tests
+
+red metaSmtSearch(upModule('WHILE-MAUDE, false), upTerm(start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := q:Real ;})), upTerm(# nil | STR:Map{Var, Real} #), nil, '*, 0, unbounded, 0) .
+
+***smt-search [1]  =>* # nil | STR:Map{Var, Real} #   such that p:Real > toReal(1) using QF_LRA .
 
 ********************
 erew start('var1 := p:Real ; if ('var1 < q:Real) then {'var2 := toReal(5) ;}) .
