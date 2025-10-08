@@ -153,9 +153,51 @@ endv
 fmod CONCRETE-STATE-MOD is
     pr RAT .
     pr MAP{Var, Rat} .
-    sort ConAExp .
+    sort ConAExp ConBExp AssignOp .
+    ***subsort Qid < Var < ConAExp .
+    ***subsort Rat < ConAExp .
+    ***subsort Bool < ConBExp .
 
     op _ := _ ; : Var ConAExp -> AssignOp [ctor prec 20] .
+
+***    op _+_ : ConAExp ConAExp -> ConAExp [ditto] .
+***    op _*_ : ConAExp ConAExp -> ConAExp [ditto] .
+***    op _-_ : ConAExp ConAExp -> ConAExp [ditto] .
+***    op _/_ : ConAExp ConAExp -> ConAExp [ditto] .
+***
+***    op _=_ : ConAExp ConAExp -> ConBExp .
+***    op _!=_ : ConAExp ConAExp -> ConBExp .
+***    op _<_ : ConAExp ConAExp -> ConBExp [ditto] .
+***    op _<=_ : ConAExp ConAExp -> ConBExp [ditto] .
+***    op _>_ : ConAExp ConAExp -> ConBExp [ditto] .
+***    op _>=_ : ConAExp ConAExp -> ConBExp [ditto] .
+***    op _and_ : ConBExp ConBExp -> ConBExp [ditto] .
+***
+***    op eval : ConAExp -> Rat .
+***    op eval : Rat -> Rat .
+***    op eval : Bool -> Boolean .
+***
+***    var R R1 : Rat .
+***    var ConAExp ConAExp1 ConAExp2 : ConAExp .
+***    var B : Bool .
+***    var BExp : BExp .
+***    var STR : Map{Var, Rat} .
+***    var Var : Var .
+***    
+***
+***    eq eval(ConAExp1 + ConAExp2, STR) = eval(ConAExp1, STR) + eval(ConAExp2, STR) .
+***    eq eval(ConAExp1 * ConAExp2, STR) = eval(ConAExp1, STR) * eval(ConAExp2, STR) .
+***    eq eval(ConAExp1 - ConAExp2, STR) = eval(ConAExp1, STR) - eval(ConAExp2, STR) .
+***    eq eval(ConAExp1 / ConAExp2, STR) = eval(ConAExp1, STR) / eval(ConAExp2, STR) .
+***    eq eval(ConAExp1 = ConAExp2, STR) = eval(ConAExp1, STR) == eval(ConAExp2, STR) .
+***    eq eval(ConAExp1 != ConAExp2, STR) = eval(ConAExp1, STR) =/= eval(ConAExp2, STR) .
+***    eq eval(ConAExp1 < ConAExp2, STR) = eval(ConAExp1, STR) < eval(ConAExp2, STR) .
+***    eq eval(ConAExp1 <= ConAExp2, STR) = eval(ConAExp1, STR) <= eval(ConAExp2, STR) .
+***    eq eval(ConAExp1 > ConAExp2, STR) = eval(ConAExp1, STR) > eval(ConAExp2, STR) .
+***    eq eval(ConAExp1 >= ConAExp2, STR) = eval(ConAExp1, STR) >= eval(ConAExp2, STR) .
+***    eq eval(Var, ((Var |-> R), STR)) = R .
+***    eq eval(R, STR) = R .
+***    eq eval(B, STR) = B .
 endfm
 
 fmod SEMAPHORE is
