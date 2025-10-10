@@ -123,18 +123,15 @@ endv
 fmod WHILE-LANG-BLOCK-MOD is
 
     pr WHILE-LANG-INSTS-MOD .
-    pr LIST{Inst} .
+    pr LIST{Inst} * (sort List{Inst} to Program) .
 
-    sorts IfElse While .
-    subsort IfElse While < Inst .
+    op if _ then {_} else {_} : BExp Program Program -> Inst [ctor prec 20] .
+    op if _ then {_} : BExp Program -> Inst [prec 20] .
 
-    op if _ then {_} else {_} : BExp List{Inst} List{Inst} -> IfElse [ctor prec 20] .
-    op if _ then {_} : BExp List{Inst} -> IfElse [ctor prec 20] .
-
-    op while _ do {_} : BExp List{Inst} -> While [ctor prec 20] .
+    op while _ do {_} : BExp Program -> Inst [ctor prec 20] .
 
     var B : BExp .
-    var IL1 : List{Inst} .
+    var IL1 : Program .
 
     eq if B then {IL1} = if B then {IL1} else {nil} .
 
@@ -146,17 +143,17 @@ mod WHILE-MAUDE is
 
     sort State .
     
-    op # _ | _ # : List{Inst} Map{Var, Real} -> State [ctor] . 
+    op # _ | _ # : Program Map{Var, Real} -> State [ctor] . 
     op errState : -> State [ctor] . 
 
-    op start : List{Inst} -> State . 
+    op start : Program -> State . 
     eq start(IL) = # IL | empty # .
 
     vars Var Var1 Var2 : Var .
     var B : Boolean .
     var BExp BExp2 : BExp .
     var RealVal : Real .
-    vars IL IL1 IL2 : List{Inst} .
+    vars IL IL1 IL2 : Program .
     var STR : Map{Var, Real} .
     var VarState : VarState .
     var AExp : AExp .
@@ -188,7 +185,7 @@ mod WHILE-MAUDE is
         # if BExp then { IL1 } else { IL2 } IL | STR #
         =>
         # IL1 IL | STR #
-        if eval(BExp, STR) === true = true .
+        if eval(BExp, STR) = true .
 
     crl [if..else] : 
         # if BExp then { IL1 } else { IL2 } IL | STR #
@@ -201,7 +198,7 @@ mod WHILE-MAUDE is
         # while BExp do { IL1 } IL | STR #
         =>
         # IL1 while BExp do { IL1 } IL | STR #
-        if eval(BExp, STR) === true = true .
+        if eval(BExp, STR) = true .
         
     crl [while..exit] : 
         # while BExp do { IL1 } IL | STR #
