@@ -1,0 +1,20 @@
+load smt
+set trace on .
+fmod SMT-TRANSFORM is
+    pr REAL-INTEGER .
+    pr META-LEVEL .
+    pr LEXICAL .
+    pr CONVERSION .
+
+    op toSMT : Int -> Integer .
+    op toSMT : Float -> Real .
+
+    op errInteger : -> Integer [ctor] .
+    op errReal : -> Real [ctor] .
+
+    var I : Int .
+    var F : Float .
+    
+    eq toSMT(I) = downTerm(getTerm(metaParse(['INTEGER], tokenize(string(I, 10)), 'Integer)), errInteger) .
+    eq toSMT(F) = downTerm(getTerm(metaParse(['REAL], tokenize(string(rat(F), 10)), 'Real)), errReal) .
+endfm
