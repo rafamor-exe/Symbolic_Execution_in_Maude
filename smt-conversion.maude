@@ -1,0 +1,26 @@
+load smt
+fmod SMT-CONVERSION is
+    pr REAL-INTEGER .
+    pr META-LEVEL .
+    pr LEXICAL .
+    pr CONVERSION .
+
+    op toInteger : Int -> Integer .
+    op toReal : Int -> Real .
+    op toReal : Rat -> Real .
+    op toReal : Float -> Real .
+
+    op errInteger : -> Integer [ctor] .
+    op errReal : -> Real [ctor] .
+
+    var I : Int .
+    var R : Rat .
+    var F : Float .
+    
+    eq toInteger(I) = downTerm(getTerm(metaParse(['INTEGER], tokenize(string(I, 10)), 'Integer)), errInteger) .
+    eq toReal(I) = toReal(toInteger(I)) .
+    eq toReal(R) = downTerm(getTerm(metaParse(['REAL], tokenize(string(R, 10)), 'Real)), errReal) .
+    ceq toReal(F) = toReal(I)
+        if I := rat(F) .
+    eq toReal(F) = downTerm(getTerm(metaParse(['REAL], tokenize(string(rat(F), 10)), 'Real)), errReal) .
+endfm
