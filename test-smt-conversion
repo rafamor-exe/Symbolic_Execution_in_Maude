@@ -1,0 +1,5 @@
+red metaCheck(upModule('SMT-CONVERSION, false), upTerm(toInteger(1) === (1).Integer)) .
+red metaCheck(upModule('SMT-CONVERSION, false), upTerm(toReal((1).NzNat) === (1/1).Real)) .
+red metaCheck(upModule('SMT-CONVERSION, false), upTerm(toReal(1/1) === (1/1).Real)) .
+red metaCheck(upModule('SMT-CONVERSION, false), upTerm(toReal(1.0) === (1/1).Real)) .
+red metaCheck(upModule('SMT-CONVERSION, false), upTerm(toReal(1.5) === (3/2).Real)) .
