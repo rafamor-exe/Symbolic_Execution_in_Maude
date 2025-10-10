@@ -1,5 +1,4 @@
 load smt
-set trace on .
 fmod SMT-TRANSFORM is
     pr REAL-INTEGER .
     pr META-LEVEL .
