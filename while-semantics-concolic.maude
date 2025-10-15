@@ -1,0 +1,251 @@
+load smt.maude .
+
+view Real from TRIV to REAL is
+  sort Elt to Real .
+endv
+
+fmod WHILE-LANG-VARSTATE-MOD is
+
+    pr REAL-INTEGER .
+    pr BOOLEAN .
+
+    sort AExp BExp .
+    sort VarState .
+    sorts VarType Value .
+    sorts RVal BVal .
+    subsort RVal < Value < AExp .
+    subsort Real < AExp .
+    subsort Boolean BVal < BExp .
+
+    ops boolean real : -> VarType [ctor] .
+
+    op val : Real -> RVal [ctor] .
+    op val : Boolean -> BVal [ctor] .
+
+    op {type _, val _} : VarType Value -> VarState [ctor] .
+
+    var T : VarType .
+    var V : Value .
+    var R : Real .
+    var B : Boolean .
+
+    op getType : VarState -> VarType .
+    eq getType({type T, val V}) = T .
+
+    op getVal : VarState -> Value .
+    eq getVal({type T, val V}) = V .
+
+endfm
+
+view VarState from TRIV to WHILE-LANG-VARSTATE-MOD is
+  sort Elt to VarState .
+endv
+
+view Value from TRIV to WHILE-LANG-VARSTATE-MOD is
+  sort Elt to Value .
+endv
+
+fmod WHILE-LANG-VAR-MOD is
+
+    pr QID .
+    pr WHILE-LANG-VARSTATE-MOD .
+
+    sort Var .
+    subsort Var < AExp .
+
+    op var : Qid -> Var [ctor] .
+
+endfm
+
+view Var from TRIV to WHILE-LANG-VAR-MOD is
+  sort Elt to Var .
+endv
+
+fmod WHILE-LANG-AEXP-MOD is
+
+    pr WHILE-LANG-VAR-MOD .
+    pr MAP{Var, Value} .
+
+    op _+_ : AExp AExp -> AExp [ditto] .
+    op _*_ : AExp AExp -> AExp [ditto] .
+    op _-_ : AExp AExp -> AExp [ditto] .
+    op _/_ : AExp AExp -> AExp [ditto] .
+
+    op _=_ : AExp AExp -> BExp .
+    op _!=_ : AExp AExp -> BExp .
+    op _<_ : AExp AExp -> BExp [ditto] .
+    op _<=_ : AExp AExp -> BExp [ditto] .
+    op _>_ : AExp AExp -> BExp [ditto] .
+    op _>=_ : AExp AExp -> BExp [ditto] .
+    op _and_ : BExp BExp -> BExp [ditto] .
+
+    op eval : BExp -> Boolean .
+    op eval : AExp Map{Var, Value} -> Real .
+    op eval : BExp Map{Var, Value} -> Boolean .
+
+    var R R1 : Real .
+    var AExp AExp1 AExp2 : AExp .
+    var B BExp1 BExp2 : Boolean .
+    var BExp : BExp .
+    var STR : Map{Var, Value} .
+    var Var : Var .
+
+    eq eval(AExp1 + AExp2, STR) = eval(AExp1, STR) + eval(AExp2, STR) .
+    eq eval(AExp1 * AExp2, STR) = eval(AExp1, STR) * eval(AExp2, STR) .
+    eq eval(AExp1 - AExp2, STR) = eval(AExp1, STR) - eval(AExp2, STR) .
+    eq eval(AExp1 / AExp2, STR) = eval(AExp1, STR) / eval(AExp2, STR) .
+    eq eval(AExp1 = AExp2, STR) = eval(AExp1, STR) === eval(AExp2, STR) .
+    eq eval(AExp1 != AExp2, STR) = eval(AExp1, STR) =/== eval(AExp2, STR) .
+    eq eval(AExp1 < AExp2, STR) = eval(AExp1, STR) < eval(AExp2, STR) .
+    eq eval(AExp1 <= AExp2, STR) = eval(AExp1, STR) <= eval(AExp2, STR) .
+    eq eval(AExp1 > AExp2, STR) = eval(AExp1, STR) > eval(AExp2, STR) .
+    eq eval(AExp1 >= AExp2, STR) = eval(AExp1, STR) >= eval(AExp2, STR) .
+    eq eval(BExp1 and BExp2, STR) = eval(BExp1, STR) and eval(BExp2, STR) .
+    ***eq eval(Var, (Var |-> R)) = R .
+    eq eval(Var, ((Var |-> val(R)), STR)) = R .
+    eq eval(val(R), STR) = R .
+    eq eval(val(B), STR) = B .
+    eq eval(R, STR) = R .
+    eq eval(B, STR) = B .
+
+endfm
+
+fmod WHILE-LANG-INSTS-MOD is
+
+    pr WHILE-LANG-AEXP-MOD .
+
+    sort Inst .
+
+    op skip ; : -> Inst [ctor prec 20] .
+    op _ := _ ; : Var AExp -> Inst [ctor prec 20] .
+
+endfm
+
+view Inst from TRIV to WHILE-LANG-INSTS-MOD is
+  sort Elt to Inst .
+endv
+
+fmod WHILE-LANG-BLOCK-MOD is
+
+    pr WHILE-LANG-INSTS-MOD .
+    pr LIST{Inst} * (sort List{Inst} to Program) .
+
+    op if _ then {_} else {_} : BExp Program Program -> Inst [ctor prec 20] .
+    op if _ then {_} : BExp Program -> Inst [prec 20] .
+
+    op while _ do {_} : BExp Program -> Inst [ctor prec 20] .
+
+    var B : BExp .
+    var IL1 : Program .
+
+    eq if B then {IL1} = if B then {IL1} else {nil} .
+
+endfm
+
+fmod WHILE-LANG-SE-LOCS-MOD is
+    sort Location .
+    ops skip assign if1 if2 while1 while2 while-inv assume : -> Location [ctor] .
+endfm
+
+view Location from TRIV to WHILE-LANG-SE-LOCS-MOD is
+  sort Elt to Location .
+endv
+
+mod WHILE-MAUDE is
+
+    pr WHILE-LANG-BLOCK-MOD .
+    pr WHILE-LANG-SE-LOCS-MOD .
+    pr LIST{Location} * (sort List{Location} to Path) .
+    pr META-LEVEL * (op _=_ to _=M_) * (op _+_ to _+M_) .
+
+    sorts SEState PState .
+    sort ConstrainedStart .
+    
+    op < _ | _ > : Program Map{Var, Value} -> PState [ctor] . 
+    op errState : -> PState [ctor] .
+
+    op _ {_} < {_} : PState BExp Path -> SEState [ctor] . 
+
+    op _ where _ : Program BExp -> ConstrainedStart [ctor] .
+
+    op [_] [_] : SEState PState -> ConcolicState [ctor] .
+
+
+    vars Var Var1 Var2 : Var .
+    var B : Boolean .
+    var BExp BExp2 Constraints Constraints' Invariants : BExp .
+    var RealVal : Real .
+    vars P IL IL1 IL2 : Program .
+    var STR STR' : Map{Var, Value} .
+    var VarState : VarState .
+    var AExp : AExp .
+    var Path : Path .
+    var SVDeclL : Program .
+    var VS : SVList .
+    var V : Value .
+    vars SEPState CEPState : PState .
+
+    op start : Program -> SEState .
+    op start : ConstrainedStart -> SEState .
+    eq start(P) = $start(P, nil, empty, true) .
+    eq start(P where BExp) = $start(P, nil, empty, BExp) .
+    op start : Program Program -> SEState .
+    op start : ConstrainedStart Program -> SEState .
+    eq start(P, SVDeclL) = $start(P, SVDeclL, empty, true) .
+    eq start(P where BExp, SVDeclL) = $start(P, SVDeclL, empty, BExp) .
+    op $start : Program Program Map{Var, Value} BExp -> SEState .
+    eq $start(P, nil, STR, BExp) = < P | STR > {BExp} < {nil} .
+    eq $start(P, (Var := V ;) SVDeclL, STR, BExp) = $start(P, SVDeclL, insert(Var, V, STR), BExp) .
+    
+
+    rl [skip] : 
+        < skip ; IL | STR > {Constraints} < {Path}
+        =>
+        < IL | STR > {Constraints} < {Path skip} .
+
+    rl [assign] : 
+        < Var := AExp ; IL | STR > {Constraints} < {Path}
+        =>
+        < IL | insert(Var, val(eval(AExp, STR)), STR) > {Constraints} < {Path assign} .
+    
+    ***rl [assign-boolean] : 
+    ***    < Var := B ; IL | STR >
+    ***    =>
+    ***    < IL | insert(Var, {type boolean, val val(B)}, STR) > .
+    ***
+    ***crl [assign-var] : 
+    ***    < Var := Var1 ; IL | STR >
+    ***    =>
+    ***    < IL | insert(Var, {type getType(VarState), val getVal(VarState)}, STR) >
+    ***    if VarState := STR[Var1] .
+
+    crl [if..then] : 
+        < if BExp then { IL1 } else { IL2 } IL | STR > {Constraints} < {Path}
+        =>
+        < IL1 IL | STR > {Constraints'} < {Path if1}
+        if Constraints' := (Constraints and eval(BExp, STR) === (true).Boolean)
+           /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints')) .
+
+    crl [if..else] : 
+        < if BExp then { IL1 } else { IL2 } IL | STR > {Constraints} < {Path}
+        =>
+        < IL2 IL | STR > {Constraints'} < {Path if2}
+        if Constraints' := (Constraints and eval(BExp, STR) =/== (true).Boolean)
+           /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints')) .
+    
+
+    crl [while..loop] : 
+        < while BExp do { IL1 } IL | STR > {Constraints} < {Path}
+        =>
+        < IL1 while BExp do { IL1 } IL | STR > {Constraints'} < {Path while1}
+        if Constraints' := (Constraints and eval(BExp, STR) === (true).Boolean)
+           /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints')) .
+        
+    crl [while..exit] : 
+        < while BExp do { IL1 } IL | STR > {Constraints} < {Path}
+        =>
+        < IL | STR > {Constraints'} < {Path while2}
+        if Constraints' := (Constraints and eval(BExp, STR) =/== (true).Boolean)
+           /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints')) .
+
+endm
