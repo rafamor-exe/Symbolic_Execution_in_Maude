@@ -13,9 +13,10 @@ fmod WHILE-LANG-VARSTATE-MOD is
     sort VarState .
     sorts VarType Value .
     sorts RVal BVal .
-    subsort RVal BVal < Value < AExp .
+    sort SMTVarId RealVar .
+    subsort RVal < Value < AExp .
     subsort Real < AExp .
-    subsort Boolean < BExp .
+    subsort Boolean BVal < BExp .
 
     ops boolean real : -> VarType [ctor] .
 
@@ -35,10 +36,17 @@ fmod WHILE-LANG-VARSTATE-MOD is
     op getVal : VarState -> Value .
     eq getVal({type T, val V}) = V .
 
+    op a : -> SMTVarId [ctor] .
+    op r : SMTVarId -> RealVar [ctor] .
+
 endfm
 
 view VarState from TRIV to WHILE-LANG-VARSTATE-MOD is
   sort Elt to VarState .
+endv
+
+view Value from TRIV to WHILE-LANG-VARSTATE-MOD is
+  sort Elt to Value .
 endv
 
 fmod WHILE-LANG-VAR-MOD is
@@ -47,9 +55,10 @@ fmod WHILE-LANG-VAR-MOD is
     pr WHILE-LANG-VARSTATE-MOD .
 
     sort Var .
-    subsort Qid < Var < AExp .
+    subsort Var < AExp .
+    subsort RealVar < AExp .
 
-    ***op var : String -> Var [ctor] .
+    op var : Qid -> Var [ctor] .
 
 endfm
 
@@ -60,7 +69,7 @@ endv
 fmod WHILE-LANG-AEXP-MOD is
 
     pr WHILE-LANG-VAR-MOD .
-    pr MAP{Var, Real} .
+    pr MAP{Var, Value} .
 
     op _+_ : AExp AExp -> AExp [ditto] .
     op _*_ : AExp AExp -> AExp [ditto] .
@@ -76,15 +85,16 @@ fmod WHILE-LANG-AEXP-MOD is
     op _and_ : BExp BExp -> BExp [ditto] .
 
     op eval : BExp -> Boolean .
-    op eval : AExp Map{Var, Real} -> Real .
-    op eval : BExp Map{Var, Real} -> Boolean .
+    op eval : AExp Map{Var, Value} -> Real .
+    op eval : BExp Map{Var, Value} -> Boolean .
 
     var R R1 : Real .
     var AExp AExp1 AExp2 : AExp .
-    var B : Boolean .
+    var B BExp1 BExp2 : Boolean .
     var BExp : BExp .
-    var STR : Map{Var, Real} .
+    var STR : Map{Var, Value} .
     var Var : Var .
+    var RV : RealVar .
 
     eq eval(AExp1 + AExp2, STR) = eval(AExp1, STR) + eval(AExp2, STR) .
     eq eval(AExp1 * AExp2, STR) = eval(AExp1, STR) * eval(AExp2, STR) .
@@ -96,9 +106,14 @@ fmod WHILE-LANG-AEXP-MOD is
     eq eval(AExp1 <= AExp2, STR) = eval(AExp1, STR) <= eval(AExp2, STR) .
     eq eval(AExp1 > AExp2, STR) = eval(AExp1, STR) > eval(AExp2, STR) .
     eq eval(AExp1 >= AExp2, STR) = eval(AExp1, STR) >= eval(AExp2, STR) .
-    eq eval(Var, ((Var |-> R), STR)) = R .
+    eq eval(BExp1 and BExp2, STR) = eval(BExp1, STR) and eval(BExp2, STR) .
+    ***eq eval(Var, (Var |-> R)) = R .
+    eq eval(Var, ((Var |-> val(R)), STR)) = R .
+    eq eval(val(R), STR) = R .
+    eq eval(val(B), STR) = B .
     eq eval(R, STR) = R .
     eq eval(B, STR) = B .
+    eq eval(RV, STR) = RV .
 
 endfm
 
@@ -107,13 +122,9 @@ fmod WHILE-LANG-INSTS-MOD is
     pr WHILE-LANG-AEXP-MOD .
 
     sort Inst .
-    sorts Skip AssignOp .
-    subsort Skip AssignOp < Inst .
 
-    op skip ; : -> Skip [ctor prec 20] .
-    op _ := _ ; : Var AExp -> AssignOp [ctor prec 20] .
-    ***op _ := _ ; : String Boolean -> AssignOp [ctor prec 20] .
-    ***op _ := _ ; : String String -> AssignOp [ctor prec 20] .
+    op skip ; : -> Inst [ctor prec 20] .
+    op _ := _ ; : Var AExp -> Inst [ctor prec 20] .
 
 endfm
 
@@ -124,18 +135,17 @@ endv
 fmod WHILE-LANG-BLOCK-MOD is
 
     pr WHILE-LANG-INSTS-MOD .
-    pr LIST{Inst} .
+    pr LIST{Inst} * (sort List{Inst} to Program) .
 
-    sorts IfElse While .
-    subsort IfElse While < Inst .
+    op if _ then {_} else {_} : BExp Program Program -> Inst [ctor prec 20] .
+    op if _ then {_} : BExp Program -> Inst [prec 20] .
 
-    op if _ then {_} else {_} : BExp List{Inst} List{Inst} -> IfElse [ctor prec 20] .
-    op if _ then {_} : BExp List{Inst} -> IfElse [ctor prec 20] .
-
-    op while _ do {_} : BExp List{Inst} -> While [ctor prec 20] .
+    op while _ do {_} : BExp Program -> Inst [ctor prec 20] .
+    op while _ inv _ do {_} : BExp BExp Program -> Inst [ctor prec 20] .
+    op assume _ : BExp -> Inst [ctor prec 20] .
 
     var B : BExp .
-    var IL1 : List{Inst} .
+    var IL1 : Program .
 
     eq if B then {IL1} = if B then {IL1} else {nil} .
 
@@ -143,7 +153,7 @@ endfm
 
 fmod WHILE-LANG-SE-LOCS-MOD is
     sort Location .
-    ops skip assign if1 if2 while1 while2 : -> Location [ctor] .
+    ops skip assign if1 if2 while1 while2 while-inv assume : -> Location [ctor] .
 endfm
 
 view Location from TRIV to WHILE-LANG-SE-LOCS-MOD is
@@ -156,44 +166,54 @@ mod WHILE-MAUDE is
     pr WHILE-LANG-SE-LOCS-MOD .
     pr LIST{Location} * (sort List{Location} to Path) .
     pr META-LEVEL * (op _=_ to _=M_) * (op _+_ to _+M_) .
+    pr LIST{Var} * (sort List{Var} to SVList) .
 
     sorts SEState PState .
     sort ConstrainedStart .
     
-    op # _ | _ # : List{Inst} Map{Var, Real} -> PState [ctor] . 
+    op # _ | _ # : Program Map{Var, Value} -> PState [ctor] . 
     op errState : -> PState [ctor] .
 
     op _ {_} # {_} : PState BExp Path -> SEState [ctor] . 
 
-    op _ where _ : List{Inst} BExp -> ConstrainedStart [ctor] .
+    op _ where _ : Program BExp -> ConstrainedStart [ctor] .
 
 
     vars Var Var1 Var2 : Var .
     var B : Boolean .
-    var BExp BExp2 Constraints Constraints' : BExp .
+    var BExp BExp2 Constraints Constraints' Invariants : BExp .
     var RealVal : Real .
-    vars IL IL1 IL2 : List{Inst} .
-    var STR : Map{Var, Real} .
+    vars P IL IL1 IL2 : Program .
+    var STR STR' : Map{Var, Value} .
     var VarState : VarState .
     var AExp : AExp .
     var Path : Path .
+    var SVDeclL : Program .
+    var VS : SVList .
+    var V : Value .
 
-    op start : List{Inst} -> SEState . 
-    op start : ConstrainedStart -> SEState . 
-    eq start(IL) = # IL | empty # {true} # {nil} .
-    eq start(IL where BExp) = # IL | empty # {BExp} # {nil} .
+    op start : Program -> SEState .
+    op start : ConstrainedStart -> SEState .
+    eq start(P) = $start(P, nil, empty, true) .
+    eq start(P where BExp) = $start(P, nil, empty, BExp) .
+    op start : Program Program -> SEState .
+    op start : ConstrainedStart Program -> SEState .
+    eq start(P, SVDeclL) = $start(P, SVDeclL, empty, true) .
+    eq start(P where BExp, SVDeclL) = $start(P, SVDeclL, empty, BExp) .
+    op $start : Program Program Map{Var, Value} BExp -> SEState .
+    eq $start(P, nil, STR, BExp) = # P | STR # {BExp} # {nil} .
+    eq $start(P, (Var := V ;) SVDeclL, STR, BExp) = $start(P, SVDeclL, insert(Var, V, STR), BExp) .
+    
 
     rl [skip] : 
         # skip ; IL | STR # {Constraints} # {Path}
         =>
         # IL | STR # {Constraints} # {Path skip} .
 
-    crl [assign] : 
+    rl [assign] : 
         # Var := AExp ; IL | STR # {Constraints} # {Path}
         =>
-        ***# IL | insert(Var, {type real, val eval(AExp, STR)}, STR) # .
-        # IL | insert(Var, RealVal, STR) # {Constraints} # {Path assign}
-        if RealVal := eval(AExp, STR) .
+        # IL | insert(Var, val(eval(AExp, STR)), STR) # {Constraints} # {Path assign} .
     
     ***rl [assign-boolean] : 
     ***    # Var := B ; IL | STR #
@@ -227,6 +247,12 @@ mod WHILE-MAUDE is
         # IL1 while BExp do { IL1 } IL | STR # {Constraints'} # {Path while1}
         if Constraints' := (Constraints and eval(BExp, STR) === (true).Boolean)
            /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints')) .
+    
+    crl [while..loop-inv] : 
+        # while BExp inv Invariants do { IL1 } IL | STR # {Constraints} # {Path}
+        =>
+        # assume Invariants IL | STR' # {Constraints} # {Path}
+        if STR' := updateStr(STR, getVars(IL1)) .
         
     crl [while..exit] : 
         # while BExp do { IL1 } IL | STR # {Constraints} # {Path}
@@ -234,4 +260,32 @@ mod WHILE-MAUDE is
         # IL | STR # {Constraints'} # {Path while2}
         if Constraints' := (Constraints and eval(BExp, STR) =/== (true).Boolean)
            /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints')) .
+    
+    crl [assume-inv] :
+        # assume Invariants IL | STR # {Constraints} # {Path}
+        =>
+        # IL | STR # {Constraints'} # {Path while1}
+        if Constraints' := (Constraints and eval(Invariants, STR) === (true).Boolean)
+           /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints')) .
+
+
+    op updateStr : Map{Var, Value} SVList -> Map{Var, Value} .
+    eq updateStr(STR, nil) = STR .
+    eq updateStr(STR, Var VS) = if $hasMapping(STR, Var) then
+                                    updateStr(STR, VS)
+                                 else
+                                    updateStr(insert(Var, r(a), STR), VS) *** Check how to introduce new variable
+                                 fi .
+
+    op getVars : Program -> SVList .
+    --- op getVars : AExp -> SVList .
+    --- op getVars : BExp -> SVList .
+    eq getVars(nil) = nil .
+    eq getVars(skip ; IL) = getVars(IL) .
+    eq getVars(Var := AExp ; IL) = Var getVars(IL) .
+    eq getVars(if BExp then { IL1 } else { IL2 } IL) = getVars(IL1) getVars(IL2) getVars(IL) .
+    eq getVars(while BExp do { IL1 } IL) = getVars(IL1) getVars(IL) .
+    --- eq getVars(Var := AExp ; IL) = Var, getVars(AExp), getVars(IL) .
+    --- eq getVars(if BExp then { IL1 } else { IL2 } IL) = getVars(BExp), getVars(IL1), getVars(IL2), getVars(IL) .
+    --- eq getVars(while BExp do { IL1 } IL) = getVars(BExp), getVars(IL1), getVars(IL) .
 endm
