@@ -64,6 +64,10 @@ smt-search [1] in WHILE-MAUDE : start(real 'n := val(5/1) ; real 'res := val(1/1
 - Does not terminate!!
 smt-search [1] in WHILE-MAUDE : start(real 'n := val(p:Real) ; real 'res := val(1/1) ; while ('n >= val(1/1)) do {real 'res := 'res * 'n ; real 'n := 'n - val(toReal(1)) ; }) =>* # nil | ('res |-> {type real, val val(q:Real)}, STR:Map{Var, VarState}) #   such that p:Real > toReal(0) and q:Real <= toReal(0) using QF_LRA .
 
+smt-search [1] in WHILE-MAUDE : start(real 'res := val(1/1) ; while ('n > val(0/1)) do {real 'res := 'res * 'n ; real 'n := 'n - val(toReal(1)) ; }, real 'n := val(p:Real) ;) =>* # nil | ('res |-> {type real, val val(q:Real)}, STR:Map{Var, VarState}) #   such that p:Real > toReal(0) and q:Real <= toReal(0) using QF_LRA .
+
+smt-search [1] in WHILE-MAUDE : start(real 'res := val(1/1) ; while ('n > val(0/1)) do {real 'res := val(toReal(2)) * 'n ; real 'n := 'n - val(toReal(1)) ; }, real 'n := val(p:Real) ;) =>* # nil | ('res |-> {type real, val val(q:Real)}, STR:Map{Var, VarState}) #   such that p:Real > toReal(0) and q:Real <= toReal(0) and q:Real === toReal(2) * p:Real using QF_LRA .
+
 
 *** Infinite loop
 - Does not terminate:

@@ -15,8 +15,6 @@ fmod WHILE-LANG-VARSTATE-MOD is
     sorts RVal BVal IVal .
     subsort RVal IVal < Value < AExp .
     subsort BVal < BExp .
-    ***subsort Real < AExp .
-    ***subsort Boolean < BExp .
 
     ops boolean real integer : -> VarType [ctor] .
 
@@ -77,7 +75,6 @@ fmod WHILE-LANG-AEXP-MOD is
     var I I1 I2 : Integer .
 
     op _+_ : AExp AExp -> AExp .
-    eq val(R1) + val(R2) = val(R1 + R2) .
     op _*_ : AExp AExp -> AExp .
     op _-_ : AExp AExp -> AExp .
     op _/_ : AExp AExp -> AExp .
@@ -134,6 +131,7 @@ fmod WHILE-LANG-INSTS-MOD is
 
     op skip ; : -> Inst [ctor prec 20] .
     op _ _ := _ ; : VarType Var AExp -> Inst [ctor prec 20] .
+    op _ := _ ; : Var AExp -> Inst [ctor prec 20] .
 
 endfm
 
@@ -195,11 +193,16 @@ mod WHILE-MAUDE is
         =>
         # IL | STR # .
 
-    rl [assign] : 
+    rl [assign-decl] : 
         # T Var := AExp ; IL | STR #
         =>
-        ***# IL | insert(Var, {type real, val eval(AExp, STR)}, STR) # .
         # IL | insert(Var, {type T, val val(eval(AExp, STR))}, STR) # .
+    
+    crl [assign] : 
+        # Var := AExp ; IL | STR #
+        =>
+        # IL | insert(Var, {type T, val val(eval(AExp, STR))}, STR) #
+        if {type T, val V} := STR[Var] .
     
     ***rl [assign-boolean] : 
     ***    # Var := B ; IL | STR #
