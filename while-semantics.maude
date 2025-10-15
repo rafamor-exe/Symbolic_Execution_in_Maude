@@ -163,7 +163,7 @@ mod WHILE-MAUDE is
 
     sort State .
     
-    op # _ | _ # : Program Map{Var, VarState} -> State [ctor] . 
+    op < _ | _ > : Program Map{Var, VarState} -> State [ctor] . 
     op errState : -> State [ctor] . 
 
     vars Var Var1 Var2 : Var .
@@ -184,48 +184,48 @@ mod WHILE-MAUDE is
     eq start(P, nil) = $start(P, nil, empty) .
     eq start(P, (T Var := V ;) SVDeclL) = $start(P, (T Var := V ;) SVDeclL, empty) .
     op $start : Program Program Map{Var, VarState} -> State .
-    eq $start(P, nil, STR) = # P | STR # .
+    eq $start(P, nil, STR) = < P | STR > .
     eq $start(P, (T Var := V ;) SVDeclL, STR) = $start(P, SVDeclL, insert(Var, {type T, val V}, STR)) .
-    ***eq $start(P, (Var : T) SVDeclL, STR) = # IL | insert(Var, {type T, val newVar(T, N)}, STR) # . *** Later, to create vars programatically without initial SMT value input
+    ***eq $start(P, (Var : T) SVDeclL, STR) = < IL | insert(Var, {type T, val newVar(T, N)}, STR) > . *** Later, to create vars programatically without initial SMT value input
 
     rl [skip] : 
-        # skip ; IL | STR #
+        < skip ; IL | STR >
         =>
-        # IL | STR # .
+        < IL | STR > .
 
     rl [assign-decl] : 
-        # T Var := AExp ; IL | STR #
+        < T Var := AExp ; IL | STR >
         =>
-        # IL | insert(Var, {type T, val val(eval(AExp, STR))}, STR) # .
+        < IL | insert(Var, {type T, val val(eval(AExp, STR))}, STR) > .
     
     crl [assign] : 
-        # Var := AExp ; IL | STR #
+        < Var := AExp ; IL | STR >
         =>
-        # IL | insert(Var, {type T, val val(eval(AExp, STR))}, STR) #
+        < IL | insert(Var, {type T, val val(eval(AExp, STR))}, STR) >
         if {type T, val V} := STR[Var] .
 
     crl [if..then] : 
-        # if BExp then { IL1 } else { IL2 } IL | STR #
+        < if BExp then { IL1 } else { IL2 } IL | STR >
         =>
-        # IL1 IL | STR #
+        < IL1 IL | STR >
         if eval(BExp, STR) = true .
 
     crl [if..else] : 
-        # if BExp then { IL1 } else { IL2 } IL | STR #
+        < if BExp then { IL1 } else { IL2 } IL | STR >
         =>
-        # IL2 IL | STR #
+        < IL2 IL | STR >
         if eval(BExp, STR) =/== true = true .
     
 
     crl [while..loop] : 
-        # while BExp do { IL1 } IL | STR #
+        < while BExp do { IL1 } IL | STR >
         =>
-        # IL1 while BExp do { IL1 } IL | STR #
+        < IL1 while BExp do { IL1 } IL | STR >
         if eval(BExp, STR) = true .
         
     crl [while..exit] : 
-        # while BExp do { IL1 } IL | STR #
+        < while BExp do { IL1 } IL | STR >
         =>
-        # IL | STR #
+        < IL | STR >
         if eval(BExp, STR) =/== true = true .
 endm
