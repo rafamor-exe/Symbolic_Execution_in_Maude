@@ -203,17 +203,6 @@ mod WHILE-MAUDE is
         =>
         # IL | insert(Var, {type T, val val(eval(AExp, STR))}, STR) #
         if {type T, val V} := STR[Var] .
-    
-    ***rl [assign-boolean] : 
-    ***    # Var := B ; IL | STR #
-    ***    =>
-    ***    # IL | insert(Var, {type boolean, val val(B)}, STR) # .
-    ***
-    ***crl [assign-var] : 
-    ***    # Var := Var1 ; IL | STR #
-    ***    =>
-    ***    # IL | insert(Var, {type getType(VarState), val getVal(VarState)}, STR) #
-    ***    if VarState := STR[Var1] .
 
     crl [if..then] : 
         # if BExp then { IL1 } else { IL2 } IL | STR #
