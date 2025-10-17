@@ -1,3 +1,12 @@
 search in WHILE-MAUDE : start(var('var2) := val(toReal(1)) ; while (var('var2) < var('var1)) do {var('var2) := var('var2) + toReal(1) ; } where ((p:Real < toReal(5)) and (p:Real > toReal(0))), var('var1) := val(p:Real) ;) =>* ConcS:ConcolicState .
 
 search in WHILE-MAUDE : start(var('n) := val(toReal(5)) ; var('res) := val(toReal(1)) ; while (var('n) >= toReal(1)) do {var('res) := var('res) * var('n) ; var('n) := var('n) - toReal(1) ; } where q:Real <= toReal(0)) =>* ConcS:ConcolicState .
+
+
+python3 while-semantics-concolic.py --program "get-SMTassignment(q:Integer < 1)"
+python3 while-semantics-concolic.py --program "get-SMTassignment(q:Integer <= 1 and q:Integer >= 0 and p:Integer < 10 and p:Integer > 20)"
+python3 while-semantics-concolic.py --program "get-SMTassignment(q:Real < (1/2).Real)"
+python3 while-semantics-concolic.py --program "get-SMTassignment(q:Integer <= 1 and q:Integer >= 0 and p:Integer < 10 and s:Real > 20/2)"
+
+***UNSAT test
+python3 while-semantics-concolic.py --program "get-SMTassignment(q:Integer >= 1 and q:Integer <= 0)"

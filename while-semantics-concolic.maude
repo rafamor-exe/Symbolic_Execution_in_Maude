@@ -155,9 +155,15 @@ endv
 
 fmod SMT-CONNECTION is
     pr WHILE-LANG-AEXP-MOD .
-    pr META-LEVEL * (op _=_ to _=M_) * (op _+_ to _+M_) .
 
-    op get-SMTassignment : Boolean -> Substitution [special (id-hook SpecialHubSymbol)] .
+    sort Assignment .
+
+    op _<--_ : Real Real -> Assignment [ctor] . *** test syntax
+    op _<--_ : Integer Integer -> Assignment [ctor] . *** test syntax
+    op _,_ : Assignment Assignment -> Assignment .
+    op failed : -> Assignment [ctor] .
+
+    op get-SMTassignment : Boolean -> Assignment [special (id-hook SpecialHubSymbol)] .
 
 endfm
 
@@ -167,6 +173,7 @@ mod WHILE-MAUDE is
     pr WHILE-LANG-SE-LOCS-MOD .
     pr LIST{Location} * (sort List{Location} to Path) .
     pr INT .
+    pr META-LEVEL * (op _=_ to _=M_) * (op _+_ to _+M_) .
     pr SMT-CONNECTION .
 
     sorts SEState PState ConcolicState .

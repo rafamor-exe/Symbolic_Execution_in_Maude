@@ -1,32 +1,87 @@
 import maude
 
 import argparse
-import z3
+from z3 import *
+import re
 
 
 class SMTAssignmentHook (maude.Hook):
 
     def __init__(self):
         super().__init__()
-        self.solver = z3.Solver()
+        self.solver = Solver()
 
-    def run(self , term , data ):
+    def run(self , term , data):
         module = term.symbol().getModule()
-        print("a")
-        #for argument in term.arguments():
-        #    print(argument)
         argument , = term.arguments()
-        print(argument)
-        self.solver.add(argument)
-        print("aa")
-        model = self.solver.model()
-        assignments = ""
-        for sv in model:
-            if sv != model[-1]:
-                assignments += f"{sv} <- {model[sv]} ; "
+        maude_constraints = str(argument).split(' and ')
+        print(maude_constraints)
+        for constraint in maude_constraints:
+            if constraint == '(false).Boolean':
+                return module.parseTerm("failed")
+            elif constraint == '(true).Boolean':
+                z3_constraint = True
             else:
-                assignments += f"{sv} <- {model[sv]}"
-        return module.parseTerm(assignments)
+                var_name, var_type, operator, int_val, rat_val, value_type = self.parse_constraint(constraint)
+                if int_val is not None:
+                    print(var_name, var_type, operator, int_val, value_type)
+                    z3_constraint = self.get_z3constraint(var_name, var_type, operator, int_val, value_type)
+                else:
+                    print(var_name, var_type, operator, rat_val, "Real")
+                    value_type = "Real"
+                    z3_constraint = self.get_z3constraint(var_name, var_type, operator, rat_val, value_type)
+            print(z3_constraint)
+            self.solver.add(z3_constraint)
+
+        if self.solver.check() == unsat:
+            return module.parseTerm("failed")
+
+        model = self.solver.model()
+        print(model)
+        if len(model) == 0:
+            return module.parseTerm("(true).Boolean")
+        
+        assignments = ""
+        for svar in model:
+            assignments += f"{svar}:{var_type} <-- {model[svar]}:{value_type} ; "
+        return module.parseTerm(assignments[:-3])
+
+    def parse_constraint(self, argument):
+        print(argument)
+        pattern = r'(\w+):(\w+)\s*([<>=!]+)\s*(?:\(([^)]*)\)|(-?\d+(?:\.\d+)?(?:\/\d+(?:\.\d+)?)?))(?:\.(\w+))?'
+        match = re.match(pattern, str(argument).strip())
+        if not match:
+            print("Not match")
+            raise ValueError("Constraint not in expected format.")
+        print(match.groups())
+        return match.groups()
+
+    def get_z3constraint(self, var_name, var_type, operator, value, value_type):
+        if var_type == "Integer":
+            var = Int(var_name)
+            val = int(value)
+        elif var_type == "Real":
+            var = Real(var_name)
+            num, det = value.split("/")
+            #val = float(value)
+            val = Q(num, det)
+        else:
+            var = Bool(var_name)
+
+        ops = {
+            "<": lambda a, b: a < b,
+            ">": lambda a, b: a > b,
+            "<=": lambda a, b: a <= b,
+            ">=": lambda a, b: a >= b,
+            "==": lambda a, b: a == b,
+            "!=": lambda a, b: a != b,
+        }
+
+        if operator not in ops:
+            raise ValueError(f"Unsupported operator: {operator}")
+
+        constraint = ops[operator](var, val)
+        return constraint
 
 def get_args():
     parser = argparse.ArgumentParser(description="Argument Parser for Maude While Language Concolic Engine", 
