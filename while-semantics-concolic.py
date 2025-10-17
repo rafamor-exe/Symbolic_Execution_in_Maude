@@ -22,14 +22,12 @@ class SMTAssignmentHook (maude.Hook):
             elif constraint == '(true).Boolean':
                 z3_constraint = True
             else:
-                var_name, var_type, operator, int_val, rat_val, value_type = self.parse_constraint(constraint)
-                if int_val is not None:
-                    print(var_name, var_type, operator, int_val, value_type)
-                    z3_constraint = self.get_z3constraint(var_name, var_type, operator, int_val, value_type)
+                var_name, var_type, operator, value = self.parse_constraint(constraint)
+                print(var_name, var_type, operator, value)
+                if '/' not in value:
+                    z3_constraint = self.get_z3constraint(var_name, var_type, operator, value)
                 else:
-                    print(var_name, var_type, operator, rat_val, "Real")
-                    value_type = "Real"
-                    z3_constraint = self.get_z3constraint(var_name, var_type, operator, rat_val, value_type)
+                    z3_constraint = self.get_z3constraint(var_name, var_type, operator, value)
             print(z3_constraint)
             self.solver.add(z3_constraint)
 
@@ -43,12 +41,12 @@ class SMTAssignmentHook (maude.Hook):
         
         assignments = ""
         for svar in model:
-            assignments += f"{svar}:{var_type} <-- {model[svar]}:{value_type} ; "
+            assignments += f"{svar}:{var_type} <-- {model[svar]}:{var_type} ; "
         return module.parseTerm(assignments[:-3])
 
     def parse_constraint(self, argument):
         print(argument)
-        pattern = r'(\w+):(\w+)\s*([<>=!]+)\s*(?:\(([^)]*)\)|(-?\d+(?:\.\d+)?(?:\/\d+(?:\.\d+)?)?))(?:\.(\w+))?'
+        pattern = r'(\w+):(\w+)\s*([<>=!]+)\s*((?:(?:\([^)]*\)\.\w+|-?\d+(?:\.\d+)?)(?:\s*[\+\-\*\/]\s*(?:\([^)]*\)\.\w+|-?\d+(?:\.\d+)?))*))'
         match = re.match(pattern, str(argument).strip())
         if not match:
             print("Not match")
@@ -56,10 +54,13 @@ class SMTAssignmentHook (maude.Hook):
         print(match.groups())
         return match.groups()
 
-    def get_z3constraint(self, var_name, var_type, operator, value, value_type):
+    def get_z3constraint(self, var_name, var_type, operator, value):
         if var_type == "Integer":
+            print("a")
             var = Int(var_name)
-            val = int(value)
+            val = eval(re.sub(r'\)\.\w+', ')', value))
+            print(val)
+            #val = int(value)
         elif var_type == "Real":
             var = Real(var_name)
             num, det = value.split("/")

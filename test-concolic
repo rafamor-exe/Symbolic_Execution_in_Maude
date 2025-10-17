@@ -10,3 +10,4 @@ python3 while-semantics-concolic.py --program "get-SMTassignment(q:Integer <= 1 
 
 ***UNSAT test
 python3 while-semantics-concolic.py --program "get-SMTassignment(q:Integer >= 1 and q:Integer <= 0)"
+python3 while-semantics-concolic.py --program "get-SMTassignment(q:Integer > 1 + 1 + 1 and q:Integer <= 5)"
