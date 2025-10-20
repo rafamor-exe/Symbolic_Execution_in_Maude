@@ -4,10 +4,13 @@ search in WHILE-MAUDE : start(var('n) := val(toReal(5)) ; var('res) := val(toRea
 
 
 python3 while-semantics-concolic.py --program "get-SMTassignment(q:Integer < 1)"
-python3 while-semantics-concolic.py --program "get-SMTassignment(q:Integer <= 1 and q:Integer >= 0 and p:Integer < 10 and p:Integer > 20)"
 python3 while-semantics-concolic.py --program "get-SMTassignment(q:Real < (1/2).Real)"
+python3 while-semantics-concolic.py --program "get-SMTassignment(q:Integer <= 1 and q:Integer >= 0 and p:Integer < 10 and p:Real > 20/2)"
 python3 while-semantics-concolic.py --program "get-SMTassignment(q:Integer <= 1 and q:Integer >= 0 and p:Integer < 10 and s:Real > 20/2)"
+python3 while-semantics-concolic.py --program "get-SMTassignment(q:Integer > 1 + 1 + 1 and q:Integer <= 5)"
+python3 while-semantics-concolic.py --program "get-SMTassignment(1/2 + q:Real > 1/2)"
+python3 while-semantics-concolic.py --program "get-SMTassignment(1/2 + q:Real > 1/2 - p:Real and p:Real > 0/1)"
 
 ***UNSAT test
+python3 while-semantics-concolic.py --program "get-SMTassignment(q:Integer <= 1 and q:Integer >= 0 and p:Integer < 10 and p:Integer > 20)"
 python3 while-semantics-concolic.py --program "get-SMTassignment(q:Integer >= 1 and q:Integer <= 0)"
-python3 while-semantics-concolic.py --program "get-SMTassignment(q:Integer > 1 + 1 + 1 and q:Integer <= 5)"
