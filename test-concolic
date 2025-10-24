@@ -14,3 +14,6 @@ python3 while-semantics-concolic.py --program "get-SMTassignment(1/2 + q:Real > 
 ***UNSAT test
 python3 while-semantics-concolic.py --program "get-SMTassignment(q:Integer <= 1 and q:Integer >= 0 and p:Integer < 10 and p:Integer > 20)"
 python3 while-semantics-concolic.py --program "get-SMTassignment(q:Integer >= 1 and q:Integer <= 0)"
+
+
+python3 while-semantics-concolic.py --program "start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; } where (p:Real < 5/1), var('var1) := val(p:Real) ;)"

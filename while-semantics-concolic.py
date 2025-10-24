@@ -12,9 +12,12 @@ class SMTAssignmentHook (maude.Hook):
         self.solver = Solver()
 
     def run(self , term , data):
+        print("a")
+        print(term)
         module = term.symbol().getModule()
         argument , = term.arguments()
         maude_constraints = str(argument).split(' and ')
+        print(maude_constraints)
         for constraint in maude_constraints:
             if constraint == '(false).Boolean':
                 return module.parseTerm("failed")
@@ -23,15 +26,18 @@ class SMTAssignmentHook (maude.Hook):
             else:
                 lhs, op, rhs = self.parse_constraint(constraint)
                 z3_constraint = self.get_z3constraint(lhs, op, rhs)
+            print(z3_constraint)
             self.solver.add(z3_constraint)
 
+        print("b")
         if self.solver.check() == unsat:
             return module.parseTerm("failed")
 
+        print("c")
         model = self.solver.model()
         if len(model) == 0:
             return module.parseTerm("(true).Boolean")
-        
+        print(model)
         assignments = ""
         for svar in model:
             svar_t = str(model[svar].sort())
@@ -97,6 +103,7 @@ if __name__ == '__main__':
     args = get_args()
     wmod = maude.getModule('WHILE-MAUDE')
     t = wmod.parseTerm(args.program)
-    t.reduce()
+    print(t)
+    t.rewrite()
     print(t)
 

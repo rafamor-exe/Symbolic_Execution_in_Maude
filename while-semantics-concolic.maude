@@ -1,4 +1,5 @@
-load smt.maude .
+load smt.maude
+load smt-conversion.maude
 
 view Real from TRIV to REAL is
   sort Elt to Real .
@@ -12,14 +13,15 @@ fmod WHILE-LANG-VARSTATE-MOD is
     sort AExp BExp .
     sort VarState .
     sorts VarType Value .
-    sorts RVal BVal .
-    subsort RVal < Value < AExp .
+    sorts RVal BVal IVal .
+    subsort IVal RVal < Value < AExp .
     subsort Real < AExp .
     subsort Boolean BVal < BExp .
 
     ops boolean real : -> VarType [ctor] .
 
     op val : Real -> RVal [ctor] .
+    op val : Integer -> IVal [ctor] .
     op val : Boolean -> BVal [ctor] .
 
     op {type _, val _} : VarType Value -> VarState [ctor] .
@@ -192,7 +194,8 @@ mod WHILE-MAUDE is
     vars Var Var1 Var2 : Var .
     var B : Boolean .
     var BExp BExp2 Constraints Constraints' Constraint C1 : BExp .
-    var RealVal : Real .
+    var RealVal R Rconc : Real .
+    var I Iconc : Integer .
     vars P IL IL1 IL2 : Program .
     var STR STR' : Map{Var, Value} .
     var VarState : VarState .
@@ -203,6 +206,7 @@ mod WHILE-MAUDE is
     vars SEPState CEPState : PState .
     var N : Int .
     var NzN : NzNat .
+    var Assingment : Assignment .
 
     op start : Program -> ConcolicState .
     op start : ConstrainedStart -> ConcolicState .
@@ -213,9 +217,8 @@ mod WHILE-MAUDE is
     eq start(P, SVDeclL) = $start(P, SVDeclL, empty, true) .
     eq start(P where BExp, SVDeclL) = $start(P, SVDeclL, empty, BExp) .
     op $start : Program Program Map{Var, Value} BExp -> ConcolicState .
-    eq $start(P, nil, STR, BExp) = [ < P | STR > ] [ < P | STR > {BExp} < {nil} ] [0] .
+    eq $start(P, nil, STR, BExp) = [ < P | init-CStore(STR, BExp) > ] [ < P | STR > {BExp} < {nil} ] [0] .
     eq $start(P, (Var := V ;) SVDeclL, STR, BExp) = $start(P, SVDeclL, insert(Var, V, STR), BExp) .
-    
 
     rl [C-skip] : 
         [ < skip ; IL | STR > ] [ SEPState {Constraints} < {Path} ] [N]
@@ -271,12 +274,25 @@ mod WHILE-MAUDE is
         [ < nil | STR > ] [ SEPState {Constraints} < {Path} ] [N]
         =>
         [ < nil | STR > ] [ SEPState {Constraints'} < {Path} ] [N + 1]
-        if Constraints' := negate-nth(Constraints, N)
+        if N <= size(Constraints)
+        /\ Constraints' := negate-nth(Constraints, N)
         /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints')) . 
     
     op negate-nth : BExp Nat -> Boolean .
     eq negate-nth(C1 and Constraints, 0) = (not C1) and Constraints .
     eq negate-nth(C1, 0) = not C1 .
     eq negate-nth(C1 and Constraints, NzN) = C1 and negate-nth(Constraints, NzN - 1) . *** TODO: Multiple parses due to C1 being able to be _and_ too
+
+    op init-CStore : Map{Var, Value} BExp -> Map{Var, Value} .
+    eq init-CStore(STR, C1) = $apply-SMTassignment(STR, get-SMTassignment(C1)) .
+    eq init-CStore(STR, C1 and Constraints) = $apply-SMTassignment(init-CStore(STR, Constraints), get-SMTassignment(C1)) .
+
+    op $apply-SMTassignment : Map{Var, Value} Assignment -> Map{Var, Value} .
+    eq $apply-SMTassignment((Var |-> val(R), STR), R <-- Rconc) = (Var |-> val(Rconc), STR) .
+    eq $apply-SMTassignment((Var |-> val(I), STR), I <-- Iconc) = (Var |-> val(Iconc), STR) .
+
+    op size : BExp -> Nat .
+    eq size(C1) = 1 .
+    eq size (C1 and Constraints) = 1 + size(Constraints) .
 
 endm
