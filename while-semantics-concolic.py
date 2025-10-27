@@ -9,15 +9,15 @@ class SMTAssignmentHook (maude.Hook):
 
     def __init__(self):
         super().__init__()
-        self.solver = Solver()
+        self.solver = None
 
     def run(self , term , data):
-        print("a")
-        print(term)
+        self.solver = Solver()
+        #print(term)
         module = term.symbol().getModule()
         argument , = term.arguments()
         maude_constraints = str(argument).split(' and ')
-        print(maude_constraints)
+        #print(maude_constraints)
         for constraint in maude_constraints:
             if constraint == '(false).Boolean':
                 return module.parseTerm("failed")
@@ -25,19 +25,19 @@ class SMTAssignmentHook (maude.Hook):
                 z3_constraint = True
             else:
                 lhs, op, rhs = self.parse_constraint(constraint)
+                #print(lhs, op, rhs)
                 z3_constraint = self.get_z3constraint(lhs, op, rhs)
-            print(z3_constraint)
+            #print(z3_constraint)
             self.solver.add(z3_constraint)
+            #print("added")
 
-        print("b")
         if self.solver.check() == unsat:
             return module.parseTerm("failed")
 
-        print("c")
         model = self.solver.model()
         if len(model) == 0:
             return module.parseTerm("(true).Boolean")
-        print(model)
+        #print(model)
         assignments = ""
         for svar in model:
             svar_t = str(model[svar].sort())
@@ -51,8 +51,7 @@ class SMTAssignmentHook (maude.Hook):
         return module.parseTerm(assignments[:-3])
 
     def parse_constraint(self, argument):
-        lhs, op, rhs = re.split(r' ([<>=!]+) ', argument)
-        return lhs, op, rhs
+        return re.split(r' ([<>=!]+) ', argument)
 
     def get_z3constraint(self, lhs, op, rhs):
         lhs_list, lvar_dic = self.process_operands(lhs.split(' '))
@@ -65,7 +64,11 @@ class SMTAssignmentHook (maude.Hook):
             "==": lambda a, b: a == b,
             "!=": lambda a, b: a != b,
         }
-        constraint = ops[op](eval(''.join(lhs_list), lvar_dic), eval(''.join(rhs_list), rvar_dic))
+        #print(lhs_list)
+        if lhs_list[0] != 'not':
+            constraint = ops[op](eval(''.join(lhs_list), lvar_dic), eval(''.join(rhs_list), rvar_dic))
+        else:
+            constraint = Not(ops[op](eval(''.join(lhs_list[1:]), lvar_dic), eval(''.join(rhs_list), rvar_dic)))
         return constraint
 
     def process_operands(self, l):
@@ -91,7 +94,9 @@ def get_args():
     parser = argparse.ArgumentParser(description="Argument Parser for Maude While Language Concolic Engine", 
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--program", action="store", help="Program to load", default='')
+    parser.add_argument("--pattern", action="store", help="Pattern to match", default='')
     parser.add_argument("--svars", action="store", help="Symbolic variables", default=[])
+    parser.add_argument("--op", action="store", help="Maude operation", default="search")
     return parser.parse_args()
 
 
@@ -103,7 +108,11 @@ if __name__ == '__main__':
     args = get_args()
     wmod = maude.getModule('WHILE-MAUDE')
     t = wmod.parseTerm(args.program)
-    print(t)
-    t.rewrite()
-    print(t)
-
+    if args.op == "search":
+        pattern = wmod.parseTerm(args.pattern)
+        #print(t)
+        for solution, substitution, path, num in t.search(maude.ANY_STEPS, pattern):
+            print(solution, 'with SUBS: \n\n', substitution, 'by', "PATH: \n\n", path(), "\n--------------\n\n\n")
+    else:
+        t.rewrite()
+        print(t)
