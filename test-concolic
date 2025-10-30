@@ -20,14 +20,74 @@ python3 while-semantics-concolic.py --program "start(var('var2) := val(1/1) ; if
 
 python3 while-semantics-concolic.py --program "start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; } where (p:Real < 5/1), var('var1) := val(p:Real) ;)" --pattern "ConcS:ConcolicState"
 
+python3 while-semantics-concolic.py --program "start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; } } where (p:Real < 5/1), var('var1) := val(p:Real) ;)" --pattern "ConcS:ConcolicState"
 
-[< if var('var1) < var('var2) then{var('var3) := val(0/1) ;}else{nil} | var('var1) |-> val(0:Real), var('var2) |-> val(1/1) >][< var('var2) := val(1/1) ; if var('var1) < var('var2) then{var('var3) := val(0/1) ;}else{nil} | var('var1) |-> val(p:Real), var('var2) |-> val(1/1) >{p:Real < 5/1}<{nil}][1]
+python3 while-semantics-concolic.py --program "start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } } where (p:Real < 5/1), var('var1) := val(p:Real) ;)" --pattern "ConcS:ConcolicState"
 
-search [< if var('var1) < var('var2) then{var('var3) := val(0/1) ;}else{nil} | var('var1) |-> val(0:Real), var('var2) |-> val(1/1) >][< var('var2) := val(1/1) ; if var('var1) < var('var2) then{var('var3) := val(0/1) ;}else{nil} | var('var1) |-> val(p:Real), var('var2) |-> val(1/1) >{p:Real < 5/1}<{nil}][1] =>* ConcS:ConcolicState .
+python3 while-semantics-concolic.py
+    --program "start(
+                var('var2) := val(1/1) ;
+                if (var('var1) < var('var2)) then {
+                    var('var3) := val(0/1) ;
+                    if (var('var1) < val(0/1)) then {
+                        var('var3) := val(2/1) ;
+                        if (var('var1) < val(-1/1)) then {
+                            var('var3) := val(3/1) ;
+                        } 
+                    } 
+                } 
+               where (p:Real < 5/1), var('var1) := val(p:Real) ;)"
+    --pattern "ConcS:ConcolicState"
 
-red $apply-SMTassignment((var('var1) |-> val(p:Real), var('var2) |-> val(1/1)), get-SMTassignment(p:Real < 5/1    and p:Real < 1/1)) .
+python3 while-semantics-concolic.py --program "start(var('var2) := val(0/1) ; while (var('var2) < var('var1)) do { var('var2) := var('var2) + val(1/1) ; } where (p:Real < 5/1), var('var1) := val(p:Real) ;)" --pattern "ConcS:ConcolicState"
+
+python3 while-semantics-concolic.py
+    --program "start(
+                var('var2) := val(0/1) ;
+                while (var('var2) < var('var1)) do {
+                    var('var2) := var('var2) + val(1/1) ;
+                }
+               where (p:Real < 5/1), var('var1) := val(p:Real) ;)"
+    --pattern "ConcS:ConcolicState"
+
+python3 while-semantics-concolic.py --program "start(var('z) := val(0/1) ; while (var('y) < var('x)) do { var('z) := var('z) + 1/1 ; var('y) := var('y) + 1/1 ; } where (p:Real < 5/1 /\ (p:Real > 0/1) /\ (q:Real < 5/1 /\ (q:Real > 0/1))), var('x) := val(p:Real) ; var('y) := val(q:Real) ;)" --pattern "ConcS:ConcolicState"
+
+python3 while-semantics-concolic.py
+    --program "start(
+                var('z) := val(0/1) ;
+                while (var('y) < var('x)) do {
+                    var('z) := var('z) + 1/1 ;
+                    var('y) := var('y) + 1/1 ;
+                }
+               where (p:Real < 5/1 /\ (p:Real > 0/1) /\ (q:Real < 5/1 /\ (q:Real > 0/1))), var('x) := val(p:Real) ; var('y) := val(q:Real) ;)"
+    --pattern "ConcS:ConcolicState"
+
+
+*** Problema: R:Real vs Num/Den
+Maude> check 0:Real < 1:Real .
+check in WHILE-MAUDE : 0:Real < 1:Real .
+Result from sat solver is: sat
+Maude> check not 0:Real < 1:Real .
+check in WHILE-MAUDE : not 0:Real < 1:Real .
+Result from sat solver is: sat
+
+--> This problem persists: paths that should not be allowed are followed 
+
 
 *** [NOTE]: When keeping the solver as an attribute, it remains the same instance throughout the whole execution
     - Check whether that would be useful instead of creating a new instance each time
         - Maybe not, because we need to explore paths with different sets of constraints (complementary constraints, in fact)
 python3 while-semantics-concolic.py --program "get-SMTassignment(p:Real < 5/1 and not p:Real < 1/1)" --op rew
+
+
+
+red negate-nth(val(p:Real) < val(4/1) /\ val(p:Real) > val(0/1) /\ val(p:Real) > val(1/1), 1) .
+red negate-nth(val(p:Real) < val(4/1) and val(p:Real) > val(0/1) and val(p:Real) > val(1/1), 1) .
+
+rew [1] [< nil | var('var1) |-> val(0/1), var('var2) |-> val(1/1), var('var3) |-> val(0/1) >][< var('var2) := val(1/1) ; if var('var1) < var('var2) then{var('var3) := val(0/1) ; if var('var1) < val(0/1) then{var('var3) := val(2/1) ;}else{nil}}else{nil} | var('var1) |-> val(p:Real), var('var2) |-> val(1/1), var('var3) |-> val(0/1) >{p:Real < 5/1 /\ p:Real < 1/1 /\ (not p:Real < 0/1)}<{nil}][1][var('var1) |-> val(p:Real)] .
+
+python3 while-semantics-concolic.py --program "[< if var('var1) < val(0/1) then{var('var3) := val(2/1) ;}else{nil} | var('var1) |-> val(0/1), var('var2) |-> val(1/1), var('var3) |-> val(0/1) >][< var('var2) := val(1/1) ; if var('var1) < var('var2) then{var('var3) := val(0/1) ; if var('var1) < val(0/1) then{var('var3) := val(2/1) ;}else{nil}}else{nil} | var('var1) |-> val(p:Real), var('var2) |-> val(1/1), var('var3) |-> val(0/1) >{p:Real < 5/1 /\ p:Real < 1/1}<{nil}][1][var('var1) |-> val(p:Real)]" --pattern "ConcS:ConcolicState"
+
+python3 while-semantics-concolic.py --program "[< nil | var('var1) |-> val(1/1), var('var2) |-> val(1/1) >][< var('var2) := val(1/1) ; if var('var1) < var('var2) then{var('var3) := val(0/1) ; if var('var1) < val(0/1) then{var('var3) := val(2/1) ;}else{nil}}else{nil} | var('var1) |-> val(p:Real), var('var2) |-> val(1/1) >{p:Real < 5/1 /\ (not p:Real < 1/1) /\ (not p:Real < 0/1) /\ (not p:Real < 1/1)}<{nil}][2][var('var1) |-> val(p:Real)]" --pattern "ConcS:ConcolicState"
+
+p:Real < 5/1 and (not p:Real < 1/1 and (p:Real < 0/1 and not p:Real < 1/1))

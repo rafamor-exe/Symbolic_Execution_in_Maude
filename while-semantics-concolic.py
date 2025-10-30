@@ -13,11 +13,11 @@ class SMTAssignmentHook (maude.Hook):
 
     def run(self , term , data):
         self.solver = Solver()
-        #print(term)
+        print(term)
         module = term.symbol().getModule()
         argument , = term.arguments()
-        maude_constraints = str(argument).split(' and ')
-        #print(maude_constraints)
+        maude_constraints = re.sub(r"[\(\)]", '', str(argument)).split(' and ')
+        print(maude_constraints)
         for constraint in maude_constraints:
             if constraint == '(false).Boolean':
                 return module.parseTerm("failed")
@@ -25,11 +25,11 @@ class SMTAssignmentHook (maude.Hook):
                 z3_constraint = True
             else:
                 lhs, op, rhs = self.parse_constraint(constraint)
-                #print(lhs, op, rhs)
+                print(lhs, op, rhs)
                 z3_constraint = self.get_z3constraint(lhs, op, rhs)
-            #print(z3_constraint)
+            print(z3_constraint)
             self.solver.add(z3_constraint)
-            #print("added")
+            print("added")
 
         if self.solver.check() == unsat:
             return module.parseTerm("failed")
@@ -37,17 +37,24 @@ class SMTAssignmentHook (maude.Hook):
         model = self.solver.model()
         if len(model) == 0:
             return module.parseTerm("(true).Boolean")
-        #print(model)
+        print(model)
         assignments = ""
         for svar in model:
+            print(svar)
             svar_t = str(model[svar].sort())
             if svar_t == "Int":
                 var_type = "Integer"
+                val_ext = ":" + var_type
             elif svar_t == "Real":
                 var_type = svar_t
+                val_ext = ""
+                if not re.search(r'/', str(model[svar])):
+                    val_ext = "/1"
             else:
                 var_type = "Bool"
-            assignments += f"{svar}:{var_type} <-- {model[svar]}:{var_type} ; "
+                val_ext = ":" + var_type
+            assignments += f"{svar}:{var_type} <-- {model[svar]}{val_ext} ; "
+            print(assignments)
         return module.parseTerm(assignments[:-3])
 
     def parse_constraint(self, argument):
@@ -64,7 +71,7 @@ class SMTAssignmentHook (maude.Hook):
             "==": lambda a, b: a == b,
             "!=": lambda a, b: a != b,
         }
-        #print(lhs_list)
+        print(lhs_list)
         if lhs_list[0] != 'not':
             constraint = ops[op](eval(''.join(lhs_list), lvar_dic), eval(''.join(rhs_list), rvar_dic))
         else:
@@ -101,7 +108,7 @@ def get_args():
 
 
 if __name__ == '__main__':
-    maude.init()
+    maude.init(advise=False)
     SMThook = SMTAssignmentHook()
     maude.connectEqHook('get-SMTassignment', SMThook)
     maude.load('while-semantics-concolic.maude')
@@ -110,9 +117,14 @@ if __name__ == '__main__':
     t = wmod.parseTerm(args.program)
     if args.op == "search":
         pattern = wmod.parseTerm(args.pattern)
-        #print(t)
-        for solution, substitution, path, num in t.search(maude.ANY_STEPS, pattern):
-            print(solution, 'with SUBS: \n\n', substitution, 'by', "PATH: \n\n", path(), "\n--------------\n\n\n")
+        print(t)
+        i = 0
+        for solution, substitution, path, num in t.search(maude.NORMAL_FORM, pattern):
+            print("\n--------------\n", f"[{i}]", solution, 'with SUBS: \n\n', substitution, "\nand PATH:\n\n")
+            #for step in path():
+            #    print(step)
+            print("\n--------------\n")
+            i += 1
     else:
         t.rewrite()
         print(t)
