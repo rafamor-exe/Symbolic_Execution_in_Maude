@@ -50,7 +50,13 @@ python3 while-semantics-concolic.py
                where (p:Real < 5/1), var('var1) := val(p:Real) ;)"
     --pattern "ConcS:ConcolicState"
 
-python3 while-semantics-concolic.py --program "start(var('z) := val(0/1) ; while (var('y) < var('x)) do { var('z) := var('z) + 1/1 ; var('y) := var('y) + 1/1 ; } where (p:Real < 5/1 /\ (p:Real > 0/1) /\ (q:Real < 5/1 /\ (q:Real > 0/1))), var('x) := val(p:Real) ; var('y) := val(q:Real) ;)" --pattern "ConcS:ConcolicState"
+python3 while-semantics-concolic.py --program "start(var('z) := val(0/1) ; while (var('y) < var('x)) do { var('z) := var('z) + val(1/1) ; var('y) := var('y) + val(1/1) ; } where (p:Real < 5/1 /\ (p:Real > 0/1) /\ (q:Real < 5/1 /\ (q:Real > 0/1))), var('x) := val(p:Real) ; var('y) := val(q:Real) ;)" --pattern "ConcS:ConcolicState"
+
+python3 while-semantics-concolic.py --program "start(var('z) := val(0/1) ; while (var('y) < var('x)) do { var('z) := var('z) + val(1/1) ; var('y) := var('y) + val(1/1) ; } where (p:Real < 1000/1 /\ (p:Real > 0/1) /\ (q:Real < 5/1 /\ (q:Real > 0/1))), var('x) := val(p:Real) ; var('y) := val(q:Real) ;)" --pattern "ConcS:ConcolicState"
+
+python3 while-semantics-concolic.py --program "start(var('z) := val(0/1) ; while (var('y) < var('x)) do { var('z) := var('z) + val(1/1) ; var('y) := var('y) + val(1/1) ; } where (val(p:Real) < val(5/1) /\ (val(p:Real) > val(0/1)) /\ (val(q:Real) < val(5/1) /\ (val(q:Real) > val(0/1)))), var('x) := val(p:Real) ; var('y) := val(q:Real) ;)" --pattern "ConcS:ConcolicState"
+
+python3 while-semantics-concolic.py --program "start(var('z) := val(0) ; while (var('y) < var('x)) do { var('z) := var('z) + val(1) ; var('y) := var('y) + val(1) ; } where (p:Integer < 5 /\ (p:Integer > 0) /\ (q:Integer < 5 /\ (q:Integer > 0))), var('x) := val(p:Integer) ; var('y) := val(q:Integer) ;)" --pattern "ConcS:ConcolicState"
 
 python3 while-semantics-concolic.py
     --program "start(
@@ -91,3 +97,5 @@ python3 while-semantics-concolic.py --program "[< if var('var1) < val(0/1) then{
 python3 while-semantics-concolic.py --program "[< nil | var('var1) |-> val(1/1), var('var2) |-> val(1/1) >][< var('var2) := val(1/1) ; if var('var1) < var('var2) then{var('var3) := val(0/1) ; if var('var1) < val(0/1) then{var('var3) := val(2/1) ;}else{nil}}else{nil} | var('var1) |-> val(p:Real), var('var2) |-> val(1/1) >{p:Real < 5/1 /\ (not p:Real < 1/1) /\ (not p:Real < 0/1) /\ (not p:Real < 1/1)}<{nil}][2][var('var1) |-> val(p:Real)]" --pattern "ConcS:ConcolicState"
 
 p:Real < 5/1 and (not p:Real < 1/1 and (p:Real < 0/1 and not p:Real < 1/1))
+
+python3 while-semantics-concolic.py --program "get-SMTassignment(eval(p:Real < 5/1, (var('x) |-> val(p:Real), var('y) |-> val(q:Real))) and (eval(p:Real > 0/1, (var('x) |-> val(p:Real), var('y) |-> val(q:Real))) and (eval(q:Real < 5/1, (var('x) |-> val(p:Real), var('y) |-> val(q:Real))) and eval(q:Real > 0/1, (var('x) |-> val(p:Real), var('y) |-> val(q:Real))))))" --op rew

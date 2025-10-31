@@ -15,7 +15,7 @@ fmod WHILE-LANG-VARSTATE-MOD is
     sorts VarType Value .
     sorts RVal BVal IVal .
     subsort IVal RVal < Value < AExp .
-    subsort Real < AExp .
+    ***subsort Real < AExp .
     ***subsort Boolean BVal < SimpleBExp .
 
     ops boolean real : -> VarType [ctor] .
@@ -27,15 +27,48 @@ fmod WHILE-LANG-VARSTATE-MOD is
     op {type _, val _} : VarType Value -> VarState [ctor] .
 
     var T : VarType .
-    var V : Value .
-    var R : Real .
+    var V V1 V2 : Value .
+    var R R1 R2 : Real .
     var B : Boolean .
+    var I I1 I2 : Integer .
 
     op getType : VarState -> VarType .
     eq getType({type T, val V}) = T .
 
     op getVal : VarState -> Value .
     eq getVal({type T, val V}) = V .
+
+    op _+_ : Value Value -> Value [gather (E e) prec 33] .
+    eq val(R1) + val(R2) = val(R1 + R2) .
+    eq val(I1) + val(I2) = val(I1 + I2) .
+    op _*_ : Value Value -> Value [gather (E e) prec 31] .
+    eq val(R1) * val(R2) = val(R1 * R2) .
+    eq val(I1) * val(I2) = val(I1 * I2) .
+    op _-_ : Value Value -> Value [gather (E e) prec 33] .
+    eq val(R1) - val(R2) = val(R1 - R2) .
+    eq val(I1) - val(I2) = val(I1 - I2) .
+    op _/_ : Value Value -> Value [gather (E e) prec 31] .
+    eq val(R1) / val(R2) = val(R1 / R2) .
+    eq val(I1) / val(I2) = val(I1 div I2) .
+
+    op _===_ : Value Value -> Boolean [gather (e E) prec 51] .
+    eq V1 === V1 = true .
+    eq V1 === V2 = false [owise] .
+    op _=/==_ : Value Value -> Boolean [gather (e E) prec 51] .
+    eq V1 =/== V1 = false .
+    eq V1 =/== V2 = true [owise] .
+    op _<_ : Value Value -> Boolean [prec 37] .
+    eq val(R1) < val(R2) = R1 < R2 .
+    eq val(I1) < val(I2) = I1 < I2 .
+    op _<=_ : Value Value -> Boolean [prec 37] .
+    eq val(R1) <= val(R2) = R1 <= R2 .
+    eq val(I1) <= val(I2) = I1 <= I2 .
+    op _>_ : Value Value -> Boolean [prec 37] .
+    eq val(R1) > val(R2) = R1 > R2 .
+    eq val(I1) > val(I2) = I1 > I2 .
+    op _>=_ : Value Value -> Boolean [prec 37] .
+    eq val(R1) >= val(R2) = R1 >= R2 .
+    eq val(I1) >= val(I2) = I1 >= I2 .
 
 endfm
 
@@ -71,32 +104,34 @@ fmod WHILE-LANG-AEXP-MOD is
     sort BExp .
     subsort Boolean < BExp .
 
-    op _+_ : AExp AExp -> AExp [ditto] .
-    op _*_ : AExp AExp -> AExp [ditto] .
-    op _-_ : AExp AExp -> AExp [ditto] .
-    op _/_ : AExp AExp -> AExp [ditto] .
+    op _+_ : AExp AExp -> AExp [gather (E e) prec 33] .
+    op _*_ : AExp AExp -> AExp [gather (E e) prec 31] .
+    op _-_ : AExp AExp -> AExp [gather (E e) prec 33] .
+    op _/_ : AExp AExp -> AExp [gather (E e) prec 31] .
 
-    op _=_ : AExp AExp -> Boolean .
-    op _!=_ : AExp AExp -> Boolean .
-    op _<_ : AExp AExp -> Boolean [ditto] .
-    op _<=_ : AExp AExp -> Boolean [ditto] .
-    op _>_ : AExp AExp -> Boolean [ditto] .
-    op _>=_ : AExp AExp -> Boolean [ditto] .
+    op _=_ : AExp AExp -> Boolean [gather (e E) prec 51] .
+    op _!=_ : AExp AExp -> Boolean [gather (e E) prec 51] .
+    op _<_ : AExp AExp -> Boolean [prec 37] .
+    op _<=_ : AExp AExp -> Boolean [prec 37] .
+    op _>_ : AExp AExp -> Boolean [prec 37] .
+    op _>=_ : AExp AExp -> Boolean [prec 37] .
     op _/\_ : BExp BExp -> BExp [ctor assoc] .
     op not_ : BExp -> Boolean [ditto] .
 
     op eval : BExp -> Boolean .
-    op eval : AExp Map{Var, Value} -> Real .
+    op eval : AExp Map{Var, Value} -> Value .
     op eval : BExp Map{Var, Value} -> Boolean .
     op eval : BVal Map{Var, Value} -> Boolean .
     op eval : Boolean Map{Var, Value} -> Boolean .
 
-    var R R1 : Real .
+    var R R1 R2 : Real .
+    var I I1 I2 : Real .
     var AExp AExp1 AExp2 : AExp .
     var B BExp1 BExp2 : Boolean .
     var BExp : BExp .
     var STR : Map{Var, Value} .
     var Var : Var .
+    var V V1 V2 : Value .
 
     eq eval(AExp1 + AExp2, STR) = eval(AExp1, STR) + eval(AExp2, STR) .
     eq eval(AExp1 * AExp2, STR) = eval(AExp1, STR) * eval(AExp2, STR) .
@@ -111,12 +146,11 @@ fmod WHILE-LANG-AEXP-MOD is
     eq eval(BExp1 /\ BExp, STR) = eval(BExp1, STR) and eval(BExp, STR) .
     eq eval(not BExp1, STR) = not eval(BExp1, STR) .
     ***eq eval(Var, (Var |-> R)) = R .
-    eq eval(Var, ((Var |-> val(R)), STR)) = R .
-    eq eval(val(R), STR) = R .
-    eq eval(val(B), STR) = B .
-    eq eval(R, STR) = R .
+    eq eval(Var, ((Var |-> V), STR)) = V .
+    eq eval(V, STR) = V .
+    ***eq eval(val(B), STR) = B .
+    ***eq eval(R, STR) = R .
     eq eval(B, STR) = B .
-
 
     eq not not BExp = BExp .
 
@@ -238,7 +272,7 @@ mod WHILE-MAUDE is
     rl [C-assign] : 
         [ < Var := AExp ; IL | STR > ] [ < P | SymbSTR > {Constraints} < {Path} ] [N]
         =>
-        [ < IL | insert(Var, val(eval(AExp, STR)), STR) > ] [ < P | insert(Var, val(eval(AExp, SymbSTR)), SymbSTR) > {Constraints} < {Path} ] [N] .
+        [ < IL | insert(Var, eval(AExp, STR), STR) > ] [ < P | insert(Var, eval(AExp, SymbSTR), SymbSTR) > {Constraints} < {Path} ] [N] .
     
     ***rl [assign-boolean] : 
     ***    < Var := B ; IL | STR >
@@ -328,17 +362,17 @@ mod WHILE-MAUDE is
     ***    /\ Constraints' := negate-nth(Constraints, size(Constraints) - 1)
     ***    /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(eval(Constraints', STR))) . 
     
-    op trunc-nth : BExp Nat -> BExp .
-    eq trunc-nth(C1 /\ Constraints, 0) = C1 .
-    eq trunc-nth(C1, 0) = C1 .
-    ceq trunc-nth((C1 /\ Constraints), NzN) = C1 /\ trunc-nth(Constraints, NzN - 1)
-        if NzN < size((C1 /\ Constraints)) .
+    ***op trunc-nth : BExp Nat -> BExp .
+    ***eq trunc-nth(C1 /\ Constraints, 0) = C1 .
+    ***eq trunc-nth(C1, 0) = C1 .
+    ***ceq trunc-nth((C1 /\ Constraints), NzN) = C1 /\ trunc-nth(Constraints, NzN - 1)
+    ***    if NzN < size((C1 /\ Constraints)) .
 
-    op negate-nth : BExp Nat -> BExp .
-    eq negate-nth(C1 /\ Constraints, 0) = (not C1) /\ Constraints .
-    eq negate-nth(C1, 0) = not C1 .
-    ceq negate-nth(C1 /\ Constraints, NzN) = C1 /\ negate-nth(Constraints, NzN - 1)
-        if NzN < size(C1 /\ Constraints) . *** TODO: Multiple parses due to C1 being able to be _and_ too
+    ***op negate-nth : BExp Nat -> BExp .
+    ***eq negate-nth(C1 /\ Constraints, 0) = (not C1) /\ Constraints .
+    ***eq negate-nth(C1, 0) = not C1 .
+    ***ceq negate-nth(C1 /\ Constraints, NzN) = C1 /\ negate-nth(Constraints, NzN - 1)
+    ***    if NzN < size(C1 /\ Constraints) . *** TODO: Multiple parses due to C1 being able to be _and_ too
 
     op init-CStore : Map{Var, Value} BExp -> Map{Var, Value} .
     ceq init-CStore(STR, Constraints) = $apply-SMTassignment(STR, get-SMTassignment(C1))
