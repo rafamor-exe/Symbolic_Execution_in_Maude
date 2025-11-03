@@ -20,6 +20,8 @@ python3 while-semantics-concolic.py --program "start(var('var2) := val(1/1) ; if
 
 python3 while-semantics-concolic.py --program "start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; } where (p:Real < 5/1), var('var1) := val(p:Real) ;)" --pattern "ConcS:ConcolicState"
 
+python3 while-semantics-concolic.py --program "start(var('var2) := val(0/1) ; while (var('var2) < var('var1)) do { var('var2) := var('var2) + val(1/1) ; } where (p:Real > 2/1), var('var1) := val(p:Real) ;)" --pattern "ConcS:ConcolicState"
+
 
 [< if var('var1) < var('var2) then{var('var3) := val(0/1) ;}else{nil} | var('var1) |-> val(0:Real), var('var2) |-> val(1/1) >][< var('var2) := val(1/1) ; if var('var1) < var('var2) then{var('var3) := val(0/1) ;}else{nil} | var('var1) |-> val(p:Real), var('var2) |-> val(1/1) >{p:Real < 5/1}<{nil}][1]
 

@@ -16,7 +16,7 @@ class SMTAssignmentHook (maude.Hook):
         #print(term)
         module = term.symbol().getModule()
         argument , = term.arguments()
-        maude_constraints = str(argument).split(' and ')
+        maude_constraints = re.sub(r"(val)?[\(\)]", '', str(argument)).split(' and ')
         #print(maude_constraints)
         for constraint in maude_constraints:
             if constraint == '(false).Boolean':
@@ -40,14 +40,21 @@ class SMTAssignmentHook (maude.Hook):
         #print(model)
         assignments = ""
         for svar in model:
+            #print(svar)
             svar_t = str(model[svar].sort())
+            val_ext = ""
             if svar_t == "Int":
                 var_type = "Integer"
+                #val_ext = ":" + var_type
             elif svar_t == "Real":
                 var_type = svar_t
+                if not re.search(r'/', str(model[svar])):
+                    val_ext = "/1"
             else:
                 var_type = "Bool"
-            assignments += f"{svar}:{var_type} <-- {model[svar]}:{var_type} ; "
+                #val_ext = ":" + var_type
+            assignments += f"{svar}:{var_type} <-- {model[svar]}{val_ext} ; "
+            #print(assignments)
         return module.parseTerm(assignments[:-3])
 
     def parse_constraint(self, argument):
@@ -65,10 +72,12 @@ class SMTAssignmentHook (maude.Hook):
             "!=": lambda a, b: a != b,
         }
         #print(lhs_list)
+        #print(rhs_list)
         if lhs_list[0] != 'not':
             constraint = ops[op](eval(''.join(lhs_list), lvar_dic), eval(''.join(rhs_list), rvar_dic))
         else:
             constraint = Not(ops[op](eval(''.join(lhs_list[1:]), lvar_dic), eval(''.join(rhs_list), rvar_dic)))
+        #print(constraint)
         return constraint
 
     def process_operands(self, l):
@@ -87,7 +96,9 @@ class SMTAssignmentHook (maude.Hook):
             else:
                 match_int = re.search(r'.Integer', l[i])
                 if match_int:
-                    l[i] = re.sub(r'\)\.\w+', ')', l[i])
+                    #print("int matched")
+                    l[i] = re.sub(r'\.Integer', '', l[i])
+                    #print(l[i])
         return l, var_dic
 
 def get_args():
@@ -101,7 +112,7 @@ def get_args():
 
 
 if __name__ == '__main__':
-    maude.init()
+    maude.init(advise=False)
     SMThook = SMTAssignmentHook()
     maude.connectEqHook('get-SMTassignment', SMThook)
     maude.load('while-semantics-concolic.maude')
@@ -111,8 +122,13 @@ if __name__ == '__main__':
     if args.op == "search":
         pattern = wmod.parseTerm(args.pattern)
         #print(t)
+        i = 0
         for solution, substitution, path, num in t.search(maude.ANY_STEPS, pattern):
-            print(solution, 'with SUBS: \n\n', substitution, 'by', "PATH: \n\n", path(), "\n--------------\n\n\n")
+            print("\n--------------\n", f"[{i}]", solution, 'with SUBS: \n\n', substitution, "\nand PATH:\n\n")
+            #for step in path():
+            #    print(step)
+            print("\n--------------\n")
+            i += 1
     else:
         t.rewrite()
         print(t)
