@@ -42,6 +42,8 @@ python3 while-semantics-concolic.py
 python3 while-semantics-concolic.py --program "start(var('var2) := val(0/1) ; while (var('var2) < var('var1)) do { var('var2) := var('var2) + val(1/1) ; } where (p:Real < 5/1), var('var1) := val(p:Real) ;)" --pattern "ConcS:ConcolicState"
 python3 while-semantics-concolic.py --program "start(var('var2) := val(0/1) ; while (var('var2) < var('var1)) do { var('var2) := var('var2) + val(1/1) ; } where (p:Real < 5/1), var('var1) := val(p:Real) ;, 5)" --pattern "ConcS:ConcolicState"
 
+python3 while-semantics-concolic.py --program "start(var('var2) := val(0) ; while (var('var2) < var('var1)) do { var('var2) := var('var2) + val(1) ; } where (p:Integer >= 0), var('var1) := val(p:Integer) ;, 6)" --pattern "ConcS:ConcolicState"
+
 python3 while-semantics-concolic.py
     --program "start(
                 var('var2) := val(0/1) ;
@@ -50,6 +52,9 @@ python3 while-semantics-concolic.py
                 }
                where (p:Real < 5/1), var('var1) := val(p:Real) ;)"
     --pattern "ConcS:ConcolicState"
+
+python3 while-semantics-concolic.py --program "start(var('var2) := val(0) ; while (var('var1) < var('var2)) do { var('var1) := var('var1) + val(1) ; } where (p:Integer >= -1000), var('var1) := val(p:Integer) ;, 6)" --pattern "ConcS:ConcolicState"
+
 
 python3 while-semantics-concolic.py --program "start(var('z) := val(0/1) ; while (var('y) < var('x)) do { var('z) := var('z) + val(1/1) ; var('y) := var('y) + val(1/1) ; } where (p:Real < 5/1 /\ (p:Real > 0/1) /\ (q:Real < 5/1 /\ (q:Real > 0/1))), var('x) := val(p:Real) ; var('y) := val(q:Real) ;)" --pattern "ConcS:ConcolicState"
 

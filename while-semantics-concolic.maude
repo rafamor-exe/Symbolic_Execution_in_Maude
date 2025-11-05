@@ -223,6 +223,7 @@ mod WHILE-MAUDE is
 
     sorts SEState PState ConcolicState ConcolicStateCore .
     sort ConstrainedStart .
+    ***sorts CThread CExec .
     
     op < _ | _ > : Program Map{Var, Value} -> PState [ctor] . 
     op errState : -> PState [ctor] .
@@ -233,6 +234,11 @@ mod WHILE-MAUDE is
 
     op [_] [_] [_] : PState SEState Int -> ConcolicStateCore [ctor] .
     op _ [_] [_/_] : ConcolicStateCore Map{Var, Value} Nat Bound -> ConcolicState [ctor] .
+
+    ***subsort CThread < CExec . 
+    ***op _ [_] : Program Nat -> CThread [ctor] .
+    ***op noProgram : -> CExec [ctor] .
+    ***op _ || _ : CExec CExec -> CExec [ctor assoc comm id: noProgram] .
 
 
     vars Var Var1 Var2 : Var .
