@@ -196,8 +196,8 @@ mod WHILE-MAUDE is
     op _ [_] : ConcolicStateCore Map{Var, Value} -> ConcolicState [ctor] .
 
     vars Var Var1 Var2 : Var .
-    var B : Boolean .
-    var BExp BExp2 Constraints Constraints' Constraint C1 : BExp .
+    var B C1 : Boolean .
+    var BExp BExp2 Constraints Constraints' Constraint : BExp .
     var RealVal R Rconc : Real .
     var I Iconc : Integer .
     vars P IL IL1 IL2 : Program .
@@ -280,15 +280,15 @@ mod WHILE-MAUDE is
         [ < P | init-CStore(STRInit, eval(Constraints', STR)) > ] [ < P | STRInit > {Constraints'} < {Path} ] [N + 1] [STRInit]
         if N < size(Constraints)
         /\ Constraints' := trunc-nth(negate-nth(Constraints, N), N)
-        /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(eval(Constraints', STR))) . 
+        /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(eval(Constraints', SymbSTR))) . 
     
     crl [reinit-Cexec-negLast] : 
-        [ < nil | STR > ] [ < P | SymbSTR > {Constraints} < {Path} ] [N] [STRInit]
+        [ < nil | STR > ] [ < P | SymbSTR > {Constraints /\ C1} < {Path} ] [N] [STRInit]
         =>
         [ < P | init-CStore(STRInit, eval(Constraints', STR)) > ] [ < P | STRInit > {Constraints'} < {Path} ] [N + 1] [STRInit]
-        if N < size(Constraints)
-        /\ Constraints' := negate-nth(Constraints, size(Constraints) - 1)
-        /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(eval(Constraints', STR))) .
+        if N < size(Constraints /\ C1)
+        /\ Constraints' := Constraints /\ (not C1)
+        /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(eval(Constraints', SymbSTR))) .
     
     op negate-nth : BExp Nat -> Boolean .
     eq negate-nth(C1 /\ Constraints, 0) = (not C1) /\ Constraints .
