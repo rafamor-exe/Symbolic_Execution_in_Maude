@@ -75,6 +75,11 @@ python3 while-semantics-concolic.py
     --pattern "ConcS:ConcolicState"
 
 
+MULTITHREAD EXAMPLE:
+python3 while-semantics-concolic.py --program "start((var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } } || var('var3) := val(4/1) ; if (var('var3) < var('var1)) then { var('var4) := val(5) ; }) where (p:Real < 5/1), var('var1) := val(p:Real) ;)" --pattern "ConcS:ConcolicState"
+
+
+--------
 *** Problema: R:Real vs Num/Den
 Maude> check 0:Real < 1:Real .
 check in WHILE-MAUDE : 0:Real < 1:Real .
