@@ -10,10 +10,10 @@ mod WHILE-MAUDE is
     sorts SEState PState .
     sort ConstrainedStart .
     
-    op # _ | _ # : Program Map{Var, Value} -> PState [ctor] . 
+    op < _ | _ > : Program Map{Var, Value} -> PState [ctor] . 
     op errState : -> PState [ctor] .
 
-    op _ {_} # {_} : PState BExp Path -> SEState [ctor] . 
+    op _ {_} < {_} : PState BExp Path -> SEState [ctor] . 
 
     op _ where _ : Program BExp -> ConstrainedStart [ctor] .
 
@@ -37,45 +37,45 @@ mod WHILE-MAUDE is
     eq start(P, SVDeclL) = $start(P, SVDeclL, empty, true) .
     eq start(P where BExp, SVDeclL) = $start(P, SVDeclL, empty, BExp) .
     op $start : Program Program Map{Var, Value} BExp -> SEState .
-    eq $start(P, nil, STR, BExp) = # P | STR # {BExp} # {nil} .
+    eq $start(P, nil, STR, BExp) = < P | STR > {BExp} < {nil} .
     eq $start(P, (Var := V ;) SVDeclL, STR, BExp) = $start(P, SVDeclL, insert(Var, V, STR), BExp) .
     
 
     rl [skip] : 
-        # skip ; IL | STR # {Constraints} # {Path}
+        < skip ; IL | STR > {Constraints} < {Path}
         =>
-        # IL | STR # {Constraints} # {Path skip} .
+        < IL | STR > {Constraints} < {Path skip} .
 
     rl [assign] : 
-        # Var := AExp ; IL | STR # {Constraints} # {Path}
+        < Var := AExp ; IL | STR > {Constraints} < {Path}
         =>
-        # IL | insert(Var, eval(AExp, STR), STR) # {Constraints} # {Path assign} .
+        < IL | insert(Var, eval(AExp, STR), STR) > {Constraints} < {Path assign} .
 
     crl [if..then] : 
-        # if BExp then { IL1 } else { IL2 } IL | STR # {Constraints} # {Path}
+        < if BExp then { IL1 } else { IL2 } IL | STR > {Constraints} < {Path}
         =>
-        # IL1 IL | STR # {Constraints'} # {Path if1}
+        < IL1 IL | STR > {Constraints'} < {Path if1}
         if Constraints' := (Constraints /\ eval(BExp, STR))
            /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(eval(Constraints', STR))) .
 
     crl [if..else] : 
-        # if BExp then { IL1 } else { IL2 } IL | STR # {Constraints} # {Path}
+        < if BExp then { IL1 } else { IL2 } IL | STR > {Constraints} < {Path}
         =>
-        # IL2 IL | STR # {Constraints'} # {Path if2}
+        < IL2 IL | STR > {Constraints'} < {Path if2}
         if Constraints' := (Constraints /\ (not eval(BExp, STR)))
            /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(eval(Constraints', STR))) .
 
     crl [while..loop] : 
-        # while BExp do { IL1 } IL | STR # {Constraints} # {Path}
+        < while BExp do { IL1 } IL | STR > {Constraints} < {Path}
         =>
-        # IL1 while BExp do { IL1 } IL | STR # {Constraints'} # {Path while1}
+        < IL1 while BExp do { IL1 } IL | STR > {Constraints'} < {Path while1}
         if Constraints' := (Constraints /\ eval(BExp, STR))
            /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(eval(Constraints', STR))) .
         
     crl [while..exit] : 
-        # while BExp do { IL1 } IL | STR # {Constraints} # {Path}
+        < while BExp do { IL1 } IL | STR > {Constraints} < {Path}
         =>
-        # IL | STR # {Constraints'} # {Path while2}
+        < IL | STR > {Constraints'} < {Path while2}
         if Constraints' := (Constraints /\ (not eval(BExp, STR)))
            /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(eval(Constraints', STR))) .
 
