@@ -10,30 +10,18 @@ fmod WHILE-LANG-VARSTATE-MOD is
     pr BOOLEAN .
 
     sort AExp .
-    sort VarState .
-    sorts VarType Value .
+    sort Value .
     sorts RVal BVal IVal .
     subsort IVal RVal < Value < AExp .
-
-    ops boolean real : -> VarType [ctor] .
 
     op val : Real -> RVal [ctor] .
     op val : Integer -> IVal [ctor] .
     op val : Boolean -> BVal [ctor] .
 
-    op {type _, val _} : VarType Value -> VarState [ctor] .
-
-    var T : VarType .
-    var V V1 V2 : Value .
-    var R R1 R2 : Real .
+    vars V V1 V2 : Value .
+    vars R R1 R2 : Real .
     var B : Boolean .
-    var I I1 I2 : Integer .
-
-    op getType : VarState -> VarType .
-    eq getType({type T, val V}) = T .
-
-    op getVal : VarState -> Value .
-    eq getVal({type T, val V}) = V .
+    vars I I1 I2 : Integer .
 
     op _+_ : Value Value -> Value [gather (E e) prec 33] .
     eq val(R1) + val(R2) = val(R1 + R2) .
@@ -68,10 +56,6 @@ fmod WHILE-LANG-VARSTATE-MOD is
     eq val(I1) >= val(I2) = I1 >= I2 .
 
 endfm
-
-view VarState from TRIV to WHILE-LANG-VARSTATE-MOD is
-  sort Elt to VarState .
-endv
 
 view Value from TRIV to WHILE-LANG-VARSTATE-MOD is
   sort Elt to Value .
@@ -121,8 +105,8 @@ fmod WHILE-LANG-AEXP-MOD is
     op eval : BVal Map{Var, Value} -> BExp .
     op eval : Boolean Map{Var, Value} -> BExp .
 
-    var AExp AExp1 AExp2 : AExp .
-    var B BExp1 BExp2 : Boolean .
+    vars AExp AExp1 AExp2 : AExp .
+    vars B BExp1 BExp2 : Boolean .
     var BExp : BExp .
     var STR : Map{Var, Value} .
     var Var : Var .
