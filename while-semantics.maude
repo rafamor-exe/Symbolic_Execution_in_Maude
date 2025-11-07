@@ -11,8 +11,8 @@ mod WHILE-MAUDE is
     op < _ | _ > : Program Map{Var, Value} -> State [ctor] . 
     op errState : -> State [ctor] . 
 
-    vars Var Var1 Var2 : Var .
-    var BExp BExp2 : BExp .
+    vars Var : Var .
+    vars BExp BExp2 : BExp .
     vars IL IL1 IL2 P : Program .
     var STR : Map{Var, Value} .
     var VarState : VarState .

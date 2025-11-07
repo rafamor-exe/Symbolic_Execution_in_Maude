@@ -47,26 +47,23 @@ mod WHILE-MAUDE is
 
 
 
-    vars Var Var1 Var2 : Var .
-    var B : Boolean .
+    vars Var : Var .
     vars BExp BExp2 Constraints Constraints' : BExp .
-    vars Constraint C1 : Boolean .
-    var RealVal R Rconc : Real .
-    var I Iconc : Integer .
+    vars B Constraint C1 : Boolean .
+    vars R Rconc : Real .
+    vars I Iconc : Integer .
     vars IL IL1 IL2 : Program .
     vars STR STR' SymbSTR STRInit : Map{Var, Value} .
-    var VarState : VarState .
     var AExp : AExp .
     var Path : Path .
     var SVDeclL : Program .
     var V : Value .
     vars SEPState CEPState : PState .
-    var N : Int .
-    var NzN : NzNat .
+    var N : Nat .
     var Assignment : Assignment .
     var LBound : Bound .
     var LDepth : Nat .
-    var P PRest : MTExec .
+    vars P PRest : MTExec .
 
     op start : MTExec -> ConcolicState .
     op start : ConstrainedStart -> ConcolicState .

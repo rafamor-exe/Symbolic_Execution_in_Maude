@@ -6,7 +6,6 @@ mod WHILE-MAUDE is
     pr WHILE-SE-BASICS .
     pr LIST{Location} * (sort List{Location} to Path) .
     pr META-LEVEL * (op _=_ to _=M_) * (op _+_ to _+M_) .
-    pr LIST{Var} * (sort List{Var} to SVList) .
 
     sorts SEState PState .
     sort ConstrainedStart .
@@ -19,17 +18,14 @@ mod WHILE-MAUDE is
     op _ where _ : Program BExp -> ConstrainedStart [ctor] .
 
 
-    vars Var Var1 Var2 : Var .
+    vars Var : Var .
     var B : Boolean .
-    var BExp BExp2 Constraints Constraints' Invariants : BExp .
-    var RealVal : Real .
+    vars BExp BExp2 Constraints Constraints' : BExp .
     vars P IL IL1 IL2 : Program .
     var STR STR' : Map{Var, Value} .
-    var VarState : VarState .
     var AExp : AExp .
     var Path : Path .
     var SVDeclL : Program .
-    var VS : SVList .
     var V : Value .
 
     op start : Program -> SEState .
