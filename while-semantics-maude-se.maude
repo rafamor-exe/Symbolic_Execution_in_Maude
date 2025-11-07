@@ -222,24 +222,24 @@ mod WHILE-MAUDE is
         < if BExp then { IL1 } else { IL2 } IL | STR >
         =>
         < IL1 IL | STR >
-        if metaCheck(upModule('WHILE-MAUDE, false), upTerm(eval(BExp, STR))) .
+        if eval(BExp, STR) = true .
 
     crl [if..else] : 
         < if BExp then { IL1 } else { IL2 } IL | STR >
         =>
         < IL2 IL | STR >
-        if metaCheck(upModule('WHILE-MAUDE, false), upTerm(not eval(BExp, STR))) .
+        if eval(BExp, STR) =/== true = true .
     
 
     crl [while..loop] : 
         < while BExp do { IL1 } IL | STR >
         =>
         < IL1 while BExp do { IL1 } IL | STR >
-        if metaCheck(upModule('WHILE-MAUDE, false), upTerm(eval(BExp, STR))) .
+        if eval(BExp, STR) = true .
         
     crl [while..exit] : 
         < while BExp do { IL1 } IL | STR >
         =>
         < IL | STR >
-        if metaCheck(upModule('WHILE-MAUDE, false), upTerm(not eval(BExp, STR))) .
+        if eval(BExp, STR) =/== true = true .
 endm

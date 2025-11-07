@@ -191,7 +191,7 @@ endfm
 
 fmod WHILE-LANG-SE-LOCS-MOD is
     sort Location .
-    ops skip assign if1 if2 while1 while2 while-inv assume : -> Location [ctor] .
+    ops skip assign if1 if2 while1 while2 : -> Location [ctor] .
 endfm
 
 view Location from TRIV to WHILE-LANG-SE-LOCS-MOD is
@@ -357,34 +357,6 @@ mod WHILE-MAUDE is
     eq withinBounds(LDepth, unbounded) = true .
     ceq withinBounds(LDepth, LBound) = true if LDepth < LBound .
     eq withinBounds(LDepth, LBound) = false [owise] .
-    
-    ***crl [reinit-Cexec-negInOrder] : 
-    ***    [ < nil | STR > ] [ < P | SymbSTR > {Constraints} < {Path} ] [N] [STRInit]
-    ***    =>
-    ***    [ < P | init-CStore(STRInit, eval(Constraints', STR)) > ] [ < P | STRInit > {Constraints'} < {Path} ] [N + 1] [STRInit]
-    ***    if N < size(Constraints)
-    ***    /\ Constraints' := trunc-nth(negate-nth(Constraints, N), N)
-    ***    /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(eval(Constraints', STR))) . 
-    ***
-    ***crl [reinit-Cexec-negLast] : 
-    ***    [ < nil | STR > ] [ < P | SymbSTR > {Constraints} < {Path} ] [N] [STRInit]
-    ***    =>
-    ***    [ < P | init-CStore(STRInit, eval(Constraints', STR)) > ] [ < P | STRInit > {Constraints'} < {Path} ] [N + 1] [STRInit]
-    ***    if N < size(Constraints)
-    ***    /\ Constraints' := negate-nth(Constraints, size(Constraints) - 1)
-    ***    /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(eval(Constraints', STR))) . 
-    
-    ***op trunc-nth : BExp Nat -> BExp .
-    ***eq trunc-nth(C1 /\ Constraints, 0) = C1 .
-    ***eq trunc-nth(C1, 0) = C1 .
-    ***ceq trunc-nth((C1 /\ Constraints), NzN) = C1 /\ trunc-nth(Constraints, NzN - 1)
-    ***    if NzN < size((C1 /\ Constraints)) .
-
-    ***op negate-nth : BExp Nat -> BExp .
-    ***eq negate-nth(C1 /\ Constraints, 0) = (not C1) /\ Constraints .
-    ***eq negate-nth(C1, 0) = not C1 .
-    ***ceq negate-nth(C1 /\ Constraints, NzN) = C1 /\ negate-nth(Constraints, NzN - 1)
-    ***    if NzN < size(C1 /\ Constraints) . *** TODO: Multiple parses due to C1 being able to be _and_ too
 
     op init-CStore : Map{Var, Value} BExp -> Map{Var, Value} .
     ceq init-CStore(STR, Constraints) = $apply-SMTassignment(STR, get-SMTassignment(C1))
