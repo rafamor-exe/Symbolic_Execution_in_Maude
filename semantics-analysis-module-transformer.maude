@@ -1,0 +1,26 @@
+load while-semantics-basics.maude
+
+fmod MODULE-TRANSFORMER is
+    pr META-LEVEL .
+    pr LIST{Location} * (sort List{Location} to Path) .
+    pr WHILE-SE-BASICS .
+
+    op errTerm : -> RuleSet [ctor] .
+
+    vars T1 T2 Constraints Path : Term .
+    var AttrSet : AttrSet .
+    var RuleSet : RuleSet .
+    var Cond : Condition .
+    ***var Constraints : BExp .
+    ***var Path : Path .
+
+    *** Symbolic Execution rule structure
+    op rl_{_}<{_}=>_{_}<{_}[_]. : Term Term Term Term Term Term AttrSet -> Rule [ctor] .
+
+    *** TODO: add rule label to path in T2
+    op rlToSymbolic : RuleSet -> RuleSet .
+    eq rlToSymbolic(none) = none .
+    eq rlToSymbolic(rl T1 => T2 [AttrSet] . RuleSet) = rl T1 { 'Constraints } < { 'Path } => T2 { 'Constraints } < { 'Path } [AttrSet] . rlToSymbolic(RuleSet) .
+    *** TODO: How to metaCheck the conjuntion of Constraints /\ new_condition??? How to reference the STR concrete store????
+    ***eq rlToSymbolic(crl T1 => T2 if Cond [AttrSet] . RuleSet) = crl T1 { 'Constraints } < { 'Path } => T2 { 'Constraints } < { 'Path } if (Cond /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(eval('Constraints, STR)))) [AttrSet] . rlToSymbolic(RuleSet) .
+endfm

@@ -11,3 +11,21 @@ smt-search [1] in WHILE-MAUDE : start(var('var2) := val(1/1) ; if (var('var1) < 
 smt-search [2] in WHILE-MAUDE : start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } }, var('var1) := val(p:Real) ;) =>* < nil | STR:Map{Var, Value} > such that p:Real > -3/1 and p:Real < 5/1 using QF_LRA .
 smt-search [3] in WHILE-MAUDE : start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } }, var('var1) := val(p:Real) ;) =>* < nil | STR:Map{Var, Value} > such that p:Real > -3/1 and p:Real < 5/1 using QF_LRA .
 smt-search [4] in WHILE-MAUDE : start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } }, var('var1) := val(p:Real) ;) =>* < nil | STR:Map{Var, Value} > such that p:Real > -3/1 and p:Real < 5/1 using QF_LRA .
+
+
+Maude> red rlToSymbolic(rl upTerm('< 'skip ; 'IL '| 'STR '>) => upTerm('< 'IL '| 'STR '>) [none] . none) .
+reduce in MODULE-TRANSFORMER : rlToSymbolic(rl upTerm('< 'skip ; 'IL '| 'STR '>) => upTerm('< 'IL '| 'STR '>) [none] .) .
+rewrites: 4 in 0ms cpu (0ms real) (~ rewrites/second)
+result [RuleSet]: rl '_;_['__[''<.Sort, ''skip.Sort], '__[''IL.Sort, ''|.Sort, ''STR.Sort, ''>.Sort]]{'Constraints}<{'Path}=> '__[''<.Sort, ''IL.Sort, ''|.Sort, ''STR.Sort, ''>.Sort]{
+    'Constraints}<{'Path}[none].
+---------------
+Maude> red rlToSymbolic(rl upTerm('< 'skip ; IL:Term '| STR:Term '>) => upTerm('< IL:Term '| STR:Term '>) [none] . none) .
+reduce in MODULE-TRANSFORMER : rlToSymbolic(rl upTerm('< 'skip ; IL:Term '| STR:Term '>) => upTerm('< IL:Term '| STR:Term '>) [none] .) .
+rewrites: 4 in 0ms cpu (0ms real) (~ rewrites/second)
+result [RuleSet]: rl '_;_['__[''<.Sort, ''skip.Sort], '__['IL:Term, ''|.Sort, 'STR:Term, ''>.Sort]]{'Constraints}<{'Path}=> '__[''<.Sort, 'IL:Term, ''|.Sort, 'STR:Term, ''>.Sort]{
+    'Constraints}<{'Path}[none].
+-------
+Maude> red rlToSymbolic(rl a:Term => b:Term [none] .) .
+reduce in MODULE-TRANSFORMER : rlToSymbolic(rl a:Term => b:Term [none] .) .
+rewrites: 2 in 0ms cpu (0ms real) (~ rewrites/second)
+result [RuleSet]: rl a:Term{'Constraints}<{'Path}=> b:Term{'Constraints}<{'Path}[none].
