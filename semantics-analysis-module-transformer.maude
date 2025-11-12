@@ -31,9 +31,9 @@ fmod MODULE-TRANSFORMER is
 
     op rlToSymbolic : RuleSet -> RuleSet .
     eq rlToSymbolic(none) = none .
-    eq rlToSymbolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet) = rl T1 { 'Constraints } < { 'Path } => T2 { 'Constraints } < { 'Path InstId } [AttrSet] . rlToSymbolic(RlSet) .
+    eq rlToSymbolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet) = rl T1 { 'Constraints } < { 'Path } => T2 { 'Constraints } < { 'Path InstId } [label(InstId) AttrSet] . rlToSymbolic(RlSet) .
     *** TODO: Check whether condition is correctly tokenized for Maude computations...('a '/\ 'b) vs ('_/\_['a:BExp, 'b]) ), where second 'b is 'eval[...]
-    ceq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet) = crl T1 { 'Constraints } < { 'Path } => T2 { 'Constraints } < { 'Path InstId } if 'metaCheck[Tmod, 'Constraints '/\ Tcond] = 'true.Bool [AttrSet] . rlToSymbolic(RlSet)
+    ceq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet) = crl T1 { 'Constraints } < { 'Path } => T2 { 'Constraints } < { 'Path InstId } if 'metaCheck[Tmod, 'Constraints '/\ Tcond] = 'true.Bool [label(InstId) AttrSet] . rlToSymbolic(RlSet)
         if ('metaCheck[Tmod, Tcond] = 'true.Bool) := Cond .
 
     op inclSESorts : SortSet -> SortSet .
