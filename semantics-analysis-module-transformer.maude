@@ -6,7 +6,7 @@ load while-semantics.maude
 fmod MODULE-TRANSFORMER is
     pr META-LEVEL .
     pr LIST{Location} * (sort List{Location} to Path) .
-    ***pr WHILE-SE-BASICS .
+    pr WHILE-SE-BASICS .
 
     vars T1 T2 Tcond Tmod Constraints Path : Term .
     var AttrSet : AttrSet .
@@ -19,7 +19,7 @@ fmod MODULE-TRANSFORMER is
     var OpDeclSet : OpDeclSet .
     var MembAxSet : MembAxSet .
     var EquationSet : EquationSet .
-    var InstId : Qid .
+    var InstId StateOp : Qid .
     ***var Tmod : Module .
     ***var Constraints : BExp .
     ***var Path : Path .
@@ -36,16 +36,77 @@ fmod MODULE-TRANSFORMER is
     ceq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet) = crl T1 { 'Constraints } < { 'Path } => T2 { 'Constraints } < { 'Path InstId } if 'metaCheck[Tmod, 'Constraints '/\ Tcond] = 'true.Bool [AttrSet] . rlToSymbolic(RlSet)
         if ('metaCheck[Tmod, Tcond] = 'true.Bool) := Cond .
 
+    op inclSESorts : SortSet -> SortSet .
+    eq inclSESorts(SortSet) = SortSet ; 'SEState ; 'ConstrainedStart .    
 
-    op transformModSymb : Module -> Module .
-    eq transformModSymb(mod Header is ImportList sorts SortSet . SubsortDeclSet OpDeclSet MembAxSet EquationSet RlSet endm) = mod Header is ImportList sorts SortSet . SubsortDeclSet OpDeclSet MembAxSet EquationSet rlToSymbolic(RlSet) endm .
+    ***op updateStateSymb : OpDeclSet Qid -> OpDeclSet .
+    ***eq updateStateSymb((op 'start : 'Program -> StateOp .) OpDeclSet, StateOp)
+
+    *** Define the Symbolic State on top of the casual (concrete) state
+    op inclSEState : OpDeclSet Qid -> OpDeclSet .
+    eq inclSEState(OpDeclSet, StateOp) = OpDeclSet
+                                        (op '_`{_`}<`{_`} : StateOp 'BExp 'Path -> 'SEState [ctor] .)
+                                        (op '_where_ : 'Program 'BExp -> 'ConstrainedStart [ctor] .) .
+                                        ***(op 'start : 'ConstrainedStart -> 'SEState [none] .)
+                                        ***(op 'start : 'ConstrainedStart 'Program -> 'SEState [none] .)
+
+
+    op transformModSymb : Module Qid -> Module .
+    eq transformModSymb(mod Header is
+                            ImportList
+                            sorts SortSet .
+                            SubsortDeclSet
+                            OpDeclSet MembAxSet EquationSet
+                            RlSet
+                        endm, StateOp)
+                        =
+                        mod 'SYMBOLIC-MOD is
+                            ImportList
+                            sorts inclSESorts(SortSet) .
+                            SubsortDeclSet
+                            inclSEState(OpDeclSet, StateOp) MembAxSet EquationSet
+                            rlToSymbolic(RlSet)
+                        endm .
 
     ***eq 'pr = 'protecting .
 
 endfm
 
-*** Test transformer with while language module
-mod TEST-TRANSFORM is
+mod VERYFICATION-COMMANDS is
+
     pr MODULE-TRANSFORMER .
-    pr WHILE-MAUDE .
+    pr LEXICAL .
+
+    vars ModId StateOp SearchType : Qid .
+    vars InitSEState PatternSEState : Term .
+    var SearchCond : Condition .
+    var Bound : Bound .
+    var SolN : Nat .
+
+    op searchSymb : Qid Qid Term Term Condition Qid Bound Nat -> ResultTriple .
+    eq searchSymb(ModId, StateOp,
+                  InitSEState,
+                  PatternSEState,
+                  SearchCond,
+                  SearchType,
+                  Bound,
+                  SolN)
+                  =
+                  metaSearch(transformModSymb(upModule(ModId, false), StateOp),
+                             InitSEState,
+                             PatternSEState,
+                             SearchCond,
+                             SearchType,
+                             Bound,
+                             SolN) .
+
 endm
+
+*** Test transformer with while language module
+***mod TEST-TRANSFORM is
+***    pr MODULE-TRANSFORMER .
+***    pr WHILE-MAUDE .
+***
+***    ***op searchSymb : Qid SEState 
+***
+***endm

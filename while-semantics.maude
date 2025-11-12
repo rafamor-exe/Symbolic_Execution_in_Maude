@@ -15,7 +15,6 @@ mod WHILE-MAUDE is
     vars BExp BExp2 : BExp .
     vars IL IL1 IL2 P : Program .
     var STR : Map{Var, Value} .
-    var VarState : VarState .
     var AExp : AExp .
     var SVDeclL : Program .
     var V : Value .
