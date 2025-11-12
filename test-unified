@@ -29,3 +29,32 @@ Maude> red rlToSymbolic(rl a:Term => b:Term [none] .) .
 reduce in MODULE-TRANSFORMER : rlToSymbolic(rl a:Term => b:Term [none] .) .
 rewrites: 2 in 0ms cpu (0ms real) (~ rewrites/second)
 result [RuleSet]: rl a:Term{'Constraints}<{'Path}=> b:Term{'Constraints}<{'Path}[none].
+
+Maude> red rlToSymbolic(crl '<_|_>['__['if_then`{_`}else`{_`}['BExp:BExp, 'IL1:Program, 'IL2:Program], 'IL:Program], 'STR:Map`{Var`,Value`}] => '<_|_>['__['IL1:Program, 'IL:Program],    'STR:Map`{Var`,Value`}] if 'metaCheck['upModule[''WHILE-MAUDE.Sort, 'false.Bool], 'upTerm['eval['BExp:BExp, 'STR:Map`{Var`,Value`}]]] = 'true.Bool [label('if..then)] .) .
+reduce in TEST-TRANSFORM : rlToSymbolic(crl '<_|_>['__['if_then`{_`}else`{_`}['BExp:BExp, 'IL1:Program, 'IL2:Program], 'IL:Program], 'STR:Map`{Var`,Value`}] => '<_|_>['__[
+    'IL1:Program, 'IL:Program], 'STR:Map`{Var`,Value`}] if 'metaCheck['upModule[''WHILE-MAUDE.Sort, 'false.Bool], 'upTerm['eval['BExp:BExp, 'STR:Map`{Var`,Value`}]]] = 'true.Bool [
+    label('if..then)] .) .
+rewrites: 2 in 0ms cpu (0ms real) (~ rewrites/second)
+result [RuleSet]: crl '<_|_>['__['if_then`{_`}else`{_`}['BExp:BExp, 'IL1:Program, 'IL2:Program], 'IL:Program], 'STR:Map`{Var`,Value`}]{'Constraints}<{'Path}=> '<_|_>['__['IL1:Program,
+    'IL:Program], 'STR:Map`{Var`,Value`}]{'Constraints}<{'Path 'if..then}if 'metaCheck['upModule[''WHILE-MAUDE.Sort, 'false.Bool], 'Constraints '/\ ('upTerm['eval['BExp:BExp,
+    'STR:Map`{Var`,Value`}]])] = 'true.Bool[none].
+
+-------
+
+Maude> red transformModSymb(upModule('WHILE-MAUDE, false)) .
+...
+  rl '<_|_>['__['skip`;.Inst, 'IL:Program], 'STR:Map`{Var`,Value`}]{'Constraints}<{'Path}=> '<_|_>['IL:Program, 'STR:Map`{Var`,Value`}]{'Constraints}<{'Path 'skip}[none].
+  rl '<_|_>['__['_:=_;['Var:Var, 'AExp:AExp], 'IL:Program], 'STR:Map`{Var`,Value`}]{'Constraints}<{'Path}=> '<_|_>['IL:Program, 'insert['Var:Var, 'eval['AExp:AExp,
+    'STR:Map`{Var`,Value`}], 'STR:Map`{Var`,Value`}]]{'Constraints}<{'Path 'assign}[none].
+  crl '<_|_>['__['if_then`{_`}else`{_`}['BExp:BExp, 'IL1:Program, 'IL2:Program], 'IL:Program], 'STR:Map`{Var`,Value`}]{'Constraints}<{'Path}=> '<_|_>['__['IL1:Program, 'IL:Program],
+    'STR:Map`{Var`,Value`}]{'Constraints}<{'Path 'if..then}if 'metaCheck['upModule[''WHILE-MAUDE.Sort, 'false.Bool], 'Constraints '/\ ('upTerm['eval['BExp:BExp,
+    'STR:Map`{Var`,Value`}]])] = 'true.Bool[none].
+  crl '<_|_>['__['if_then`{_`}else`{_`}['BExp:BExp, 'IL1:Program, 'IL2:Program], 'IL:Program], 'STR:Map`{Var`,Value`}]{'Constraints}<{'Path}=> '<_|_>['__['IL2:Program, 'IL:Program],
+    'STR:Map`{Var`,Value`}]{'Constraints}<{'Path 'if..else}if 'metaCheck['upModule[''WHILE-MAUDE.Sort, 'false.Bool], 'Constraints '/\ ('upTerm['not_['eval['BExp:BExp,
+    'STR:Map`{Var`,Value`}]]])] = 'true.Bool[none].
+  crl '<_|_>['__['while_do`{_`}['BExp:BExp, 'IL1:Program], 'IL:Program], 'STR:Map`{Var`,Value`}]{'Constraints}<{'Path}=> '<_|_>['IL:Program, 'STR:Map`{Var`,Value`}]{'Constraints}<{
+    'Path 'while..exit}if 'metaCheck['upModule[''WHILE-MAUDE.Sort, 'false.Bool], 'Constraints '/\ ('upTerm['not_['eval['BExp:BExp, 'STR:Map`{Var`,Value`}]]])] = 'true.Bool[none].
+  crl '<_|_>['__['while_do`{_`}['BExp:BExp, 'IL1:Program], 'IL:Program], 'STR:Map`{Var`,Value`}]{'Constraints}<{'Path}=> '<_|_>['__['IL1:Program, '__['while_do`{_`}['BExp:BExp,
+    'IL1:Program], 'IL:Program]], 'STR:Map`{Var`,Value`}]{'Constraints}<{'Path 'while..loop}if 'metaCheck['upModule[''WHILE-MAUDE.Sort, 'false.Bool], 'Constraints '/\ ('upTerm['eval[
+    'BExp:BExp, 'STR:Map`{Var`,Value`}]])] = 'true.Bool[none].
+endm

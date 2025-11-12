@@ -1,26 +1,51 @@
 load while-semantics-basics.maude
 
+*** Test transformer with while language module
+load while-semantics.maude
+
 fmod MODULE-TRANSFORMER is
     pr META-LEVEL .
     pr LIST{Location} * (sort List{Location} to Path) .
-    pr WHILE-SE-BASICS .
+    ***pr WHILE-SE-BASICS .
 
-    op errTerm : -> RuleSet [ctor] .
-
-    vars T1 T2 Constraints Path : Term .
+    vars T1 T2 Tcond Tmod Constraints Path : Term .
     var AttrSet : AttrSet .
-    var RuleSet : RuleSet .
+    var RlSet : RuleSet .
     var Cond : Condition .
+    var Header : Header .
+    var ImportList : ImportList .
+    var SortSet : SortSet .
+    var SubsortDeclSet : SubsortDeclSet .
+    var OpDeclSet : OpDeclSet .
+    var MembAxSet : MembAxSet .
+    var EquationSet : EquationSet .
+    var InstId : Qid .
+    ***var Tmod : Module .
     ***var Constraints : BExp .
     ***var Path : Path .
 
     *** Symbolic Execution rule structure
     op rl_{_}<{_}=>_{_}<{_}[_]. : Term Term Term Term Term Term AttrSet -> Rule [ctor] .
+    op crl_{_}<{_}=>_{_}<{_}if_[_]. : Term Term Term Term Term Term Condition AttrSet -> Rule [ctor] .
 
-    *** TODO: add rule label to path in T2
+
     op rlToSymbolic : RuleSet -> RuleSet .
     eq rlToSymbolic(none) = none .
-    eq rlToSymbolic(rl T1 => T2 [AttrSet] . RuleSet) = rl T1 { 'Constraints } < { 'Path } => T2 { 'Constraints } < { 'Path } [AttrSet] . rlToSymbolic(RuleSet) .
-    *** TODO: How to metaCheck the conjuntion of Constraints /\ new_condition??? How to reference the STR concrete store????
-    ***eq rlToSymbolic(crl T1 => T2 if Cond [AttrSet] . RuleSet) = crl T1 { 'Constraints } < { 'Path } => T2 { 'Constraints } < { 'Path } if (Cond /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(eval('Constraints, STR)))) [AttrSet] . rlToSymbolic(RuleSet) .
+    eq rlToSymbolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet) = rl T1 { 'Constraints } < { 'Path } => T2 { 'Constraints } < { 'Path InstId } [AttrSet] . rlToSymbolic(RlSet) .
+    *** TODO: Check whether condition is correctly tokenized for Maude computations...('a '/\ 'b) vs ('_/\_['a:BExp, 'b]) ), where second 'b is 'eval[...]
+    ceq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet) = crl T1 { 'Constraints } < { 'Path } => T2 { 'Constraints } < { 'Path InstId } if 'metaCheck[Tmod, 'Constraints '/\ Tcond] = 'true.Bool [AttrSet] . rlToSymbolic(RlSet)
+        if ('metaCheck[Tmod, Tcond] = 'true.Bool) := Cond .
+
+
+    op transformModSymb : Module -> Module .
+    eq transformModSymb(mod Header is ImportList sorts SortSet . SubsortDeclSet OpDeclSet MembAxSet EquationSet RlSet endm) = mod Header is ImportList sorts SortSet . SubsortDeclSet OpDeclSet MembAxSet EquationSet rlToSymbolic(RlSet) endm .
+
+    ***eq 'pr = 'protecting .
+
 endfm
+
+*** Test transformer with while language module
+mod TEST-TRANSFORM is
+    pr MODULE-TRANSFORMER .
+    pr WHILE-MAUDE .
+endm

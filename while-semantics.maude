@@ -3,8 +3,8 @@ load while-semantics-basics.maude
 
 mod WHILE-MAUDE is
 
-    pr WHILE-BASICS .
-    pr META-LEVEL * (op _=_ to _=M_) * (op _+_ to _+M_) .
+    protecting WHILE-BASICS .
+    protecting META-LEVEL * (op _=_ to _=M_) * (op _+_ to _+M_) .
 
     sort State .
     
