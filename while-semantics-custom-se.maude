@@ -4,7 +4,6 @@ load while-semantics-basics.maude
 mod WHILE-MAUDE is
 
     pr WHILE-SE-BASICS .
-    pr LIST{Location} * (sort List{Location} to Path) .
     pr META-LEVEL * (op _=_ to _=M_) * (op _+_ to _+M_) .
 
     sorts SEState PState .
@@ -68,7 +67,7 @@ mod WHILE-MAUDE is
     crl [while..loop] : 
         < while BExp do { IL1 } IL | STR > {Constraints} < {Path}
         =>
-        < IL1 while BExp do { IL1 } IL | STR > {Constraints'} < {Path while1}
+        < IL1 while BExp do { IL1 } IL | STR > {Constraints'} < {Path loc('while..loop)}
         if Constraints' := (Constraints /\ eval(BExp, STR))
            /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(eval(Constraints', STR))) .
         

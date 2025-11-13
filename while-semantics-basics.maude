@@ -169,8 +169,10 @@ fmod WHILE-BASICS is
 endfm
 
 fmod WHILE-LANG-SE-LOCS-MOD is
+    pr QID .
     sort Location .
     ops skip assign if1 if2 while1 while2 : -> Location [ctor] .
+    op loc : Qid -> Location [ctor] .
 endfm
 
 view Location from TRIV to WHILE-LANG-SE-LOCS-MOD is
@@ -180,4 +182,5 @@ endv
 fmod WHILE-SE-BASICS is
     pr WHILE-LANG-BLOCK-MOD .
     pr WHILE-LANG-SE-LOCS-MOD .
+    pr LIST{Location} * (sort List{Location} to Path) .
 endfm

@@ -5,8 +5,7 @@ load while-semantics.maude
 
 fmod MODULE-TRANSFORMER is
     pr META-LEVEL .
-    pr LIST{Location} * (sort List{Location} to Path) .
-    pr WHILE-SE-BASICS .
+    ***pr WHILE-SE-BASICS .
 
     vars T1 T2 Tcond Tmod Constraints Path : Term .
     var AttrSet : AttrSet .
@@ -31,9 +30,9 @@ fmod MODULE-TRANSFORMER is
 
     op rlToSymbolic : RuleSet -> RuleSet .
     eq rlToSymbolic(none) = none .
-    eq rlToSymbolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet) = rl T1 { 'Constraints } < { 'Path } => T2 { 'Constraints } < { 'Path InstId } [label(InstId) AttrSet] . rlToSymbolic(RlSet) .
-    *** TODO: Check whether condition is correctly tokenized for Maude computations...('a '/\ 'b) vs ('_/\_['a:BExp, 'b]) ), where second 'b is 'eval[...]
-    ceq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet) = crl T1 { 'Constraints } < { 'Path } => T2 { 'Constraints } < { 'Path InstId } if 'metaCheck[Tmod, 'Constraints '/\ Tcond] = 'true.Bool [label(InstId) AttrSet] . rlToSymbolic(RlSet)
+    eq rlToSymbolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet) = rl '_`{_`}<`{_`}[T1, 'Constraints:BExp, 'Path:Path] => '_`{_`}<`{_`}[T2, 'Constraints:BExp, '__['Path:Path, 'loc[upTerm(InstId)]]] [label(InstId) AttrSet] . rlToSymbolic(RlSet) .
+    *** TODO: parametrize language-specific sorts (Map, BExp)
+    ceq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet) = crl '_`{_`}<`{_`}[T1, 'Constraints:BExp, 'Path:Path] => '_`{_`}<`{_`}[T2, 'Constraints:BExp, '__['Path:Path, 'loc[upTerm(InstId)]]] if 'metaCheck[Tmod, 'upTerm['eval['_/\_['Constraints:BExp, Tcond]], 'STR:Map`{Var`,Value`}]] = 'true.Bool [label(InstId) AttrSet] . rlToSymbolic(RlSet)
         if ('metaCheck[Tmod, Tcond] = 'true.Bool) := Cond .
 
     op inclSESorts : SortSet -> SortSet .
@@ -50,7 +49,7 @@ fmod MODULE-TRANSFORMER is
                                         ***(op 'start : 'ConstrainedStart -> 'SEState [none] .)
                                         ***(op 'start : 'ConstrainedStart 'Program -> 'SEState [none] .)
 
-
+    *** TODO: Usar variable y metodos get
     op transformModSymb : Module Qid -> Module .
     eq transformModSymb(mod Header is
                             ImportList
@@ -72,7 +71,7 @@ fmod MODULE-TRANSFORMER is
 
 endfm
 
-mod VERYFICATION-COMMANDS is
+mod VERIFICATION-COMMANDS is
 
     pr MODULE-TRANSFORMER .
     pr LEXICAL .
