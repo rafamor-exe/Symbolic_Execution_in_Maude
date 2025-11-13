@@ -21,6 +21,7 @@ fmod MODULE-TRANSFORMER is
     var MembAxSet : MembAxSet .
     var EquationSet : EquationSet .
     var InstId StateOp : Qid .
+    var M : Module .
     ***var Tmod : Module .
     ***var Constraints : BExp .
     ***var Path : Path .
@@ -57,21 +58,13 @@ fmod MODULE-TRANSFORMER is
 
     *** TODO: Usar variable y metodos get
     op transformModSymb : Module Qid -> Module .
-    eq transformModSymb(mod Header is
-                            ImportList
-                            sorts SortSet .
-                            SubsortDeclSet
-                            OpDeclSet MembAxSet EquationSet
-                            RlSet
-                        endm, StateOp)
-                        =
-                        mod 'SYMBOLIC-MOD is
-                            inclSEImports(ImportList)
-                            sorts inclSESorts(SortSet) .
-                            SubsortDeclSet
-                            inclSEState(OpDeclSet, StateOp) MembAxSet EquationSet
-                            rlToSymbolic(RlSet)
-                        endm .
+    eq transformModSymb(M, StateOp) = mod 'SYMBOLIC-MOD is
+                                            inclSEImports(getImports(M))
+                                            sorts inclSESorts(getSorts(M)) .
+                                            getSubsorts(M)
+                                            inclSEState(getOps(M), StateOp) getMbs(M) getEqs(M)
+                                            rlToSymbolic(getRls(M))
+                                      endm .
 
     ***eq 'pr = 'protecting .
 
