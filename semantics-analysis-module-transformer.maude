@@ -56,7 +56,6 @@ fmod MODULE-TRANSFORMER is
                                         ***(op 'start : 'ConstrainedStart -> 'SEState [none] .)
                                         ***(op 'start : 'ConstrainedStart 'Program -> 'SEState [none] .)
 
-    *** TODO: Usar variable y metodos get
     op transformModSymb : Module Qid -> Module .
     eq transformModSymb(M, StateOp) = mod 'SYMBOLIC-MOD is
                                             inclSEImports(getImports(M))
