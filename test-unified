@@ -60,11 +60,21 @@ red transformModSymb(upModule('WHILE-MAUDE, false), 'State) .
 endm
 
 
-red searchSymb('WHILE-MAUDE, 'State, start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } } where (p:Real < 5/1), var('var1) := val(p:Real) ;), FinalState:SEState, nil, '!, unbounded, 0) .
+***red searchSymb('WHILE-MAUDE, 'State, start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } } where (p:Real < 5/1), var('var1) := val(p:Real) ;), FinalState:SEState, nil, '!, unbounded, 0) .
+***
+***red searchSymb('WHILE-MAUDE, 'State, upTerm('< 'var('var2) := 'val('1/1) ; 'if ('var('var1) '< 'var('var2)) 'then '{ 'var('var3) ':= 'val('0/1) ; '} '| var('var1) |-> val(p:Real) > {p:Real < 5/1} < {nil}), 'FinalState:SEState, nil, '!, unbounded, 0) .
+***
+***red searchSymb('WHILE-MAUDE, 'State, < var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; } | var('var1) |-> val(p:Real) > {p:Real < 5/1} < {nil}, 'FinalState:SEState, nil, '!, unbounded, 0) .
 
-red searchSymb('WHILE-MAUDE, 'State, upTerm('< 'var('var2) := 'val('1/1) ; 'if ('var('var1) '< 'var('var2)) 'then '{ 'var('var3) ':= 'val('0/1) ; '} '| var('var1) |-> val(p:Real) > {p:Real < 5/1} < {nil}), 'FinalState:SEState, nil, '!, unbounded, 0) .
+*** Symbolic metasearch over the transformed module
+red searchSymb('WHILE-MAUDE, 'State, getTerm(metaParse(transformModSymb(upModule('WHILE-MAUDE, false), 'State), tokenize("< var('var2) := val(1/1) ; | var('var1) |-> val(p:Real) > {p:Real < 5/1} < {nil}"), 'SEState)), 'FinalState:SEState, nil, '!, unbounded, 0) .
 
-red searchSymb('WHILE-MAUDE, 'State, < var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; } | var('var1) |-> val(p:Real) > {p:Real < 5/1} < {nil}, 'FinalState:SEState, nil, '!, unbounded, 0) .
+red searchSymb('WHILE-MAUDE, 'State, getTerm(metaParse(transformModSymb(upModule('WHILE-MAUDE, false), 'State), tokenize("< var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; } | var('var1) |-> val(p:Real) > {p:Real < 5/1} < {nil}"), 'SEState)), 'FinalState:SEState, nil, '!, unbounded, 0) .
 
-*** Try this (not working):
+
+*** Metaparse symbolic states
 red metaParse(transformModSymb(upModule('WHILE-MAUDE, false), 'State), tokenize("< var('var2) := val(1/1) ; | var('var1) |-> val(p:Real) > {p:Real < 5/1} < {nil}"), 'SEState) .
+rewrites: 29 in 7ms cpu (7ms real) (4142 rewrites/second)
+result ResultPair: {'_`{_`}<`{_`}['<_|_>['_:=_;['var[''var2.Sort], 'val[
+    '1/1.Real]], '_|->_['var[''var1.Sort], 'val['p:Real]]], '_<_['p:Real,
+    '5/1.Real], 'nil.Path], 'SEState}
