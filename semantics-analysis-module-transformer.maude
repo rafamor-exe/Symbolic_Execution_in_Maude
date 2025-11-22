@@ -1,13 +1,10 @@
-load while-semantics-basics.maude
-
+load smt.maude
 *** Test transformer with while language module
-load while-semantics.maude
+load while-semantics-concrete.maude
 
 fmod MODULE-TRANSFORMER is
     pr META-LEVEL .
-    pr LIST{Location} * (sort List{Location} to Path) .
-
-    pr WHILE-SE-BASICS .
+    pr STRING-OPS .
 
     vars T1 T2 Tcond Tmod Constraints Path : Term .
     var AttrSet : AttrSet .
@@ -20,50 +17,129 @@ fmod MODULE-TRANSFORMER is
     var OpDeclSet : OpDeclSet .
     var MembAxSet : MembAxSet .
     var EquationSet : EquationSet .
-    var InstId StateOp : Qid .
-    var M : Module .
-    ***var Tmod : Module .
-    ***var Constraints : BExp .
-    ***var Path : Path .
+    vars InstId StateOp OpId ModId Q : Qid .
+    vars M AccM : Module .
+    var TL : TypeList .
+    var T : Type .
+    var S1 S2 : Sort .
+    var Import : Import .
+    vars ModIdList QL : QidList .
+    var NeTL : NeTermList .
+    var Smain S S' : String .
+    var N? : FindResult .
+    var MVar : Variable .
+    var MConst : Constant .
 
-    *** Symbolic Execution rule structure
-    op rl_{_}<{_}=>_{_}<{_}[_]. : Term Term Term Term Term Term AttrSet -> Rule [ctor] .
-    op crl_{_}<{_}=>_{_}<{_}if_[_]. : Term Term Term Term Term Term Condition AttrSet -> Rule [ctor] .
+    op modRl : Module -> Module .
+    eq modRl(M) = mod 'SYMBOLIC-MOD is
+                    getImports(M)
+                    sorts getSorts(M) .
+                    getSubsorts(M)
+                    getOps(M)
+                    getMbs(M)
+                    getEqs(M)
+                    rlToSymbolic(getRls(M), M)
+                  endm .
 
-
-    op rlToSymbolic : RuleSet -> RuleSet .
-    eq rlToSymbolic(none) = none .
-    eq rlToSymbolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet) = rl '_`{_`}<`{_`}[T1, 'Constraints:BExp, 'Path:Path] => '_`{_`}<`{_`}[T2, 'Constraints:BExp, '__['Path:Path, 'loc[upTerm(InstId)]]] [label(InstId) AttrSet] . rlToSymbolic(RlSet) .
+    op rlToSymbolic : RuleSet Module -> RuleSet .
+    eq rlToSymbolic(none, M) = none .
+    eq rlToSymbolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet, M) = rl '_`{_`}<`{_`}[T1, 'Constraints:Boolean, 'Path:Path] => '_`{_`}<`{_`}[T2, 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]] [label(InstId) AttrSet] . rlToSymbolic(RlSet, M) .
     *** TODO: parametrize language-specific sorts (Map, BExp)
-    ceq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet) = crl '_`{_`}<`{_`}[T1, 'Constraints:BExp, 'Path:Path] => '_`{_`}<`{_`}[T2, 'Constraints:BExp, '__['Path:Path, 'loc[upTerm(InstId)]]] if 'Constraints':BExp := '_/\_['Constraints:BExp, downTerm(Tcond, 'false.BExp)] /\ 'metaCheck[Tmod, 'upTerm['eval['Constraints':BExp, 'STR:Map`{Var`,Value`}]]] = 'true.Bool [label(InstId) AttrSet] . rlToSymbolic(RlSet)
-        if ('metaCheck[Tmod, Tcond] = 'true.Bool) := Cond .
+    ceq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, M) = crl '_`{_`}<`{_`}[T1, 'Constraints:Boolean, 'Path:Path] => '_`{_`}<`{_`}[T2, 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]] if 'Constraints':Boolean := '_and_['Constraints:Boolean, 'evalB[Tcond]] /\ 'metaCheck[upTerm(M), 'upTerm['Constraints':Boolean]] = 'true.Bool [label(InstId) AttrSet] . rlToSymbolic(RlSet, M)
+        if (Tcond = 'val['true.Bool]) := Cond .
 
     op inclSEImports : ImportList -> ImportList .
-    eq inclSEImports(ImportList) = ImportList (protecting 'LIST{'Location} * (sort 'List`{Location`} to 'Path) .) .
+    eq inclSEImports(ImportList) = ImportList
+                                   (including 'BOOLEAN .)
+                                   (protecting 'REAL-INTEGER .)
+                                   (protecting 'LIST{'Location} * (sort 'List`{Location`} to 'Path) .)
+                                   (protecting 'LIST{'Inst} * (sort 'List`{Inst`} to 'Program) .)
+                                   (protecting 'META-LEVEL .) .
 
     op inclSESorts : SortSet -> SortSet .
-    eq inclSESorts(SortSet) = SortSet ; 'SEState ; 'ConstrainedStart ; 'Location .    
+    eq inclSESorts(SortSet) = SortSet ; 'SEState ; 'ConstrainedStart . ***; 'Location    
 
     ***op updateStateSymb : OpDeclSet Qid -> OpDeclSet .
     ***eq updateStateSymb((op 'start : 'Program -> StateOp .) OpDeclSet, StateOp)
+    
+    op toSMTSorts : TypeList -> TypeList .
+    eq toSMTSorts(nil) = nil .
+    eq toSMTSorts('Bool TL) = 'Boolean toSMTSorts(TL) .
+    eq toSMTSorts('Int TL) = 'Integer toSMTSorts(TL) .
+    eq toSMTSorts('Rat TL) = 'Real toSMTSorts(TL) .
+    eq toSMTSorts(T TL) = T toSMTSorts(TL) [owise] .
+
+    op modSESubsorts : SubsortDeclSet -> SubsortDeclSet .
+    eq modSESubsorts(none) = none .
+    eq modSESubsorts((subsort S1 < S2 .) SubsortDeclSet) = (subsort toSMTSorts(S1) < toSMTSorts(S2) .) modSESubsorts(SubsortDeclSet) .
+
+    op useSMTsorts : OpDeclSet -> OpDeclSet .
+    eq useSMTsorts(none) = none .
+    eq useSMTsorts((op OpId : TL -> T [AttrSet] .) OpDeclSet) = (op OpId : toSMTSorts(TL) -> toSMTSorts(T) [AttrSet] .)
+                                                                useSMTsorts(OpDeclSet) . 
 
     *** Define the Symbolic State on top of the casual (concrete) state
-    op inclSEState : OpDeclSet Qid -> OpDeclSet .
-    eq inclSEState(OpDeclSet, StateOp) = OpDeclSet
-                                        (op '_`{_`}<`{_`} : StateOp 'BExp 'Path -> 'SEState [ctor] .)
-                                        (op '_where_ : 'Program 'BExp -> 'ConstrainedStart [ctor] .)
-                                        (op 'loc : 'Qid -> 'Location [ctor] .) .
-                                        ***(op 'start : 'ConstrainedStart -> 'SEState [none] .)
-                                        ***(op 'start : 'ConstrainedStart 'Program -> 'SEState [none] .)
+    op modSEOps : OpDeclSet Qid -> OpDeclSet .
+    eq modSEOps(OpDeclSet, StateOp) = useSMTsorts(OpDeclSet)
+                                      (op '_`{_`}<`{_`} : StateOp 'Boolean 'Path -> 'SEState [ctor] .)
+                                      (op '_where_ : 'Program 'Boolean -> 'ConstrainedStart [ctor] .)
+                                      (op 'evalB : 'BExp -> 'Boolean [none] .) .
+                                      ***(op 'loc : 'Qid -> 'Location [ctor] .)
+                                      ***(op 'start : 'ConstrainedStart -> 'SEState [none] .)
+                                      ***(op 'start : 'ConstrainedStart 'Program -> 'SEState [none] .)
 
-    op transformModSymb : Module Qid -> Module .
-    eq transformModSymb(M, StateOp) = mod 'SYMBOLIC-MOD is
-                                            inclSEImports(getImports(M))
-                                            sorts inclSESorts(getSorts(M)) .
-                                            getSubsorts(M)
-                                            inclSEState(getOps(M), StateOp) getMbs(M) getEqs(M)
-                                            rlToSymbolic(getRls(M))
-                                      endm .
+    op modSEOpIds : Qid -> Qid .
+    eq modSEOpIds('_==_) = '_===_ .
+    eq modSEOpIds('_=/=_) = '_=/==_ . 
+    eq modSEOpIds('_quo_) = '_div_ . 
+    eq modSEOpIds(Q) = Q [owise] .
+
+    op subSEVarSorts : Variable -> Variable .
+    eq subSEVarSorts(MVar) = qid(string(getName(MVar)) + ":" + string(toSMTSorts(getType(MVar)))) .
+
+    op subSEConstSorts : Constant -> Constant .
+    eq subSEConstSorts(MConst) = qid(string(getName(MConst)) + "." + string(toSMTSorts(getType(MConst)))) .
+
+    op subSETerm : TermList -> TermList .
+    eq subSETerm(empty) = empty .
+    eq subSETerm(MConst) = subSEConstSorts(MConst) .
+    eq subSETerm(MVar) = subSEVarSorts(MVar) .
+    eq subSETerm(OpId[T1]) = modSEOpIds(OpId)[subSETerm(T1)] .
+    eq subSETerm(OpId[T1, NeTL]) = modSEOpIds(OpId)[subSETerm(T1), subSETerm(NeTL)] .
+    eq subSETerm((T1, NeTL)) = subSETerm(T1), subSETerm(NeTL) .
+
+
+    op modSEEqs : EquationSet -> EquationSet .
+    eq modSEEqs(none) = none .
+    eq modSEEqs(eq T1 = T2 [AttrSet] . EquationSet) = eq subSETerm(T1) = subSETerm(T2) [AttrSet] .
+                                                      modSEEqs(EquationSet) .
+    
+    op inclSEEqs : -> EquationSet .
+    eq inclSEEqs = (eq 'evalB['val['B:Boolean]] = 'B:Boolean [none] .) .
+
+    op transformModSymb : QidList Qid -> Module .
+    op transformModSymb : QidList Qid Module -> Module .
+    eq transformModSymb(ModIdList, StateOp) = transformModSymb(ModIdList, StateOp, mod 'SEMANTICS is nil sorts none . none none none none none endm) .
+    eq transformModSymb(nil, StateOp, M) = modRl(mod 'SYMBOLIC-MOD is
+                                                    inclSEImports(getImports(M))
+                                                    sorts inclSESorts(getSorts(M)) .
+                                                    modSESubsorts(getSubsorts(M))
+                                                    modSEOps(getOps(M), StateOp)
+                                                    getMbs(M)
+                                                    modSEEqs(getEqs(M)) inclSEEqs *** quo for Int = div for Integer + change var types
+                                                    getRls(M)
+                                                endm) .
+    ceq transformModSymb(ModId ModIdList, StateOp, AccM) = transformModSymb(ModIdList, StateOp,
+                                                                       mod getName(AccM) is
+                                                                        getImports(AccM)
+                                                                        sorts getSorts(M) ; getSorts(AccM) .
+                                                                        getSubsorts(M) getSubsorts(AccM)
+                                                                        getOps(M) getOps(AccM)
+                                                                        getMbs(M) getMbs(AccM)
+                                                                        getEqs(M) getEqs(AccM)
+                                                                        getRls(M) getRls(AccM)
+                                                                       endm)
+        if M := upModule(ModId, false) .
 
     ***eq 'pr = 'protecting .
 
@@ -75,12 +151,15 @@ mod VERIFICATION-COMMANDS is
     pr LEXICAL .
 
     vars ModId StateOp SearchType : Qid .
-    vars InitSEState PatternSEState : Term .
+    var PatternSEState : Term .
+    var InitSEState : String . 
     var SearchCond : Condition .
     var Bound : Bound .
     var SolN : Nat .
+    var ModIdList : QidList .
 
-    op searchSymb : Qid Qid Term Term Condition Qid Bound Nat -> ResultTriple .
+    op searchSymb : Qid Qid String Term Condition Qid Bound Nat -> ResultTriple .
+    op searchSymb : Qid Qid String Term Condition Qid Bound Nat QidList -> ResultTriple .
     eq searchSymb(ModId, StateOp,
                   InitSEState,
                   PatternSEState,
@@ -89,8 +168,24 @@ mod VERIFICATION-COMMANDS is
                   Bound,
                   SolN)
                   =
-                  metaSearch(transformModSymb(upModule(ModId, false), StateOp),
-                             InitSEState,
+                  metaSearch(transformModSymb(ModId, StateOp, mod 'SEMANTICS is nil sorts none . none none none none none endm),
+                             getTerm(metaParse(transformModSymb(ModId, StateOp, mod 'SEMANTICS is nil sorts none . none none none none none endm), tokenize(InitSEState), 'SEState)),
+                             PatternSEState,
+                             SearchCond,
+                             SearchType,
+                             Bound,
+                             SolN) .
+    eq searchSymb(ModId, StateOp,
+                  InitSEState,
+                  PatternSEState,
+                  SearchCond,
+                  SearchType,
+                  Bound,
+                  SolN,
+                  ModIdList)
+                  =
+                  metaSearch(transformModSymb(ModId ModIdList, StateOp, mod 'SEMANTICS is nil sorts none . none none none none none endm),
+                             getTerm(metaParse(transformModSymb(ModId ModIdList, StateOp, mod 'SEMANTICS is nil sorts none . none none none none none endm), tokenize(InitSEState), 'SEState)),
                              PatternSEState,
                              SearchCond,
                              SearchType,
@@ -98,12 +193,3 @@ mod VERIFICATION-COMMANDS is
                              SolN) .
 
 endm
-
-*** Test transformer with while language module
-***mod TEST-TRANSFORM is
-***    pr MODULE-TRANSFORMER .
-***    pr WHILE-MAUDE .
-***
-***    ***op searchSymb : Qid SEState 
-***
-***endm

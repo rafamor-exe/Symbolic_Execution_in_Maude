@@ -4,13 +4,15 @@ search start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('v
 
 *** Custom SE + Concolic
 search start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } } where (p:Real < 5/1), var('var1) := val(p:Real) ;) =>! FinalState:SEState .
-search start(var('z) := val(0) ; while (var('y) < var('x)) do { var('z) := var('z) + val(1) ; var('y) := var('y) + val(1) ; } where (p:Integer < 5 /\ (p:Integer > 0) /\ (q:Integer < 5 /\ (q:Integer > 0))), var('x) := val(p:Integer) ; var('y) := val(q:Integer) ;) =>! FinalState:SEState .
+search start(var('z) := val(0) ; while (var('y) < var('x)) do { var('z) := var('z) + val(1) ; var('y) := var('y) + val(1) ; } where (p:Integer < 5 and (p:Integer > 0) and (q:Integer < 5 and (q:Integer > 0))), var('x) := val(p:Integer) ; var('y) := val(q:Integer) ;) =>! FinalState:SEState .
 
 *** Concrete semantics SMT types + MaudeSE (only works without metaCheck conditions)
 smt-search [1] in WHILE-MAUDE : start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } }, var('var1) := val(p:Real) ;) =>* < nil | STR:Map{Var, Value} > such that p:Real > -3/1 and p:Real < 5/1 using QF_LRA .
 smt-search [2] in WHILE-MAUDE : start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } }, var('var1) := val(p:Real) ;) =>* < nil | STR:Map{Var, Value} > such that p:Real > -3/1 and p:Real < 5/1 using QF_LRA .
 smt-search [3] in WHILE-MAUDE : start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } }, var('var1) := val(p:Real) ;) =>* < nil | STR:Map{Var, Value} > such that p:Real > -3/1 and p:Real < 5/1 using QF_LRA .
 smt-search [4] in WHILE-MAUDE : start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } }, var('var1) := val(p:Real) ;) =>* < nil | STR:Map{Var, Value} > such that p:Real > -3/1 and p:Real < 5/1 using QF_LRA .
+
+smt-search [1] in WHILE-MAUDE : start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; }, var('var1) := val(p:Real) ;) =>* < nil | STR:Map{Var, Value} > such that p:Real > -3/1 and p:Real < 5/1 using QF_LRA .
 
 
 Maude> red rlToSymbolic(rl upTerm('< 'skip ; 'IL '| 'STR '>) => upTerm('< 'IL '| 'STR '>) [none] . none) .
@@ -60,16 +62,10 @@ red transformModSymb(upModule('WHILE-MAUDE, false), 'State) .
 endm
 
 
-***red searchSymb('WHILE-MAUDE, 'State, start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } } where (p:Real < 5/1), var('var1) := val(p:Real) ;), FinalState:SEState, nil, '!, unbounded, 0) .
-***
-***red searchSymb('WHILE-MAUDE, 'State, upTerm('< 'var('var2) := 'val('1/1) ; 'if ('var('var1) '< 'var('var2)) 'then '{ 'var('var3) ':= 'val('0/1) ; '} '| var('var1) |-> val(p:Real) > {p:Real < 5/1} < {nil}), 'FinalState:SEState, nil, '!, unbounded, 0) .
-***
-***red searchSymb('WHILE-MAUDE, 'State, < var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; } | var('var1) |-> val(p:Real) > {p:Real < 5/1} < {nil}, 'FinalState:SEState, nil, '!, unbounded, 0) .
-
 *** Symbolic metasearch over the transformed module
-red searchSymb('WHILE-MAUDE, 'State, getTerm(metaParse(transformModSymb(upModule('WHILE-MAUDE, false), 'State), tokenize("< var('var2) := val(1/1) ; | var('var1) |-> val(p:Real) > {p:Real < 5/1} < {nil}"), 'SEState)), 'FinalState:SEState, nil, '!, unbounded, 0) .
+red searchSymb('WHILE-MAUDE, 'State, "< var('var2) := val(1/1) ; | var('var1) |-> val(p:Real) > {p:Real < 5/1} < {nil}", 'FinalState:SEState, nil, '!, unbounded, 0) .
 
-red searchSymb('WHILE-MAUDE, 'State, getTerm(metaParse(transformModSymb(upModule('WHILE-MAUDE, false), 'State), tokenize("< var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; } | var('var1) |-> val(p:Real) > {p:Real < 5/1} < {nil}"), 'SEState)), 'FinalState:SEState, nil, '!, unbounded, 0) .
+red searchSymb('WHILE-MAUDE, 'State, "< var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; } | var('var1) |-> val(p:Real) > {p:Real < 5/1} < {nil}", 'FinalState:SEState, nil, '!, unbounded, 0) .
 
 
 *** Metaparse symbolic states
@@ -78,3 +74,102 @@ rewrites: 29 in 7ms cpu (7ms real) (4142 rewrites/second)
 result ResultPair: {'_`{_`}<`{_`}['<_|_>['_:=_;['var[''var2.Sort], 'val[
     '1/1.Real]], '_|->_['var[''var1.Sort], 'val['p:Real]]], '_<_['p:Real,
     '5/1.Real], 'nil.Path], 'SEState}
+
+
+
+red rlToSymbolic(crl '<_|_>['__['if_then`{_`}else`{_`}['BExp:BExp, 'IL1:Program,    'IL2:Program], 'IL:Program], 'STR:Map`{Var`,Value`}] => '<_|_>['__[    'IL1:Program, 'IL:Program], 'STR:Map`{Var`,Value`}] if 'eval['BExp:BExp,    'STR:Map`{Var`,Value`}] = 'true.Bool [label('if..then)] .  crl '<_|_>['__['if_then`{_`}else`{_`}['BExp:BExp, 'IL1:Program, 'IL2:Program],    'IL:Program], 'STR:Map`{Var`,Value`}] => '<_|_>['__['IL2:Program,    'IL:Program], 'STR:Map`{Var`,Value`}] if 'not_['eval['BExp:BExp,    'STR:Map`{Var`,Value`}]] = 'true.Bool [label('if..else)] .  crl '<_|_>['__['while_do`{_`}['BExp:BExp, 'IL1:Program], 'IL:Program],    'STR:Map`{Var`,Value`}] => '<_|_>['IL:Program, 'STR:Map`{Var`,Value`}] if    'not_['eval['BExp:BExp, 'STR:Map`{Var`,Value`}]] = 'true.Bool [label(    'while..exit)] .  crl '<_|_>['__['while_do`{_`}['BExp:BExp, 'IL1:Program], 'IL:Program],    'STR:Map`{Var`,Value`}] => '<_|_>['__['IL1:Program, '__['while_do`{_`}[    'BExp:BExp, 'IL1:Program], 'IL:Program]], 'STR:Map`{Var`,Value`}] if 'eval[    'BExp:BExp, 'STR:Map`{Var`,Value`}] = 'true.Bool [label('while..loop)] .) .
+
+*** Current problem:
+  - Operator transformation has to be extended to AExp/BExp definition modules (BUT NOT MAUDE PRELUDE MODULES) 
+
+Maude> red metaParse(transformModSymb(upModule('WHILE-MAUDE, false), 'State), 'val '`( 'p:Rat '`), 'Value) .
+reduce in VERIFICATION-COMMANDS : metaParse(transformModSymb(upModule(
+    'WHILE-MAUDE, false), 'State), 'val '`( 'p:Rat '`), 'Value) .
+rewrites: 67 in 1ms cpu (0ms real) (67000 rewrites/second)
+result ResultPair: {'val['p:Rat], 'Value}
+
+mod TEST1 is
+  protecting INT .
+  sort Value .
+
+  op val : Int -> Value [ctor] .
+endm
+
+mod TEST2 is
+  protecting META-LEVEL .
+
+  var M : Module .
+  op transformMod : Module -> Module .
+  eq transformMod(M) = mod M is
+                            getImports(M)
+                            sorts getSorts(M) ; 'Test .
+                            getSubsorts(M)
+                            getOps(M) (op 't_ : 'Int -> 'Test [ctor] .)
+                            getMbs(M)
+                            getEqs(M)
+                            getRls(M)
+                           endm .
+endm
+
+
+red metaParse(transformModSymb('WHILE-MAUDE, 'State, mod 'SEMANTICS is nil sorts none . none none none none none endm), 'val '`( 'p:Rat '`), 'Value) .
+red metaParse(transformModSymb('WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD, 'State, mod 'SEMANTICS is nil sorts none . none none none none none endm), 'val '`( 'p:Rat '`), 'Value) .
+
+*** Transforming Eqs
+
+***transformModSymb('WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-SE-BASICS 'WHILE-LANG-SE-LOCS-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD, 'State)
+
+red metaParse(transformModSymb('WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-SE-BASICS 'WHILE-LANG-SE-LOCS-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD, 'State), metaPrettyPrint(transformModSymb('WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-SE-BASICS 'WHILE-LANG-SE-LOCS-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD, 'State), subSETerm('val['R1:Rat])) , 'Value) .
+
+*** Why does this work?
+red metaParse(transformModSymb('WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-SE-BASICS 'WHILE-LANG-SE-LOCS-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD, 'State), metaPrettyPrint(transformModSymb('WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-SE-BASICS 'WHILE-LANG-SE-LOCS-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD, 'State), subSETerm('val['_/_['s_['0.Zero], 's_['0.Zero]]])) , 'Value) .
+
+
+red subSETerm('_>=_['val['R1:Rat], 'val['R2:Rat]]) .
+
+
+Summary:
+- The idea is to transform: 
+    '_>=_['val['R1:Rat], 'val['R2:Rat]]
+  to
+    '_>=_['val['R1:Real], 'val['R2:Real]]
+
+Old:
+
+***red replaceStr(toString(metaPrettyPrint(upModule('WHILE-MAUDE, false), '_>=_['val['R1:Rat], 'val['R2:Rat]])), "Rat", "Real") .
+
+***red metaParse(transformModSymb('WHILE-MAUDE, 'State, mod 'SEMANTICS is nil sorts none . none none none none none endm), tokenize(replaceStr(toString(metaPrettyPrint(upModule('WHILE-MAUDE, false), '_>=_['val['R1:Rat], 'val['R2:Rat]], none)), "Rat", "Real")), 'Term) .
+
+***red tokenize(replaceStr(replaceStr(replaceStr(toString(metaPrettyPrint(upModule('WHILE-MAUDE, false), '_>=_['val['R1:Rat], 'val['R2:Rat]], none)), "Rat", "Real"), "(", "["), ")" ,"]")) .
+
+***red metaParse(transformModSymb('WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-SE-BASICS 'WHILE-LANG-SE-LOCS-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD, 'State, mod 'SEMANTICS is nil sorts none . none none none none none endm), tokenize("_>=_[val[R1:Real], val[R2:Real]]"), 'Term) .
+
+***red metaParse(upModule('WHILE-MAUDE, false), tokenize(toString(metaPrettyPrint(upModule('WHILE-MAUDE, false), 'val['R1:Rat], mixfix))), 'Value) .
+
+***red metaParse(transformModSymb('WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-SE-BASICS 'WHILE-LANG-SE-LOCS-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD, 'State), tokenize(replaceStr(toString(metaPrettyPrint(upModule('WHILE-MAUDE, false), 'val['R1:Rat], mixfix)), "Rat", "Real")), 'Value) .
+
+
+Back to symbolic meta-search:
+
+*** Reals have to be disambiguated (by explicitly marking their sort). If not they can be parsed as _/_ for Int sort
+red searchSymb('WHILE-MAUDE, 'State, "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) > {p:Real < (5/1).Real} < {nil}", 'FinalState:SEState, nil, '!, unbounded, 0, 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-SE-BASICS 'WHILE-LANG-SE-LOCS-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD) .
+
+red searchSymb('WHILE-MAUDE, 'State, "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) > {p:Real < (5/1).Real} < {nil}", 'FinalState:SEState, nil, '!, unbounded, 1, 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-SE-BASICS 'WHILE-LANG-SE-LOCS-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD) .
+red searchSymb('WHILE-MAUDE, 'State, "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) > {p:Real < (5/1).Real} < {nil}", 'FinalState:SEState, nil, '!, unbounded, 2, 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-SE-BASICS 'WHILE-LANG-SE-LOCS-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD) .
+
+
+ambiguity({'_`{_`}<`{_`}['<_|_>['__['_:=_;['var[''var2.Sort], 'val[
+    '_/_['s_['0.Zero], 's_['0.Zero]]]], 'if_then`{_`}['_<_['var[''var1.Sort],
+    'var[''var2.Sort]], '_:=_;['var[''var3.Sort], 'val['_/_['0.Zero, 's_[
+    '0.Zero]]]]]], '_|->_['var[''var1.Sort], 'val['p:Real]]], '_<_['p:Real,
+    '5/1.Real], 'nil.Path], 'SEState}, {'_`{_`}<`{_`}['<_|_>['__['_:=_;['var[
+    ''var2.Sort], 'val['1/1.Real]], 'if_then`{_`}['_<_['var[''var1.Sort], 'var[
+    ''var2.Sort]], '_:=_;['var[''var3.Sort], 'val['_/_['0.Zero, 's_['0.Zero]]]]]],
+    '_|->_['var[''var1.Sort], 'val['p:Real]]], '_<_['p:Real, '5/1.Real],
+    'nil.Path], 'SEState})
+
+*** Problem: ifs not working at meta-level now
+- Problem was not being able to reference meta-module by Qid in upModule
+red searchSymb('WHILE-MAUDE, 'State, "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) > {p:Real < (5/1).Real} < {nil}", 'FinalState:SEState, nil, '!, unbounded, 0, 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-SE-BASICS 'WHILE-LANG-SE-LOCS-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD) .
+red metaReduce(transformModSymb('WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-SE-BASICS 'WHILE-LANG-SE-LOCS-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD, 'State), upTerm(metaCheck(transformModSymb('WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-SE-BASICS 'WHILE-LANG-SE-LOCS-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD, 'State), '_and_['_<_['p:Real, '5/1.Real], 'not_['_<_['p:Real, '1/1.Real]]]))) .
+red metaReduce(transformModSymb('WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-SE-BASICS 'WHILE-LANG-SE-LOCS-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD, 'State), '_`{_`}<`{_`}['<_|_>['if_then`{_`}else`{_`}['_<_['var[    ''var1.Sort], 'var[''var2.Sort]], '_:=_;['var[''var3.Sort], 'val['0/1.Real]],    'nil.Program], '_`,_['_|->_['var[''var1.Sort], 'val['p:Real]], '_|->_['var[    ''var2.Sort], 'val['1/1.Real]]]], '_<_['p:Real, '5/1.Real], 'loc[    ''assign.Sort]]) .

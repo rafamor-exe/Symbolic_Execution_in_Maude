@@ -1,5 +1,6 @@
 load smt.maude
-load while-semantics-basics.maude
+load while-semantics-basics-smtTypes.maude
+set trace on .
 
 mod WHILE-MAUDE is
 

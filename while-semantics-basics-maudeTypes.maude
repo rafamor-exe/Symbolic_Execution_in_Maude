@@ -1,0 +1,189 @@
+fmod WHILE-LANG-VARSTATE-MOD is
+
+    protecting RAT .
+
+    sort AExp .
+    sorts Value BVal .
+    subsort Value < AExp .
+
+    op val : Rat -> Value [ctor] .
+    op val : Int -> Value [ctor] .
+    op val : Bool -> BVal [ctor] .
+
+    vars R R1 R2 : Rat .
+    vars B B1 B2 : Bool .
+    vars I I1 I2 : Int .
+
+    op _+_ : Value Value -> Value [gather (E e) prec 33] .
+    eq val(R1) + val(R2) = val(R1 + R2) .
+    eq val(I1) + val(I2) = val(I1 + I2) .
+    op _*_ : Value Value -> Value [gather (E e) prec 31] .
+    eq val(R1) * val(R2) = val(R1 * R2) .
+    eq val(I1) * val(I2) = val(I1 * I2) .
+    op _-_ : Value Value -> Value [gather (E e) prec 33] .
+    eq val(R1) - val(R2) = val(R1 - R2) .
+    eq val(I1) - val(I2) = val(I1 - I2) .
+    op _/_ : Value Value -> Value [gather (E e) prec 31] .
+    eq val(R1) / val(R2) = val(R1 / R2) .
+    eq val(I1) / val(I2) = val(I1 quo I2) . *** quo for Int = div for Integer
+
+    op _===_ : BVal BVal -> BVal [gather (e E) prec 51] .
+    eq val(B1) === val(B2) = val(B1 == B2) .
+    op _=/==_ : BVal BVal -> BVal [gather (e E) prec 51] .
+    eq val(B1) =/== val(B2) = val(B1 =/= B2) .
+    op not_ : BVal -> BVal [prec 53] .
+    eq not val(B1) = val(not B1) .
+    op _and_ : BVal BVal -> BVal [gather (e E) prec 55] .
+    eq val(B1) and val(B2) = val(B1 and B2) .
+    op _or_ : BVal BVal -> BVal [gather (e E) prec 57] .
+    eq val(B1) or val(B2) = val(B1 or B2) .
+    op _xor_ : BVal BVal -> BVal [gather (e E) prec 59] .
+    eq val(B1) xor val(B2) = val(B1 xor B2) .
+    op _implies_ : BVal BVal -> BVal [gather (e E) prec 61] .
+    eq val(B1) implies val(B2) = val(B1 implies B2) .
+
+    op _===_ : Value Value -> BVal [gather (e E) prec 51] .
+    eq val(R1) === val(R2) = val(R1 == R2) .
+    eq val(I1) === val(I2) = val(I1 == I2) .
+    op _=/==_ : Value Value -> BVal [gather (e E) prec 51] .
+    eq val(R1) =/== val(R2) = val(R1 =/= R2) .
+    eq val(I1) =/== val(I2) = val(I1 =/= I2) .
+    op _<_ : Value Value -> BVal [prec 37] .
+    eq val(R1) < val(R2) = val(R1 < R2) .
+    eq val(I1) < val(I2) = val(I1 < I2) .
+    op _<=_ : Value Value -> BVal [prec 37] .
+    eq val(R1) <= val(R2) = val(R1 <= R2) .
+    eq val(I1) <= val(I2) = val(I1 <= I2) .
+    op _>_ : Value Value -> BVal [prec 37] .
+    eq val(R1) > val(R2) = val(R1 > R2) .
+    eq val(I1) > val(I2) = val(I1 > I2) .
+    op _>=_ : Value Value -> BVal [prec 37] .
+    eq val(R1) >= val(R2) = val(R1 >= R2) .
+    eq val(I1) >= val(I2) = val(I1 >= I2) .
+
+endfm
+
+view Value from TRIV to WHILE-LANG-VARSTATE-MOD is
+  sort Elt to Value .
+endv
+
+fmod WHILE-LANG-VAR-MOD is
+
+    protecting QID .
+    protecting WHILE-LANG-VARSTATE-MOD .
+
+    sort Var .
+    subsort Var < AExp .
+
+    op var : Qid -> Var [ctor] .
+
+endfm
+
+view Var from TRIV to WHILE-LANG-VAR-MOD is
+  sort Elt to Var .
+endv
+
+fmod WHILE-LANG-AEXP-MOD is
+
+    protecting WHILE-LANG-VAR-MOD .
+    protecting MAP{Var, Value} .
+
+    sort BExp .
+    subsort BVal < BExp .
+
+    op _+_ : AExp AExp -> AExp [gather (E e) prec 33] .
+    op _*_ : AExp AExp -> AExp [gather (E e) prec 31] .
+    op _-_ : AExp AExp -> AExp [gather (E e) prec 33] .
+    op _/_ : AExp AExp -> AExp [gather (E e) prec 31] .
+
+    op _=_ : AExp AExp -> BVal [gather (e E) prec 51] .
+    op _!=_ : AExp AExp -> BVal [gather (e E) prec 51] .
+    op _<_ : AExp AExp -> BVal [prec 37] .
+    op _<=_ : AExp AExp -> BVal [prec 37] .
+    op _>_ : AExp AExp -> BVal [prec 37] .
+    op _>=_ : AExp AExp -> BVal [prec 37] .
+    op _/\_ : BExp BExp -> BExp [ctor assoc] .
+    ***op not_ : BVal -> BVal .
+
+    op eval : AExp Map{Var, Value} -> Value .
+    op eval : BExp Map{Var, Value} -> BVal .
+
+    vars AExp AExp1 AExp2 : AExp .
+    vars BExp1 BExp : BExp .
+    var STR : Map{Var, Value} .
+    var Var : Var .
+    var V : Value .
+    var B : Bool .
+
+    eq eval(AExp1 + AExp2, STR) = eval(AExp1, STR) + eval(AExp2, STR) .
+    eq eval(AExp1 * AExp2, STR) = eval(AExp1, STR) * eval(AExp2, STR) .
+    eq eval(AExp1 - AExp2, STR) = eval(AExp1, STR) - eval(AExp2, STR) .
+    eq eval(AExp1 / AExp2, STR) = eval(AExp1, STR) / eval(AExp2, STR) .
+    eq eval(AExp1 = AExp2, STR) = eval(AExp1, STR) === eval(AExp2, STR) .
+    eq eval(AExp1 != AExp2, STR) = eval(AExp1, STR) =/== eval(AExp2, STR) .
+    eq eval(AExp1 < AExp2, STR) = eval(AExp1, STR) < eval(AExp2, STR) .
+    eq eval(AExp1 <= AExp2, STR) = eval(AExp1, STR) <= eval(AExp2, STR) .
+    eq eval(AExp1 > AExp2, STR) = eval(AExp1, STR) > eval(AExp2, STR) .
+    eq eval(AExp1 >= AExp2, STR) = eval(AExp1, STR) >= eval(AExp2, STR) .
+    eq eval(BExp1 /\ BExp, STR) = eval(BExp1, STR) and eval(BExp, STR) .
+    eq eval(not BExp1, STR) = not eval(BExp1, STR) .
+    eq eval(Var, ((Var |-> V), STR)) = V .
+    eq eval(V, STR) = V .
+    eq eval(val(B), STR) = val(B) .
+
+    eq not not BExp = BExp .
+
+endfm
+
+fmod WHILE-LANG-INSTS-MOD is
+
+    protecting WHILE-LANG-AEXP-MOD .
+
+    sort Inst .
+
+    op skip ; : -> Inst [ctor prec 20] .
+    op _ := _ ; : Var AExp -> Inst [ctor prec 20] .
+
+endfm
+
+view Inst from TRIV to WHILE-LANG-INSTS-MOD is
+  sort Elt to Inst .
+endv
+
+fmod WHILE-LANG-BLOCK-MOD is
+
+    protecting WHILE-LANG-INSTS-MOD .
+    protecting LIST{Inst} * (sort List{Inst} to Program) .
+
+    op if _ then {_} else {_} : BExp Program Program -> Inst [ctor prec 20] .
+    op if _ then {_} : BExp Program -> Inst [prec 20] .
+
+    op while _ do {_} : BExp Program -> Inst [ctor prec 20] .
+
+    var B : BExp .
+    var IL1 : Program .
+
+    eq if B then {IL1} = if B then {IL1} else {nil} .
+
+endfm
+
+fmod WHILE-BASICS is
+    protecting WHILE-LANG-BLOCK-MOD .
+endfm
+
+fmod WHILE-LANG-SE-LOCS-MOD is
+    protecting QID .
+    sort Location .
+    ops skip assign if1 if2 while1 while2 : -> Location [ctor] .
+    op loc : Qid -> Location [ctor] .
+endfm
+
+view Location from TRIV to WHILE-LANG-SE-LOCS-MOD is
+  sort Elt to Location .
+endv
+
+fmod WHILE-SE-BASICS is
+    protecting WHILE-LANG-BLOCK-MOD .
+    protecting WHILE-LANG-SE-LOCS-MOD .
+    protecting LIST{Location} * (sort List{Location} to Path) .
+endfm

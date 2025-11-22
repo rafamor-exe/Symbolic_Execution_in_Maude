@@ -1,4 +1,4 @@
-search in WHILE-MAUDE : start(if (var('var1) < var('var2)) then {var('var3) := val(q:Real) ;}, var('var1) := val(p:Real) ; var('var2) := val(q:Real) ;) =>* # nil | STR:Map{Var, Value} # {Const:BExp} # {P:Path} .
+search in WHILE-MAUDE : start(if (var('var1) < var('var2)) then {var('var3) := val(q:Real) ;}, var('var1) := val(p:Real) ; var('var2) := val(q:Real) ;) =>* < nil | STR:Map{Var, Value} > {Const:BExp} < {P:Path} .
 Solution 1 (state 2)
 states: 3  rewrites: 21 in 5ms cpu (4ms real) (4200 rewrites/second)
 STR --> var('var1) |-> val(p:Real), var('var2) |-> val(q:Real)
@@ -15,21 +15,21 @@ No more solutions.
 states: 4  rewrites: 24 in 5ms cpu (4ms real) (4800 rewrites/second)
 
 *** Constrained input
-search in WHILE-MAUDE : start(if (var('var1) < toReal(0)) then {var('var2) := val(q:Real) ;} where p:Real > toReal(1), var('var1) := val(p:Real) ;) =>* # nil | STR:Map{Var, Value} # {Const:BExp} # {P:Path} .
+search in WHILE-MAUDE : start(if (var('var1) < toReal(0)) then {var('var2) := val(q:Real) ;} where p:Real > toReal(1), var('var1) := val(p:Real) ;) =>* < nil | STR:Map{Var, Value} > {Const:BExp} < {P:Path} .
 
 
 *** Loop
-search in WHILE-MAUDE : start(var('var2) := val(toReal(1)) ; while (var('var2) < var('var1)) do {var('var2) := var('var2) + toReal(1) ; } where ((p:Real < toReal(5)) and (p:Real > toReal(0))), var('var1) := val(p:Real) ;) =>* # nil | STR:Map{Var, Value} # {Const:BExp} # {P:Path} .
-search in WHILE-MAUDE : start(var('var2) := 1/1 ; while (var('var2) < var('var1)) do {var('var2) := var('var2) + 1/1 ; } where ((p:Real < toReal(5)) and (p:Real > 0/1)), var('var1) := val(p:Real) ;) =>* # nil | STR:Map{Var, Value} # {Const:BExp} # {P:Path} .
+search in WHILE-MAUDE : start(var('var2) := val(toReal(1)) ; while (var('var2) < var('var1)) do {var('var2) := var('var2) + toReal(1) ; } where ((p:Real < toReal(5)) and (p:Real > toReal(0))), var('var1) := val(p:Real) ;) =>* < nil | STR:Map{Var, Value} > {Const:BExp} < {P:Path} .
+search in WHILE-MAUDE : start(var('var2) := 1/1 ; while (var('var2) < var('var1)) do {var('var2) := var('var2) + 1/1 ; } where ((p:Real < toReal(5)) and (p:Real > 0/1)), var('var1) := val(p:Real) ;) =>* < nil | STR:Map{Var, Value} > {Const:BExp} < {P:Path} .
 
 *** Factorial
-search in WHILE-MAUDE : start(var('n) := val(toReal(5)) ; var('res) := val(toReal(1)) ; while (var('n) >= toReal(1)) do {var('res) := var('res) * var('n) ; var('n) := var('n) - toReal(1) ; } where q:Real <= toReal(0)) =>* # nil | (var('res) |-> q:Real, STR:Map{Var, Value}) # {Const:BExp} # {P:Path} .
+search in WHILE-MAUDE : start(var('n) := val(toReal(5)) ; var('res) := val(toReal(1)) ; while (var('n) >= toReal(1)) do {var('res) := var('res) * var('n) ; var('n) := var('n) - toReal(1) ; } where q:Real <= toReal(0)) =>* < nil | (var('res) |-> q:Real, STR:Map{Var, Value}) < {Const:BExp} < {P:Path} .
 
 *** Does not terminate:
-search in WHILE-MAUDE : start(var('n) := val(p:Real) ; var('res) := val(toReal(1)) ; while (var('n) >= toReal(1)) do {var('res) := var('res) * var('n) ; var('n) := var('n) - toReal(1) ; } where (p:Real > toReal(0))) =>* # nil | (var('res) |-> toReal(120), STR:Map{Var, Value}) # {Const:BExp} # {P:Path} .
+search in WHILE-MAUDE : start(var('n) := val(p:Real) ; var('res) := val(toReal(1)) ; while (var('n) >= toReal(1)) do {var('res) := var('res) * var('n) ; var('n) := var('n) - toReal(1) ; } where (p:Real > toReal(0))) =>* < nil | (var('res) |-> toReal(120), STR:Map{Var, Value}) < {Const:BExp} < {P:Path} .
 
 ** Distinct parses + no solution(?)
-search in WHILE-MAUDE : start(var('n) := val(p:Real) ; var('res) := val(toReal(1)) ; while (var('n) >= toReal(1)) do {var('res) := var('res) * var('n) ; var('n) := var('n) - toReal(1) ; } where ((p:Real > toReal(0)) and (p:Real < toReal(6)))) =>* # IL:List{Inst} | (var('res) |-> toReal(120), STR:Map{Var, Value}) # {Const:BExp} # {P:Path} .
+search in WHILE-MAUDE : start(var('n) := val(p:Real) ; var('res) := val(toReal(1)) ; while (var('n) >= toReal(1)) do {var('res) := var('res) * var('n) ; var('n) := var('n) - toReal(1) ; } where ((p:Real > toReal(0)) and (p:Real < toReal(6)))) =>* < IL:List{Inst} | (var('res) |-> toReal(120), STR:Map{Var, Value}) < {Const:BExp} < {P:Path} .
 
 
 

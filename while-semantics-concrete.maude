@@ -1,10 +1,8 @@
-load smt.maude
-load while-semantics-basics-smtTypes.maude
-set trace on .
+load while-semantics-basics-maudeTypes.maude
 
 mod WHILE-MAUDE is
 
-    pr WHILE-BASICS .
+    pr WHILE-SE-BASICS .
 
     sort State .
     
@@ -15,7 +13,6 @@ mod WHILE-MAUDE is
     var BExp BExp2 : BExp .
     vars IL IL1 IL2 P : Program .
     var STR : Map{Var, Value} .
-    var VarState : VarState .
     var AExp : AExp .
     var SVDeclL : Program .
     var V : Value .
@@ -43,24 +40,27 @@ mod WHILE-MAUDE is
         < if BExp then { IL1 } else { IL2 } IL | STR >
         =>
         < IL1 IL | STR >
-        if eval(BExp, STR) = true .
+        if eval(BExp, STR) = val(true) .
 
     crl [if..else] : 
         < if BExp then { IL1 } else { IL2 } IL | STR >
         =>
         < IL2 IL | STR >
-        if eval(BExp, STR) =/== true = true .
+        if (not eval(BExp, STR)) = val(true) .
     
 
     crl [while..loop] : 
         < while BExp do { IL1 } IL | STR >
         =>
         < IL1 while BExp do { IL1 } IL | STR >
-        if eval(BExp, STR) = true .
+        if eval(BExp, STR) = val(true) .
         
     crl [while..exit] : 
         < while BExp do { IL1 } IL | STR >
         =>
         < IL | STR >
-        if eval(BExp, STR) =/== true = true .
+        if (not eval(BExp, STR)) = val(true) .
+
+    *** Ignore
+    op test : Bool Int -> Rat .
 endm
