@@ -61,6 +61,15 @@ mod WHILE-MAUDE is
         < IL | STR >
         if (not eval(BExp, STR)) = val(true) .
 
+    *** Auxiliary
+
+    op getStore : State -> Map{Var, Value} .
+    eq getStore(< P | STR >) = STR .
+    
+    op insertToSt : State Var Value -> State .
+    eq insertToSt(< P | STR >, Var, V) = < P | insert(Var, V, STR) > .
+
+    
     *** Ignore
     op test : Bool Int -> Rat .
 endm
