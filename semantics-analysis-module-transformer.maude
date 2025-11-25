@@ -2,6 +2,20 @@ load smt.maude
 *** Test transformer with while language module
 load while-semantics-concrete.maude
 
+fmod SMT-CONNECTION is
+    pr REAL-INTEGER .
+
+    sort AssignmentSMT .
+
+    op _<--_ : Real Real -> AssignmentSMT [ctor] . *** test syntax
+    op _<--_ : Integer Integer -> AssignmentSMT [ctor] . *** test syntax
+    op _,_ : AssignmentSMT AssignmentSMT -> AssignmentSMT .
+    op failed : -> AssignmentSMT [ctor] .
+
+    op get-SMTassignment : Boolean -> AssignmentSMT [special (id-hook SpecialHubSymbol)] .
+
+endfm
+
 fmod MODULE-TRANSFORMER is
     pr META-LEVEL .
     pr STRING-OPS .
@@ -64,16 +78,27 @@ fmod MODULE-TRANSFORMER is
     ***     - Create another module? Just changing the rules to use the underlying equational theory 
     op rlToConcolic : RuleSet Module -> RuleSet .
     ***eq rlToSymbolic(none, M) = none .
-    ***eq rlToSymbolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet, M) = rl '_`{_`}<`{_`}[T1, 'Constraints:Boolean, 'Path:Path] => '_`{_`}<`{_`}[T2, 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]] [label(InstId) AttrSet] . rlToSymbolic(RlSet, M) .
-    ***ceq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, M) = crl '_`{_`}<`{_`}[T1, 'Constraints:Boolean, 'Path:Path] => '_`{_`}<`{_`}[T2, 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]] if 'Constraints':Boolean := '_and_['Constraints:Boolean, 'evalB[Tcond]] /\ 'metaCheck[upTerm(M), 'upTerm['Constraints':Boolean]] = 'true.Bool [label(InstId) AttrSet] . rlToSymbolic(RlSet, M)
+    ***eq rlToSymbolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet, M) = rl '`[_`]`[_`]`[_`]`[_`]`[_/_`][T1, '_`{_`}<`{_`}[OpId['P:Program, 'SymbSTR:Map`{Var`,Value`}], 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
+    ***                                                                     =>
+    ***                                                                     '`[_`]`[_`]`[_`]`[_`]`[_/_`][T2, '_`{_`}<`{_`}[OpId['P:Program, 'SymbSTR:Map`{Var`,Value`}], 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]                                                                      rlToSymbolic(RlSet, M) .
+    ***ceq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, M) = crl '`[_`]`[_`]`[_`]`[_`]`[_/_`][T1, '_`{_`}<`{_`}[OpId['P:Program, 'SymbSTR:Map`{Var`,Value`}], 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
+    ***                                                                                =>
+    ***                                                                                '`[_`]`[_`]`[_`]`[_`]`[_/_`][T2, '_`{_`}<`{_`}[OpId['P:Program, 'SymbSTR:Map`{Var`,Value`}], 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
+    ***                                                                                if 'Constraints':Boolean := '_and_['Constraints:Boolean, 'evalB[Tcond]] /\ 'metaCheck[upTerm(M), 'upTerm['Constraints':Boolean]] = 'true.Bool [label(InstId) AttrSet] .
+    ***                                                                            crl '`[_`]`[_`]`[_`]`[_`]`[_/_`][T1, '_`{_`}<`{_`}[OpId['P:Program, 'SymbSTR:Map`{Var`,Value`}], 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
+    ***                                                                                =>
+    ***                                                                                '`[_`]`[_`]`[_`]`[_`]`[_/_`][T2, '_`{_`}<`{_`}[OpId['P:Program, 'SymbSTR:Map`{Var`,Value`}], 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
+    ***                                                                                if 'Constraints':Boolean := '_and_['Constraints:Boolean, 'evalB[Tcond]] /\ 'metaCheck[upTerm(M), 'upTerm['Constraints':Boolean]] = 'true.Bool [label(InstId) AttrSet] .
+    ***                                                                            rlToSymbolic(RlSet, M)
     ***    if (Tcond = 'val['true.Bool]) := Cond .
 
     op inclSEImports : ImportList -> ImportList .
     eq inclSEImports(ImportList) = ImportList
                                    (protecting 'REAL-INTEGER .)
-                                   (protecting 'LIST{'Location} * (sort 'List`{Location`} to 'Path) .)
-                                   (protecting 'LIST{'Inst} * (sort 'List`{Inst`} to 'Program) .)
-                                   (protecting 'META-LEVEL .) .
+                                   (protecting 'META-LEVEL .)
+                                   (protecting 'SMT-CONNECTION .) .
+                                   ***(protecting 'LIST{'Location} * (sort 'List`{Location`} to 'Path) .)
+                                   ***(protecting 'LIST{'Inst} * (sort 'List`{Inst`} to 'Program) .)
 
     op inclSESorts : SortSet -> SortSet .
     eq inclSESorts(SortSet) = SortSet ; 'SEState ; 'ConstrainedStart ;
@@ -185,7 +210,7 @@ fmod MODULE-TRANSFORMER is
                                                               endm, TrId) .
     ceq transformModSymb(ModId ModIdList, StateOp, ValOp, TrId, AccM) = transformModSymb(ModIdList, StateOp, ValOp, TrId,
                                                                         mod getName(AccM) is
-                                                                            getImports(AccM)
+                                                                            getImports(M) getImports(AccM)
                                                                             sorts getSorts(M) ; getSorts(AccM) .
                                                                             getSubsorts(M) getSubsorts(AccM)
                                                                             getOps(M) getOps(AccM)

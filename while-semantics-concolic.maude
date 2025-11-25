@@ -3,7 +3,7 @@ load smt-conversion.maude
 load while-semantics-basics-smtTypes.maude
 
 fmod SMT-CONNECTION is
-    pr WHILE-LANG-AEXP-MOD .
+    pr REAL-INTEGER .
 
     sort Assignment .
 
