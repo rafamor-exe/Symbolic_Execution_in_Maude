@@ -20,7 +20,7 @@ mod WHILE-MAUDE is
 
 
     vars Var : Var .
-    var B Constraints Constraints' : Boolean .
+    vars B Constraints Constraints' : Boolean .
     vars BExp BExp2 : BExp .
     vars P IL IL1 IL2 : Program .
     var STR STR' : Map{Var, Value} .
