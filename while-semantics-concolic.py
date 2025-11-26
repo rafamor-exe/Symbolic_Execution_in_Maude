@@ -99,6 +99,11 @@ class SMTAssignmentHook (maude.Hook):
                     #print("int matched")
                     l[i] = re.sub(r'\.Integer', '', l[i])
                     #print(l[i])
+                match_real = re.search(r'.Real', l[i])
+                if match_real:
+                    #print("real matched")
+                    l[i] = re.sub(r'\.Real', '', l[i])
+                    #print(l[i])
         return l, var_dic
 
 def get_args():
@@ -108,27 +113,59 @@ def get_args():
     parser.add_argument("--pattern", action="store", help="Pattern to match", default='')
     parser.add_argument("--svars", action="store", help="Symbolic variables", default=[])
     parser.add_argument("--op", action="store", help="Maude operation", default="search")
+    parser.add_argument("--file", action="store", help="File containing the semantics", default="while-semantics-concolic.maude")
+    parser.add_argument("--mod", action="store", help="Semantics module", default="WHILE-MAUDE")
+
+    parser.add_argument("--modL", action="store", help="List of Maude modules to transform to SMT", default="")
+    parser.add_argument("--stSort", action="store", help="State sort", default="")
+    parser.add_argument("--valOp", action="store", help="Value operator", default="")
+    parser.add_argument("--sCond", action="store", help="Search conditions", default="nil")
+    parser.add_argument("--sType", action="store", help="Search type", default="'!")
+    parser.add_argument("--bound", action="store", help="Search bound", default="unbounded")
+    parser.add_argument("--solN", action="store", help="Solution number", default=0)
     return parser.parse_args()
 
 
 if __name__ == '__main__':
-    maude.init(advise=False)
+    maude.init(advise=True)
     SMThook = SMTAssignmentHook()
     maude.connectEqHook('get-SMTassignment', SMThook)
-    maude.load('while-semantics-concolic.maude')
     args = get_args()
-    wmod = maude.getModule('WHILE-MAUDE')
-    t = wmod.parseTerm(args.program)
-    if args.op == "search":
-        pattern = wmod.parseTerm(args.pattern)
-        #print(t)
-        i = 0
-        for solution, substitution, path, num in t.search(maude.NORMAL_FORM, pattern):
-            print("\n--------------\n", f"[{i}]", solution, 'with SUBS: \n\n', substitution, "\nand PATH:\n\n")
-            #for step in path():
-            #    print(step)
-            print("\n--------------\n")
-            i += 1
+    maude.load(args.file)
+    if args.file == 'while-semantics-concolic.maude':
+        wmod = maude.getModule(args.mod)
+        t = wmod.parseTerm(args.program)
+        if args.op == "search":
+            pattern = wmod.parseTerm(args.pattern)
+            #print(t)
+            i = 0
+            for solution, substitution, path, num in t.search(maude.NORMAL_FORM, pattern):
+                print("\n--------------\n", f"[{i}]", solution, 'with SUBS: \n\n', substitution, "\nand PATH:\n\n")
+                #for step in path():
+                #    print(step)
+                print("\n--------------\n")
+                i += 1
+        else:
+            t.rewrite()
+            print(t)
     else:
-        t.rewrite()
+        # Semantic transformation module loaded
+        # Search over transformed module for concolic execution
+        wmod = maude.getModule('VERIFICATION-COMMANDS')
+        #pattern = wmod.parseTerm(args.pattern)
+        t = "searchConcolic(" \
+                            +args.modL+"," \
+                            +args.stSort+"," \
+                            +args.valOp+"," \
+                            +'\"'+args.program+'\"'+"," \
+                            +args.pattern+"," \
+                            +args.sCond+"," \
+                            +str(args.sType)+"," \
+                            +str(args.bound)+"," \
+                            +str(args.solN)+")"
+        t = wmod.parseTerm(t)
+        t.reduce()
         print(t)
+
+
+    

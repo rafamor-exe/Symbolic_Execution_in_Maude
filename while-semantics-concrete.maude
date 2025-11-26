@@ -12,7 +12,7 @@ mod WHILE-MAUDE is
     vars Var Var1 Var2 : Var .
     var BExp BExp2 : BExp .
     vars IL IL1 IL2 P : Program .
-    var STR : Map{Var, Value} .
+    vars STR STR2 : Map{Var, Value} .
     var AExp : AExp .
     var SVDeclL : Program .
     var V : Value .
@@ -63,8 +63,17 @@ mod WHILE-MAUDE is
 
     *** Auxiliary
 
+    op getProgram : State -> Program .
+    eq getProgram(< P | STR >) = P .
+
     op getStore : State -> Map{Var, Value} .
     eq getStore(< P | STR >) = STR .
+
+    op updateProgram : State Program -> State .
+    eq updateProgram(< P | STR >, IL) = < IL | STR > .
+
+    op updateStore : State Map{Var, Value} -> State .
+    eq updateStore(< P | STR >, STR2) = < P | STR2 > .
     
     op insertToSt : State Var Value -> State .
     eq insertToSt(< P | STR >, Var, V) = < P | insert(Var, V, STR) > .
