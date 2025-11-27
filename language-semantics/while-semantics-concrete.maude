@@ -1,4 +1,4 @@
-load semantics-basics-maudeTypes.maude
+load ../semantics-basics/semantics-basics-maudeTypes.maude
 
 fmod WHILE-LANG-INSTS-MOD is
 

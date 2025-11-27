@@ -1,7 +1,7 @@
-load semantics-basics-smtTypes.maude
+load semantics-basics/semantics-basics-smtTypes.maude
 
 *** Test transformer with while language module
-load while-semantics-concrete.maude
+load language-semantics/while-semantics-concrete.maude
 
 fmod SMT-CONNECTION is
     pr REAL-INTEGER .

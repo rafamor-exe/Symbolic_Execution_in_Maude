@@ -1,21 +1,55 @@
-load smt.maude
-load semantics-basics-smtTypes.maude
-set trace on .
+load ../semantics-basics/semantics-basics-smtTypes.maude
+
+fmod WHILE-LANG-INSTS-MOD is
+
+    pr SMT-AEXP-MOD .
+
+    sort Inst .
+
+    op skip ; : -> Inst [ctor prec 20] .
+    op _ := _ ; : Var AExp -> Inst [ctor prec 20] .
+
+endfm
+
+view Inst from TRIV to WHILE-LANG-INSTS-MOD is
+  sort Elt to Inst .
+endv
+
+fmod WHILE-LANG-BLOCK-MOD is
+
+    pr WHILE-LANG-INSTS-MOD .
+    pr LIST{Inst} * (sort List{Inst} to Program) .
+
+    op if _ then {_} else {_} : BExp Program Program -> Inst [ctor prec 20] .
+    op if _ then {_} : BExp Program -> Inst [prec 20] .
+
+    op while _ do {_} : BExp Program -> Inst [ctor prec 20] .
+
+    var B : BExp .
+    var IL1 : Program .
+
+    eq if B then {IL1} = if B then {IL1} else {nil} .
+
+endfm
+
+fmod WHILE-BASICS is
+    pr WHILE-LANG-BLOCK-MOD .
+endfm
 
 mod WHILE-MAUDE is
 
-    protecting WHILE-BASICS .
-    protecting META-LEVEL * (op _=_ to _=M_) * (op _+_ to _+M_) .
+    pr WHILE-BASICS .
 
     sort State .
     
     op < _ | _ > : Program Map{Var, Value} -> State [ctor] . 
     op errState : -> State [ctor] . 
 
-    vars Var : Var .
-    vars BExp BExp2 : BExp .
+    vars Var Var1 Var2 : Var .
+    var BExp BExp2 : BExp .
     vars IL IL1 IL2 P : Program .
     var STR : Map{Var, Value} .
+    var VarState : VarState .
     var AExp : AExp .
     var SVDeclL : Program .
     var V : Value .
@@ -43,24 +77,24 @@ mod WHILE-MAUDE is
         < if BExp then { IL1 } else { IL2 } IL | STR >
         =>
         < IL1 IL | STR >
-        if metaCheck(upModule('WHILE-MAUDE, false), upTerm(eval(BExp, STR))) .
+        if eval(BExp, STR) = true .
 
     crl [if..else] : 
         < if BExp then { IL1 } else { IL2 } IL | STR >
         =>
         < IL2 IL | STR >
-        if metaCheck(upModule('WHILE-MAUDE, false), upTerm(not eval(BExp, STR))) .
+        if eval(BExp, STR) =/== true = true .
     
 
     crl [while..loop] : 
         < while BExp do { IL1 } IL | STR >
         =>
         < IL1 while BExp do { IL1 } IL | STR >
-        if metaCheck(upModule('WHILE-MAUDE, false), upTerm(eval(BExp, STR))) .
+        if eval(BExp, STR) = true .
         
     crl [while..exit] : 
         < while BExp do { IL1 } IL | STR >
         =>
         < IL | STR >
-        if metaCheck(upModule('WHILE-MAUDE, false), upTerm(not eval(BExp, STR))) .
+        if eval(BExp, STR) =/== true = true .
 endm
