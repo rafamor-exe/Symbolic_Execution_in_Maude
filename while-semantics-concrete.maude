@@ -1,8 +1,44 @@
-load while-semantics-basics-maudeTypes.maude
+load semantics-basics-maudeTypes.maude
+
+fmod WHILE-LANG-INSTS-MOD is
+
+    protecting CONCRETE-AEXP-MOD .
+
+    sort Inst .
+
+    op skip ; : -> Inst [ctor prec 20] .
+    op _ := _ ; : Var AExp -> Inst [ctor prec 20] .
+
+endfm
+
+view Inst from TRIV to WHILE-LANG-INSTS-MOD is
+  sort Elt to Inst .
+endv
+
+fmod WHILE-LANG-BLOCK-MOD is
+
+    protecting WHILE-LANG-INSTS-MOD .
+    protecting LIST{Inst} * (sort List{Inst} to Program) .
+
+    op if _ then {_} else {_} : BExp Program Program -> Inst [ctor prec 20] .
+    op if _ then {_} : BExp Program -> Inst [prec 20] .
+
+    op while _ do {_} : BExp Program -> Inst [ctor prec 20] .
+
+    var B : BExp .
+    var IL1 : Program .
+
+    eq if B then {IL1} = if B then {IL1} else {nil} .
+
+endfm
+
+fmod WHILE-BASICS is
+    protecting WHILE-LANG-BLOCK-MOD .
+endfm
 
 mod WHILE-MAUDE is
 
-    pr WHILE-BASICS .
+    protecting WHILE-BASICS .
 
     sort State .
     

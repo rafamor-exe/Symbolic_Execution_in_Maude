@@ -1,4 +1,5 @@
-load smt.maude
+load semantics-basics-smtTypes.maude
+
 *** Test transformer with while language module
 load while-semantics-concrete.maude
 
@@ -147,8 +148,13 @@ fmod MODULE-TRANSFORMER is
                                                                                 rlToConcolic(RlSet, StateOp, M)
         if (Tcond = 'val['true.Bool]) := Cond .
 
+    op modSEImports : ImportList -> ImportList .
+    eq modSEImports(nil) = nil .
+    eq modSEImports((protecting 'CONCRETE-AEXP-MOD .) ImportList) = (protecting 'SMT-AEXP-MOD .) ImportList .
+    eq modSEImports(Import ImportList) = Import modSEImports(ImportList) [owise] .
+
     op inclSEImports : ImportList -> ImportList .
-    eq inclSEImports(ImportList) = ImportList
+    eq inclSEImports(ImportList) = modSEImports(ImportList)
                                    (protecting 'REAL-INTEGER .)
                                    (protecting 'META-LEVEL .)
                                    (protecting 'SMT-CONNECTION .)
@@ -175,6 +181,7 @@ fmod MODULE-TRANSFORMER is
     ***eq modSESubsorts(none) = none .
     ***eq modSESubsorts((subsort S1 < S2 .) SubsortDeclSet) = (subsort toSMTSorts(S1) < toSMTSorts(S2) .) modSESubsorts(SubsortDeclSet) .
 
+    *** Old definition for transformation of value constructor
     op useSMTsorts : OpDeclSet Qid -> OpDeclSet .
     eq useSMTsorts(none, ValOp) = none .
     eq useSMTsorts((op ValOp : TL -> T [AttrSet] .) OpDeclSet, ValOp) = (op ValOp : toSMTSorts(TL) -> T [AttrSet] .)
@@ -184,10 +191,10 @@ fmod MODULE-TRANSFORMER is
 
     *** Define the Symbolic State on top of the casual (concrete) state
     op modSEOps : OpDeclSet Qid Qid -> OpDeclSet .
-    eq modSEOps(OpDeclSet, StateOp, ValOp) = useSMTsorts(OpDeclSet, ValOp)
+    eq modSEOps(OpDeclSet, StateOp, ValOp) = OpDeclSet ***useSMTsorts(OpDeclSet, ValOp)
                                              (op '_`{_`}<`{_`} : StateOp 'Boolean 'Path -> 'SEState [ctor] .)
                                              (op '_where_ : 'Program 'Boolean -> 'ConstrainedStart [ctor] .)
-                                             (op 'evalB : 'BExp -> 'Boolean [none] .)
+                                             ***(op 'evalB : 'BExp -> 'Boolean [none] .)
                                              (op '`[_`]`[_`]`[_`]`[_`]`[_/_`] : StateOp 'SEState 'Int 'Map`{Var`,Value`} 'Nat 'Bound -> 'ConcolicState [ctor] .)
                                              ***(op '_`[_`]`[_/_`] : 'ConcolicStateCore 'Map`{Var`,Value`} 'Nat 'Bound -> 'ConcolicState [ctor] .)
                                              (op 'init-CStore : 'Map`{Var`,Value`} 'Boolean -> 'Map`{Var`,Value`} [none] .)
