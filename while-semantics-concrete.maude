@@ -2,7 +2,7 @@ load while-semantics-basics-maudeTypes.maude
 
 mod WHILE-MAUDE is
 
-    pr WHILE-SE-BASICS .
+    pr WHILE-BASICS .
 
     sort State .
     
@@ -18,13 +18,7 @@ mod WHILE-MAUDE is
     var V : Value .
 
     op start : Program -> State .
-    eq start(P) = $start(P, nil, empty) .
-    op start : Program Program -> State .
-    eq start(P, nil) = $start(P, nil, empty) .
-    eq start(P, (Var := V ;) SVDeclL) = $start(P, (Var := V ;) SVDeclL, empty) .
-    op $start : Program Program Map{Var, Value} -> State .
-    eq $start(P, nil, STR) = < P | STR > .
-    eq $start(P, (Var := V ;) SVDeclL, STR) = $start(P, SVDeclL, insert(Var, V, STR)) .
+    eq start(P) = < P | empty > .
 
     rl [skip] : 
         < skip ; IL | STR >

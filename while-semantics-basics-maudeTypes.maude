@@ -72,16 +72,22 @@ fmod WHILE-LANG-VAR-MOD is
     protecting QID .
     protecting WHILE-LANG-VARSTATE-MOD .
 
-    sort Var .
+    sorts Var PairVarValue .
     subsort Var < AExp .
 
     op var : Qid -> Var [ctor] .
+
+    ***op _,_ : Var Value -> PairVarValue [ctor] .
 
 endfm
 
 view Var from TRIV to WHILE-LANG-VAR-MOD is
   sort Elt to Var .
 endv
+
+***view PairVarValue from TRIV to WHILE-LANG-VAR-MOD is
+***  sort Elt to PairVarValue .
+***endv
 
 fmod WHILE-LANG-AEXP-MOD is
 
@@ -169,21 +175,4 @@ endfm
 
 fmod WHILE-BASICS is
     protecting WHILE-LANG-BLOCK-MOD .
-endfm
-
-fmod WHILE-LANG-SE-LOCS-MOD is
-    protecting QID .
-    sort Location .
-    ops skip assign if1 if2 while1 while2 : -> Location [ctor] .
-    op loc : Qid -> Location [ctor] .
-endfm
-
-view Location from TRIV to WHILE-LANG-SE-LOCS-MOD is
-  sort Elt to Location .
-endv
-
-fmod WHILE-SE-BASICS is
-    protecting WHILE-LANG-BLOCK-MOD .
-    protecting WHILE-LANG-SE-LOCS-MOD .
-    protecting LIST{Location} * (sort List{Location} to Path) .
 endfm

@@ -16,6 +16,16 @@ fmod SMT-CONNECTION is
 
 endfm
 
+fmod SE-LOCS-MOD is
+    protecting QID .
+    sort Location .
+    op loc : Qid -> Location [ctor] .
+endfm
+
+view Location from TRIV to SE-LOCS-MOD is
+  sort Elt to Location .
+endv
+
 fmod MODULE-TRANSFORMER is
     pr META-LEVEL .
     pr STRING-OPS .
@@ -117,7 +127,7 @@ fmod MODULE-TRANSFORMER is
     ***                                                                           [label(InstId) AttrSet] .
     ***                                                                           rlToConcolic(RlSet, StateOp, M) .
     
-    *** TODO: Generalize hardocded STR variable indicating the concrete store
+    *** TODO: Generalize hardcoded STR variable indicating the concrete store
     ceq rlToConcolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, StateOp, M) = (crl '`[_`]`[_`]`[_`]`[_`]`[_/_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
                                                                                     =>
                                                                                     '`[_`]`[_`]`[_`]`[_`]`[_/_`][T2, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints':Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
@@ -141,8 +151,10 @@ fmod MODULE-TRANSFORMER is
     eq inclSEImports(ImportList) = ImportList
                                    (protecting 'REAL-INTEGER .)
                                    (protecting 'META-LEVEL .)
-                                   (protecting 'SMT-CONNECTION .) .
-                                   ***(protecting 'LIST{'Location} * (sort 'List`{Location`} to 'Path) .)
+                                   (protecting 'SMT-CONNECTION .)
+                                   (protecting 'SE-LOCS-MOD .)
+                                   (protecting 'LIST{'Location} * (sort 'List`{Location`} to 'Path) .) .
+                                   ***(protecting 'LIST{'PairVarValue} .)
                                    ***(protecting 'LIST{'Inst} * (sort 'List`{Inst`} to 'Program) .)
 
     op inclSESorts : SortSet -> SortSet .
@@ -179,9 +191,12 @@ fmod MODULE-TRANSFORMER is
                                              (op '`[_`]`[_`]`[_`]`[_`]`[_/_`] : StateOp 'SEState 'Int 'Map`{Var`,Value`} 'Nat 'Bound -> 'ConcolicState [ctor] .)
                                              ***(op '_`[_`]`[_/_`] : 'ConcolicStateCore 'Map`{Var`,Value`} 'Nat 'Bound -> 'ConcolicState [ctor] .)
                                              (op 'init-CStore : 'Map`{Var`,Value`} 'Boolean -> 'Map`{Var`,Value`} [none] .)
-                                             (op '$apply-SMTassignment : 'Map`{Var`,Value`} 'AssignmentSMT -> 'Map`{Var`,Value`} [none] .)
-                                             ***(op 'size : 'Boolean -> 'Nat [none] .) .
-                                             ***(op 'loc : 'Qid -> 'Location [ctor] .)
+                                             (op '$apply-SMTassignment : 'Map`{Var`,Value`} 'AssignmentSMT -> 'Map`{Var`,Value`} [none] .) .
+                                             ***(op 'size : 'Boolean -> 'Nat [none] .)
+                                             ***(op 'start : 'Program 'List`{PairVarValue`} -> 'SEState [none] .)
+                                             ***(op 'start : 'ConstrainedStart 'List`{PairVarValue`} -> 'SEState [none] .)
+                                             ***(op '$start : StateOp 'List`{PairVarValue`} 'Map`{Var`,Value`} 'Boolean -> 'SEState [none] .)
+                                             
                                              ***(op 'start : 'ConstrainedStart -> 'SEState [none] .)
                                              ***(op 'start : 'ConstrainedStart 'Program -> 'SEState [none] .)
 
@@ -230,16 +245,20 @@ fmod MODULE-TRANSFORMER is
     eq modSEEqs(eq T1 = T2 [AttrSet] . EquationSet, ValOp) = eq subSETermL(T1, ValOp) = subSETermL(T2, ValOp) [AttrSet] .
                                                              modSEEqs(EquationSet, ValOp) .
     
-    op inclSEEqs : -> EquationSet .
-    eq inclSEEqs = (eq 'evalB['val['B:Boolean]] = 'B:Boolean [none] .)
-                   (eq 'init-CStore['STR:Map`{Var`,Value`}, 'Constraints:Boolean] = '$apply-SMTassignment['STR:Map`{Var`,Value`}, 'get-SMTassignment['Constraints:Boolean]] [none] .)
-                   (eq '$apply-SMTassignment['_`,_['_|->_['Var:Var, 'val['R:Real]], 'STR:Map`{Var`,Value`}], '_<--_['R:Real, 'Rconc:Real]] = '_`,_['_|->_['Var:Var, 'val['Rconc:Real]], 'STR:Map`{Var`,Value`}] [none] .)
-                   (eq '$apply-SMTassignment['_`,_['_|->_['Var:Var, 'val['R:Real]], 'STR:Map`{Var`,Value`}], '_`,_['_<--_['R:Real, 'Rconc:Real], 'AssignmentSMT:AssignmentSMT]] = '_`,_['_|->_['Var:Var, 'val['Rconc:Real]], '$apply-SMTassignment['STR:Map`{Var`,Value`}, 'AssignmentSMT:AssignmentSMT]] [none] .)
-                   (eq '$apply-SMTassignment['_`,_['_|->_['Var:Var, 'val['I:Integer]], 'STR:Map`{Var`,Value`}], '_<--_['I:Integer, 'Iconc:Integer]] = '_`,_['_|->_['Var:Var, 'val['Iconc:Integer]], 'STR:Map`{Var`,Value`}] [none] .)
-                   (eq '$apply-SMTassignment['_`,_['_|->_['Var:Var, 'val['I:Integer]], 'STR:Map`{Var`,Value`}], '_`,_['_<--_['I:Integer, 'Iconc:Integer], 'AssignmentSMT:AssignmentSMT]] = '_`,_['_|->_['Var:Var, 'val['Iconc:Integer]], '$apply-SMTassignment['STR:Map`{Var`,Value`}, 'AssignmentSMT:AssignmentSMT]] [none] .)
-                   (eq '$apply-SMTassignment['STR:Map`{Var`,Value`}, 'failed.AssignmentSMT] = 'STR:Map`{Var`,Value`} [none] .)
-                   ***(eq 'size['C1:Boolean] = ''s_['0.Nat] [none] .)
-                   ***(eq 'size['_and_['C1:Boolean, 'Constraints:Boolean]] = ''s_['0.Nat] + 'size['Constraints:Boolean] [none] .) .
+    op inclSEEqs : Qid -> EquationSet .
+    eq inclSEEqs(StateOp) = (eq 'evalB['val['B:Boolean]] = 'B:Boolean [none] .)
+                            (eq 'init-CStore['STR:Map`{Var`,Value`}, 'Constraints:Boolean] = '$apply-SMTassignment['STR:Map`{Var`,Value`}, 'get-SMTassignment['Constraints:Boolean]] [none] .)
+                            (eq '$apply-SMTassignment['_`,_['_|->_['Var:Var, 'val['R:Real]], 'STR:Map`{Var`,Value`}], '_<--_['R:Real, 'Rconc:Real]] = '_`,_['_|->_['Var:Var, 'val['Rconc:Real]], 'STR:Map`{Var`,Value`}] [none] .)
+                            (eq '$apply-SMTassignment['_`,_['_|->_['Var:Var, 'val['R:Real]], 'STR:Map`{Var`,Value`}], '_`,_['_<--_['R:Real, 'Rconc:Real], 'AssignmentSMT:AssignmentSMT]] = '_`,_['_|->_['Var:Var, 'val['Rconc:Real]], '$apply-SMTassignment['STR:Map`{Var`,Value`}, 'AssignmentSMT:AssignmentSMT]] [none] .)
+                            (eq '$apply-SMTassignment['_`,_['_|->_['Var:Var, 'val['I:Integer]], 'STR:Map`{Var`,Value`}], '_<--_['I:Integer, 'Iconc:Integer]] = '_`,_['_|->_['Var:Var, 'val['Iconc:Integer]], 'STR:Map`{Var`,Value`}] [none] .)
+                            (eq '$apply-SMTassignment['_`,_['_|->_['Var:Var, 'val['I:Integer]], 'STR:Map`{Var`,Value`}], '_`,_['_<--_['I:Integer, 'Iconc:Integer], 'AssignmentSMT:AssignmentSMT]] = '_`,_['_|->_['Var:Var, 'val['Iconc:Integer]], '$apply-SMTassignment['STR:Map`{Var`,Value`}, 'AssignmentSMT:AssignmentSMT]] [none] .)
+                            (eq '$apply-SMTassignment['STR:Map`{Var`,Value`}, 'failed.AssignmentSMT] = 'STR:Map`{Var`,Value`} [none] .) .
+                            ***(eq 'size['C1:Boolean] = ''s_['0.Nat] [none] .)
+                            ***(eq 'size['_and_['C1:Boolean, 'Constraints:Boolean]] = ''s_['0.Nat] + 'size['Constraints:Boolean] [none] .)
+                            ***(eq 'start['P:Program, 'SVDeclL:List`{PairVarValue`}] = '$start['start['P:Program], 'SVDeclL:List`{PairVarValue`}, 'empty.Map`{Var`,Value`}, 'true.Boolean] [none] .)
+                            ***(eq 'start['_where_['P:Program, 'B:Boolean, 'SVDeclL:List`{PairVarValue`}]] = '$start['start['P:Program], 'SVDeclL:List`{PairVarValue`}, 'empty.Map`{Var`,Value`}, 'B:Boolean] [none] .)
+                            ***(eq '$start[stateVar(StateOp), nil, 'STR:Map`{Var`,Value`}, 'B:Boolean] = '_`{_`}<`{_`}['updateStore[stateVar(StateOp), 'STR:Map`{Var`,Value`}], 'B:Boolean, 'nil.Path] [none] .)
+                            ***(eq '$start[stateVar(StateOp), '__['_`,_['Var:Var, 'V:Value], 'SVDeclL:List`{PairVarValue`}], 'STR:Map`{Var`,Value`}, 'B:Boolean] = '$start[stateVar(StateOp), 'SVDeclL:List`{PairVarValue`}, 'insert['Var:Var, 'V:Value, 'STR:Map`{Var`,Value`}], 'B:Boolean] [none] .)
 
     ***op transformModSymb : Module Qid Qid -> Module .
     ***op transformModSymb : Module Qid Qid Qid Qid Qid -> Module .
@@ -249,7 +268,7 @@ fmod MODULE-TRANSFORMER is
     ***                                            getSubsorts(M)
     ***                                            modSEOps(getOps(M), StateOp, ValOp)
     ***                                            getMbs(M)
-    ***                                            modSEEqs(getEqs(M), ValOp) inclSEEqs
+    ***                                            modSEEqs(getEqs(M), ValOp) inclSEEqs(StateOp)
     ***                                            getRls(M)
     ***                                         endm) .
     op transformModSymb : QidList Qid Qid Qid -> Module .
@@ -261,7 +280,7 @@ fmod MODULE-TRANSFORMER is
                                                                 getSubsorts(M)
                                                                 modSEOps(getOps(M), StateOp, ValOp)
                                                                 getMbs(M)
-                                                                modSEEqs(getEqs(M), ValOp) inclSEEqs
+                                                                modSEEqs(getEqs(M), ValOp) inclSEEqs(StateOp)
                                                                 getRls(M)
                                                               endm, StateOp, TrId) .
     ceq transformModSymb(ModId ModIdList, StateOp, ValOp, TrId, AccM) = transformModSymb(ModIdList, StateOp, ValOp, TrId,

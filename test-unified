@@ -2,6 +2,23 @@
 
 search start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } }, var('var1) := val(-1/1) ;) =>! FinalState:State .
 
+*****************
+*** Unified system
+'WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD  'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD
+
+red searchSymb('WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD, 'State, 'val, "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) > {p:Real < (5/1).Real} < {nil}", 'FinalState:SEState, nil, '!, unbounded, 1) .
+
+red transformModSymb('WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD, 'State, 'val, 'symb) .
+red transformModSymb('WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD, 'State, 'val, 'conc) .
+
+-------------
+*** Concolic
+python3 while-semantics-concolic.py --program "[< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | \$apply-SMTassignment(var('var1) |-> val(p:Real), get-SMTassignment(p:Real < 5/1))>][< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | var('var1) |-> val(p:Real) >{p:Real < 5/1}<{nil}][1][var('var1) |-> val(p:Real)][0 / unbounded]" --pattern "'ConcS:ConcolicState" --file "semantics-analysis-module-transformer.maude" --modL "'WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD" --stSort "'State" --valOp "'val" --solN 0
+python3 while-semantics-concolic.py --program "[< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | \$apply-SMTassignment(var('var1) |-> val(p:Real), get-SMTassignment(p:Real < 5/1))>][< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | var('var1) |-> val(p:Real) >{p:Real < 5/1}<{nil}][1][var('var1) |-> val(p:Real)][0 / unbounded]" --pattern "'ConcS:ConcolicState" --file "semantics-analysis-module-transformer.maude" --modL "'WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD" --stSort "'State" --valOp "'val" --solN 1
+
+
+**********************
+
 *** Custom SE + Concolic
 search start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } } where (p:Real < 5/1), var('var1) := val(p:Real) ;) =>! FinalState:SEState .
 search start(var('z) := val(0) ; while (var('y) < var('x)) do { var('z) := var('z) + val(1) ; var('y) := var('y) + val(1) ; } where (p:Integer < 5 and (p:Integer > 0) and (q:Integer < 5 and (q:Integer > 0))), var('x) := val(p:Integer) ; var('y) := val(q:Integer) ;) =>! FinalState:SEState .
@@ -158,20 +175,6 @@ red searchSymb('WHILE-MAUDE, 'State, "< var('var2) := val((1/1).Real) ; if (var(
 red searchSymb('WHILE-MAUDE, 'State, "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) > {p:Real < (5/1).Real} < {nil}", 'FinalState:SEState, nil, '!, unbounded, 2, 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-SE-BASICS 'WHILE-LANG-SE-LOCS-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD) .
 
 --------------------------
-'WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-SE-BASICS 'WHILE-LANG-SE-LOCS-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD
-
-red searchSymb('WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-SE-BASICS 'WHILE-LANG-SE-LOCS-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD, 'State, 'val, "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) > {p:Real < (5/1).Real} < {nil}", 'FinalState:SEState, nil, '!, unbounded, 1) .
-
-red transformModSymb('WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-SE-BASICS 'WHILE-LANG-SE-LOCS-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD, 'State, 'val, 'symb) .
-red transformModSymb('WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-SE-BASICS 'WHILE-LANG-SE-LOCS-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD, 'State, 'val, 'conc) .
-
-
--------------
-*** Concolic
-python3 while-semantics-concolic.py --program "[< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | \$apply-SMTassignment(var('var1) |-> val(p:Real), get-SMTassignment(p:Real < 5/1))>][< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | var('var1) |-> val(p:Real) >{p:Real < 5/1}<{nil}][1][var('var1) |-> val(p:Real)][0 / unbounded]" --pattern "'ConcS:ConcolicState" --file "semantics-analysis-module-transformer.maude" --modL "'WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-SE-BASICS 'WHILE-LANG-SE-LOCS-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD" --stSort "'State" --valOp "'val" --solN 0
-python3 while-semantics-concolic.py --program "[< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | \$apply-SMTassignment(var('var1) |-> val(p:Real), get-SMTassignment(p:Real < 5/1))>][< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | var('var1) |-> val(p:Real) >{p:Real < 5/1}<{nil}][1][var('var1) |-> val(p:Real)][0 / unbounded]" --pattern "'ConcS:ConcolicState" --file "semantics-analysis-module-transformer.maude" --modL "'WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-SE-BASICS 'WHILE-LANG-SE-LOCS-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD" --stSort "'State" --valOp "'val" --solN 1
-
-
 
 *** InitState
 < var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) > {p:Real < (5/1).Real} < {nil}
@@ -186,7 +189,7 @@ python3 while-semantics-concolic.py --program "[< var('var2) := val((1/1).Real) 
     val(p:Real) >{p:Real < 5/1}<{nil}][1][var('var1) |-> val(p:Real)][0 / unbounded]
 
 *** Updated: tokens are correctly generated
-red metaParse(transformModSymb('WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-SE-BASICS 'WHILE-LANG-SE-LOCS-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD, 'State, 'val, 'conc), tokenize("[< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | \$apply-SMTassignment(var('var1) |-> val(p:Real), get-SMTassignment(p:Real < 5/1))>][< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | var('var1) |-> val(p:Real) >{p:Real < 5/1}<{nil}][1][var('var1) |-> val(p:Real)][0 / unbounded]"), 'ConcolicState) .
+red metaParse(transformModSymb('WHILE-MAUDE 'WHILE-LANG-VARSTATE-MOD 'WHILE-LANG-AEXP-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD 'WHILE-LANG-VAR-MOD, 'State, 'val, 'conc), tokenize("[< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | \$apply-SMTassignment(var('var1) |-> val(p:Real), get-SMTassignment(p:Real < 5/1))>][< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | var('var1) |-> val(p:Real) >{p:Real < 5/1}<{nil}][1][var('var1) |-> val(p:Real)][0 / unbounded]"), 'ConcolicState) .
 
 ----- Not anymore:
 red searchSymb('WHILE-MAUDE, 'State, 'val, "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) > {p:Real < (5/1).Real} < {nil}", 'FinalState:SEState, nil, '!, unbounded, 1) .
