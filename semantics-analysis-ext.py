@@ -117,6 +117,7 @@ def get_args():
     parser.add_argument("--file", action="store", help="File containing the semantics", default=ADHOC_CONCOLIC_IMPL)
     parser.add_argument("--mod", action="store", help="Semantics module", default="WHILE-MAUDE")
 
+    parser.add_argument("--analysis", action="store", help="Type of analysis to perform (e.g.: maude-se, concolic)", default="")
     parser.add_argument("--modL", action="store", help="List of Maude modules to transform to SMT", default="")
     parser.add_argument("--stSort", action="store", help="State sort", default="")
     parser.add_argument("--valOp", action="store", help="Value operator", default="")
@@ -124,6 +125,11 @@ def get_args():
     parser.add_argument("--sType", action="store", help="Search type", default="'!")
     parser.add_argument("--bound", action="store", help="Search bound", default="unbounded")
     parser.add_argument("--solN", action="store", help="Solution number", default=0)
+
+    parser.add_argument("--maudeDir", action="store", help="Path to Maude", default="")
+    parser.add_argument("--maudeSEDir", action="store", help="Path to MaudeSE Python library", default="")
+    parser.add_argument("--logic", action="store", help="Logic to use in MaudeSE analysis", default="'QF_LRA")
+    parser.add_argument("--fold", action="store", help="Allow folding in MaudeSE analysis", default="false")
     return parser.parse_args()
 
 
@@ -132,8 +138,8 @@ if __name__ == '__main__':
     SMThook = SMTAssignmentHook()
     maude.connectEqHook('get-SMTassignment', SMThook)
     args = get_args()
-    maude.load(args.file)
     if args.file == ADHOC_CONCOLIC_IMPL:
+        maude.load(args.file)
         wmod = maude.getModule(args.mod)
         t = wmod.parseTerm(args.program)
         if args.op == "search":
@@ -152,20 +158,40 @@ if __name__ == '__main__':
     else:
         # Semantic transformation module loaded
         # Search over transformed module for concolic execution
-        wmod = maude.getModule('VERIFICATION-COMMANDS')
-        #pattern = wmod.parseTerm(args.pattern)
-        t = "searchConcolic(" \
-                            +args.modL+"," \
-                            +args.stSort+"," \
-                            +args.valOp+"," \
-                            +'\"'+args.program+'\"'+"," \
-                            +args.pattern+"," \
-                            +args.sCond+"," \
-                            +str(args.sType)+"," \
-                            +str(args.bound)+"," \
-                            +str(args.solN)+")"
-        t = wmod.parseTerm(t)
-        t.reduce()
+        if args.analysis == "concolic":
+            maude.load(args.file)
+            wmod = maude.getModule('VERIFICATION-COMMANDS')
+            #pattern = wmod.parseTerm(args.pattern)
+            t = "searchConcolic(" \
+                                +args.modL+"," \
+                                +args.stSort+"," \
+                                +args.valOp+"," \
+                                +'\"'+args.program+'\"'+"," \
+                                +args.pattern+"," \
+                                +args.sCond+"," \
+                                +str(args.sType)+"," \
+                                +str(args.bound)+"," \
+                                +str(args.solN)+")"
+            t = wmod.parseTerm(t)
+            t.reduce()
+        elif args.analysis == "maude-se":
+            maude.load(args.maudeDir + "/smt.maude")
+            maude.load(args.maudeSEDir + "/maude/smt-check.maude")
+            maude.load(args.file)
+            wmod = maude.getModule('MAUDE-SE-EXT')
+            t = "searchMaudeSE(" \
+                               +args.modL+"," \
+                               +args.stSort+"," \
+                               +'\"'+args.program+'\"'+"," \
+                               +args.pattern+"," \
+                               +args.sCond+"," \
+                               +str(args.sType)+"," \
+                               +str(args.bound)+"," \
+                               +str(args.solN)+"," \
+                               +str(args.logic)+"," \
+                               +str(args.fold)+")"
+            t = wmod.parseTerm(t)
+            t.reduce()
         print(t)
 
 

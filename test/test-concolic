@@ -1,12 +1,12 @@
-python3 while-semantics-concolic.py --program "start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; } where (p:Real < 5/1), (var('var1), val(p:Real)))"
+python3 semantics-analysis-ext.py --program "start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; } where (p:Real < 5/1), (var('var1), val(p:Real)))"
 
-python3 while-semantics-concolic.py --program "start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; } where (p:Real < 5/1), (var('var1), val(p:Real)))" --pattern "ConcS:ConcolicState"
+python3 semantics-analysis-ext.py --program "start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; } where (p:Real < 5/1), (var('var1), val(p:Real)))" --pattern "ConcS:ConcolicState"
 
-python3 while-semantics-concolic.py --program "start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; } } where (p:Real < 5/1), (var('var1), val(p:Real)))" --pattern "ConcS:ConcolicState"
+python3 semantics-analysis-ext.py --program "start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; } } where (p:Real < 5/1), (var('var1), val(p:Real)))" --pattern "ConcS:ConcolicState"
 
-python3 while-semantics-concolic.py --program "start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } } where (p:Real < 5/1), (var('var1), val(p:Real)))" --pattern "ConcS:ConcolicState"
+python3 semantics-analysis-ext.py --program "start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } } where (p:Real < 5/1), (var('var1), val(p:Real)))" --pattern "ConcS:ConcolicState"
 
-python3 while-semantics-concolic.py
+python3 semantics-analysis-ext.py
     --program "start(
                 var('var2) := val(1/1) ;
                 if (var('var1) < var('var2)) then {
@@ -21,12 +21,12 @@ python3 while-semantics-concolic.py
                where (p:Real < 5/1), (var('var1), val(p:Real)))"
     --pattern "ConcS:ConcolicState"
 
-python3 while-semantics-concolic.py --program "start(var('var2) := val(0/1) ; while (var('var2) < var('var1)) do { var('var2) := var('var2) + val(1/1) ; } where (p:Real < 5/1), (var('var1), val(p:Real)))" --pattern "ConcS:ConcolicState"
-python3 while-semantics-concolic.py --program "start(var('var2) := val(0/1) ; while (var('var2) < var('var1)) do { var('var2) := var('var2) + val(1/1) ; } where (p:Real < 5/1), (var('var1), val(p:Real)), 5)" --pattern "ConcS:ConcolicState"
+python3 semantics-analysis-ext.py --program "start(var('var2) := val(0/1) ; while (var('var2) < var('var1)) do { var('var2) := var('var2) + val(1/1) ; } where (p:Real < 5/1), (var('var1), val(p:Real)))" --pattern "ConcS:ConcolicState"
+python3 semantics-analysis-ext.py --program "start(var('var2) := val(0/1) ; while (var('var2) < var('var1)) do { var('var2) := var('var2) + val(1/1) ; } where (p:Real < 5/1), (var('var1), val(p:Real)), 5)" --pattern "ConcS:ConcolicState"
 
-python3 while-semantics-concolic.py --program "start(var('var2) := val(0) ; while (var('var2) < var('var1)) do { var('var2) := var('var2) + val(1) ; } where (p:Integer >= 0), (var('var1), val(p:Integer)), 6)" --pattern "ConcS:ConcolicState"
+python3 semantics-analysis-ext.py --program "start(var('var2) := val(0) ; while (var('var2) < var('var1)) do { var('var2) := var('var2) + val(1) ; } where (p:Integer >= 0), (var('var1), val(p:Integer)), 6)" --pattern "ConcS:ConcolicState"
 
-python3 while-semantics-concolic.py
+python3 semantics-analysis-ext.py
     --program "start(
                 var('var2) := val(0/1) ;
                 while (var('var2) < var('var1)) do {
@@ -35,18 +35,18 @@ python3 while-semantics-concolic.py
                where (p:Real < 5/1), (var('var1), val(p:Real)))"
     --pattern "ConcS:ConcolicState"
 
-python3 while-semantics-concolic.py --program "start(var('var2) := val(0) ; while (var('var1) < var('var2)) do { var('var1) := var('var1) + val(1) ; } where (p:Integer >= -1000), (var('var1), val(p:Integer)), 6)" --pattern "ConcS:ConcolicState"
+python3 semantics-analysis-ext.py --program "start(var('var2) := val(0) ; while (var('var1) < var('var2)) do { var('var1) := var('var1) + val(1) ; } where (p:Integer >= -1000), (var('var1), val(p:Integer)), 6)" --pattern "ConcS:ConcolicState"
 
 
-python3 while-semantics-concolic.py --program "start(var('z) := val(0/1) ; while (var('y) < var('x)) do { var('z) := var('z) + val(1/1) ; var('y) := var('y) + val(1/1) ; } where (p:Real < 5/1 and (p:Real > 0/1) and (q:Real < 5/1 and (q:Real > 0/1))), (var('x), val(p:Real)) (var('y), val(q:Real)))" --pattern "ConcS:ConcolicState"
+python3 semantics-analysis-ext.py --program "start(var('z) := val(0/1) ; while (var('y) < var('x)) do { var('z) := var('z) + val(1/1) ; var('y) := var('y) + val(1/1) ; } where (p:Real < 5/1 and (p:Real > 0/1) and (q:Real < 5/1 and (q:Real > 0/1))), (var('x), val(p:Real)) (var('y), val(q:Real)))" --pattern "ConcS:ConcolicState"
 
-python3 while-semantics-concolic.py --program "start(var('z) := val(0/1) ; while (var('y) < var('x)) do { var('z) := var('z) + val(1/1) ; var('y) := var('y) + val(1/1) ; } where (p:Real < 1000/1 and (p:Real > 0/1) and (q:Real < 5/1 and (q:Real > 0/1))), (var('x), val(p:Real)) (var('y), val(q:Real)))" --pattern "ConcS:ConcolicState"
+python3 semantics-analysis-ext.py --program "start(var('z) := val(0/1) ; while (var('y) < var('x)) do { var('z) := var('z) + val(1/1) ; var('y) := var('y) + val(1/1) ; } where (p:Real < 1000/1 and (p:Real > 0/1) and (q:Real < 5/1 and (q:Real > 0/1))), (var('x), val(p:Real)) (var('y), val(q:Real)))" --pattern "ConcS:ConcolicState"
 
-python3 while-semantics-concolic.py --program "start(var('z) := val(0/1) ; while (var('y) < var('x)) do { var('z) := var('z) + val(1/1) ; var('y) := var('y) + val(1/1) ; } where ((p:Real < 5/1) and (p:Real > 0/1) and (q:Real < 5/1) and (q:Real > 0/1)), (var('x), val(p:Real)) (var('y), val(q:Real)))" --pattern "ConcS:ConcolicState"
+python3 semantics-analysis-ext.py --program "start(var('z) := val(0/1) ; while (var('y) < var('x)) do { var('z) := var('z) + val(1/1) ; var('y) := var('y) + val(1/1) ; } where ((p:Real < 5/1) and (p:Real > 0/1) and (q:Real < 5/1) and (q:Real > 0/1)), (var('x), val(p:Real)) (var('y), val(q:Real)))" --pattern "ConcS:ConcolicState"
 
-python3 while-semantics-concolic.py --program "start(var('z) := val(0) ; while (var('y) < var('x)) do { var('z) := var('z) + val(1) ; var('y) := var('y) + val(1) ; } where (p:Integer < 5 and (p:Integer > 0) and (q:Integer < 5 and (q:Integer > 0))), (var('x), val(p:Integer)) (var('y), val(q:Integer)))" --pattern "ConcS:ConcolicState"
+python3 semantics-analysis-ext.py --program "start(var('z) := val(0) ; while (var('y) < var('x)) do { var('z) := var('z) + val(1) ; var('y) := var('y) + val(1) ; } where (p:Integer < 5 and (p:Integer > 0) and (q:Integer < 5 and (q:Integer > 0))), (var('x), val(p:Integer)) (var('y), val(q:Integer)))" --pattern "ConcS:ConcolicState"
 
-python3 while-semantics-concolic.py
+python3 semantics-analysis-ext.py
     --program "start(
                 var('z) := val(0/1) ;
                 while (var('y) < var('x)) do {
@@ -58,7 +58,7 @@ python3 while-semantics-concolic.py
 
 
 MULTITHREAD EXAMPLE:
-python3 while-semantics-concolic.py --program "start((var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } } || var('var3) := val(4/1) ; if (var('var3) < var('var1)) then { var('var4) := val(5) ; }) where (p:Real < 5/1), (var('var1), val(p:Real)))" --pattern "ConcS:ConcolicState"
+python3 semantics-analysis-ext.py --program "start((var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } } || var('var3) := val(4/1) ; if (var('var3) < var('var1)) then { var('var4) := val(5) ; }) where (p:Real < 5/1), (var('var1), val(p:Real)))" --pattern "ConcS:ConcolicState"
 
 
 
@@ -69,17 +69,17 @@ search in WHILE-MAUDE : start(var('var2) := val(toReal(1)) ; while (var('var2) <
 search in WHILE-MAUDE : start(var('n) := val(toReal(5)) ; var('res) := val(toReal(1)) ; while (var('n) >= toReal(1)) do {var('res) := var('res) * var('n) ; var('n) := var('n) - toReal(1) ; } where q:Real <= toReal(0)) =>* ConcS:ConcolicState .
 
 
-python3 while-semantics-concolic.py --program "get-SMTassignment(q:Integer < 1)"
-python3 while-semantics-concolic.py --program "get-SMTassignment(q:Real < (1/2).Real)"
-python3 while-semantics-concolic.py --program "get-SMTassignment(q:Integer <= 1 and q:Integer >= 0 and p:Integer < 10 and p:Real > 20/2)"
-python3 while-semantics-concolic.py --program "get-SMTassignment(q:Integer <= 1 and q:Integer >= 0 and p:Integer < 10 and s:Real > 20/2)"
-python3 while-semantics-concolic.py --program "get-SMTassignment(q:Integer > 1 + 1 + 1 and q:Integer <= 5)"
-python3 while-semantics-concolic.py --program "get-SMTassignment(1/2 + q:Real > 1/2)"
-python3 while-semantics-concolic.py --program "get-SMTassignment(1/2 + q:Real > 1/2 - p:Real and p:Real > 0/1)"
+python3 semantics-analysis-ext.py --program "get-SMTassignment(q:Integer < 1)"
+python3 semantics-analysis-ext.py --program "get-SMTassignment(q:Real < (1/2).Real)"
+python3 semantics-analysis-ext.py --program "get-SMTassignment(q:Integer <= 1 and q:Integer >= 0 and p:Integer < 10 and p:Real > 20/2)"
+python3 semantics-analysis-ext.py --program "get-SMTassignment(q:Integer <= 1 and q:Integer >= 0 and p:Integer < 10 and s:Real > 20/2)"
+python3 semantics-analysis-ext.py --program "get-SMTassignment(q:Integer > 1 + 1 + 1 and q:Integer <= 5)"
+python3 semantics-analysis-ext.py --program "get-SMTassignment(1/2 + q:Real > 1/2)"
+python3 semantics-analysis-ext.py --program "get-SMTassignment(1/2 + q:Real > 1/2 - p:Real and p:Real > 0/1)"
 
 ***UNSAT test
-python3 while-semantics-concolic.py --program "get-SMTassignment(q:Integer <= 1 and q:Integer >= 0 and p:Integer < 10 and p:Integer > 20)"
-python3 while-semantics-concolic.py --program "get-SMTassignment(q:Integer >= 1 and q:Integer <= 0)"
+python3 semantics-analysis-ext.py --program "get-SMTassignment(q:Integer <= 1 and q:Integer >= 0 and p:Integer < 10 and p:Integer > 20)"
+python3 semantics-analysis-ext.py --program "get-SMTassignment(q:Integer >= 1 and q:Integer <= 0)"
 
 
 --------
@@ -97,7 +97,7 @@ Result from sat solver is: sat
 *** [NOTE]: When keeping the solver as an attribute, it remains the same instance throughout the whole execution
     - Check whether that would be useful instead of creating a new instance each time
         - Maybe not, because we need to explore paths with different sets of constraints (complementary constraints, in fact)
-python3 while-semantics-concolic.py --program "get-SMTassignment(p:Real < 5/1 and not p:Real < 1/1)" --op rew
+python3 semantics-analysis-ext.py --program "get-SMTassignment(p:Real < 5/1 and not p:Real < 1/1)" --op rew
 
 
 
@@ -106,10 +106,10 @@ red negate-nth(val(p:Real) < val(4/1) and val(p:Real) > val(0/1) and val(p:Real)
 
 rew [1] [< nil | var('var1) |-> val(0/1), var('var2) |-> val(1/1), var('var3) |-> val(0/1) >][< var('var2) := val(1/1) ; if var('var1) < var('var2) then{var('var3) := val(0/1) ; if var('var1) < val(0/1) then{var('var3) := val(2/1) ;}else{nil}}else{nil} | var('var1) |-> val(p:Real), var('var2) |-> val(1/1), var('var3) |-> val(0/1) >{p:Real < 5/1 and p:Real < 1/1 and (not p:Real < 0/1)}<{nil}][1][var('var1) |-> val(p:Real)] .
 
-python3 while-semantics-concolic.py --program "[< if var('var1) < val(0/1) then{var('var3) := val(2/1) ;}else{nil} | var('var1) |-> val(0/1), var('var2) |-> val(1/1), var('var3) |-> val(0/1) >][< var('var2) := val(1/1) ; if var('var1) < var('var2) then{var('var3) := val(0/1) ; if var('var1) < val(0/1) then{var('var3) := val(2/1) ;}else{nil}}else{nil} | var('var1) |-> val(p:Real), var('var2) |-> val(1/1), var('var3) |-> val(0/1) >{p:Real < 5/1 and p:Real < 1/1}<{nil}][1][var('var1) |-> val(p:Real)]" --pattern "ConcS:ConcolicState"
+python3 semantics-analysis-ext.py --program "[< if var('var1) < val(0/1) then{var('var3) := val(2/1) ;}else{nil} | var('var1) |-> val(0/1), var('var2) |-> val(1/1), var('var3) |-> val(0/1) >][< var('var2) := val(1/1) ; if var('var1) < var('var2) then{var('var3) := val(0/1) ; if var('var1) < val(0/1) then{var('var3) := val(2/1) ;}else{nil}}else{nil} | var('var1) |-> val(p:Real), var('var2) |-> val(1/1), var('var3) |-> val(0/1) >{p:Real < 5/1 and p:Real < 1/1}<{nil}][1][var('var1) |-> val(p:Real)]" --pattern "ConcS:ConcolicState"
 
-python3 while-semantics-concolic.py --program "[< nil | var('var1) |-> val(1/1), var('var2) |-> val(1/1) >][< var('var2) := val(1/1) ; if var('var1) < var('var2) then{var('var3) := val(0/1) ; if var('var1) < val(0/1) then{var('var3) := val(2/1) ;}else{nil}}else{nil} | var('var1) |-> val(p:Real), var('var2) |-> val(1/1) >{p:Real < 5/1 and (not p:Real < 1/1) and (not p:Real < 0/1) and (not p:Real < 1/1)}<{nil}][2][var('var1) |-> val(p:Real)]" --pattern "ConcS:ConcolicState"
+python3 semantics-analysis-ext.py --program "[< nil | var('var1) |-> val(1/1), var('var2) |-> val(1/1) >][< var('var2) := val(1/1) ; if var('var1) < var('var2) then{var('var3) := val(0/1) ; if var('var1) < val(0/1) then{var('var3) := val(2/1) ;}else{nil}}else{nil} | var('var1) |-> val(p:Real), var('var2) |-> val(1/1) >{p:Real < 5/1 and (not p:Real < 1/1) and (not p:Real < 0/1) and (not p:Real < 1/1)}<{nil}][2][var('var1) |-> val(p:Real)]" --pattern "ConcS:ConcolicState"
 
 p:Real < 5/1 and (not p:Real < 1/1 and (p:Real < 0/1 and not p:Real < 1/1))
 
-python3 while-semantics-concolic.py --program "get-SMTassignment(eval(p:Real < 5/1, (var('x) |-> val(p:Real), var('y) |-> val(q:Real))) and (eval(p:Real > 0/1, (var('x) |-> val(p:Real), var('y) |-> val(q:Real))) and (eval(q:Real < 5/1, (var('x) |-> val(p:Real), var('y) |-> val(q:Real))) and eval(q:Real > 0/1, (var('x) |-> val(p:Real), var('y) |-> val(q:Real))))))" --op rew
+python3 semantics-analysis-ext.py --program "get-SMTassignment(eval(p:Real < 5/1, (var('x) |-> val(p:Real), var('y) |-> val(q:Real))) and (eval(p:Real > 0/1, (var('x) |-> val(p:Real), var('y) |-> val(q:Real))) and (eval(q:Real < 5/1, (var('x) |-> val(p:Real), var('y) |-> val(q:Real))) and eval(q:Real > 0/1, (var('x) |-> val(p:Real), var('y) |-> val(q:Real))))))" --op rew

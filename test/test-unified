@@ -8,16 +8,24 @@ search start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('v
 
 'CONCRETE-VARSTATE-MOD 'CONCRETE-VAR-MOD 'CONCRETE-AEXP-MOD
 
-red searchSymb('WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD, 'State, 'val, "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) > {p:Real < (5/1).Real} < {nil}", 'FinalState:SEState, nil, '!, unbounded, 1) .
+red in VERIFICATION-COMMANDS : searchSymb('WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD, 'State, 'val, "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) > {p:Real < (5/1).Real} < {nil}", 'FinalState:SEState, nil, '!, unbounded, 0) .
+red in VERIFICATION-COMMANDS : searchSymb('WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD, 'State, 'val, "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) > {p:Real < (5/1).Real} < {nil}", 'FinalState:SEState, nil, '!, unbounded, 1) .
 
-red transformModSymb('WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD, 'State, 'val, symb) .
-red transformModSymb('WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD, 'State, 'val, conc) .
+red in VERIFICATION-COMMANDS : transformModSymb('WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD, 'State, 'val, symb) .
+red in VERIFICATION-COMMANDS : transformModSymb('WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD, 'State, 'val, conc) .
 
 -------------
 *** Concolic
-python3 while-semantics-concolic.py --program "[< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | \$apply-SMTassignment(var('var1) |-> val(p:Real), get-SMTassignment(p:Real < 5/1))>][< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | var('var1) |-> val(p:Real) >{p:Real < 5/1}<{nil}][1][var('var1) |-> val(p:Real)][0 / unbounded]" --pattern "'ConcS:ConcolicState" --file "semantics-analysis-module-transformer.maude" --modL "'WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD" --stSort "'State" --valOp "'val" --solN 0
-python3 while-semantics-concolic.py --program "[< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | \$apply-SMTassignment(var('var1) |-> val(p:Real), get-SMTassignment(p:Real < 5/1))>][< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | var('var1) |-> val(p:Real) >{p:Real < 5/1}<{nil}][1][var('var1) |-> val(p:Real)][0 / unbounded]" --pattern "'ConcS:ConcolicState" --file "semantics-analysis-module-transformer.maude" --modL "'WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD" --stSort "'State" --valOp "'val" --solN 1
+python3 semantics-analysis-ext.py --program "[< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | \$apply-SMTassignment(var('var1) |-> val(p:Real), get-SMTassignment(p:Real < 5/1))>][< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | var('var1) |-> val(p:Real) >{p:Real < 5/1}<{nil}][1][var('var1) |-> val(p:Real)][0 / unbounded]" --pattern "'ConcS:ConcolicState" --file "semantics-analysis-module-transformer.maude" --analysis "concolic" --modL "'WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD" --stSort "'State" --valOp "'val" --solN 0
+python3 semantics-analysis-ext.py --program "[< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | \$apply-SMTassignment(var('var1) |-> val(p:Real), get-SMTassignment(p:Real < 5/1))>][< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | var('var1) |-> val(p:Real) >{p:Real < 5/1}<{nil}][1][var('var1) |-> val(p:Real)][0 / unbounded]" --pattern "'ConcS:ConcolicState" --file "semantics-analysis-module-transformer.maude" --analysis "concolic" --modL "'WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD" --stSort "'State" --valOp "'val" --solN 1
 
+-------------
+*** Incorporated MaudeSE (need to load smt-check.maude)
+- It needs to be executed from python, so this does not fully reduce
+red searchMaudeSE('WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD, 'State, "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) >", 'FinalState:State, nil, '!, unbounded, 1, 'QF_LRA, false) .
+
+*** Does not fully reduce yet!!
+python3 semantics-analysis-ext.py --program "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) >" --pattern "'FinalSt:State" --file "semantics-analysis-module-transformer.maude" --analysis "maude-se"  --logic "'QF_LRA" --fold "false" --modL "'WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD" --stSort "'State" --solN 0 --maudeDir "/bin/" --maudeSEDir ""
 
 **********************
 
