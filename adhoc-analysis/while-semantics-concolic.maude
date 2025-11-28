@@ -71,9 +71,9 @@ mod WHILE-MAUDE is
 
     pr WHILE-SE-BASICS .
     pr LIST{Location} * (sort List{Location} to Path) .
-    pr INT .
     pr META-LEVEL * (op _=_ to _=M_) * (op _+_ to _+M_) .
     pr SMT-CONNECTION .
+    protecting LIST{PairVarValue} .
 
     sorts SEState PState ConcolicState ConcolicStateCore .
     sort ConstrainedStart .
@@ -96,9 +96,7 @@ mod WHILE-MAUDE is
     op _ [_] [_/_] : ConcolicStateCore Map{Var, Value} Nat Bound -> ConcolicState [ctor] .
 
 
-
-
-    vars Var : Var .
+    var Var : Var .
     vars B Constraint C1 Constraints Constraints' : Boolean .
     vars BExp BExp2 : BExp .
     vars R Rconc : Real .
@@ -107,7 +105,7 @@ mod WHILE-MAUDE is
     vars STR STR' SymbSTR STRInit : Map{Var, Value} .
     var AExp : AExp .
     var Path : Path .
-    var SVDeclL : Program .
+    var SVDeclL : List{PairVarValue} .
     var V : Value .
     vars SEPState CEPState : PState .
     var N : Nat .
@@ -120,17 +118,17 @@ mod WHILE-MAUDE is
     op start : ConstrainedStart -> ConcolicState .
     eq start(P) = $start(P, nil, empty, true, unbounded) .
     eq start(P where B) = $start(P, nil, empty, B, unbounded) .
-    op start : MTExec Program -> ConcolicState .
-    op start : ConstrainedStart Program -> ConcolicState .
-    op start : MTExec Program Bound -> ConcolicState .
-    op start : ConstrainedStart Program Bound -> ConcolicState .
+    op start : MTExec List{PairVarValue} -> ConcolicState .
+    op start : ConstrainedStart List{PairVarValue} -> ConcolicState .
+    op start : MTExec List{PairVarValue} Bound -> ConcolicState .
+    op start : ConstrainedStart List{PairVarValue} Bound -> ConcolicState .
     eq start(P, SVDeclL) = $start(P, SVDeclL, empty, true, unbounded) .
     eq start(P where B, SVDeclL) = $start(P, SVDeclL, empty, B, unbounded) .
     eq start(P, SVDeclL, LBound) = $start(P, SVDeclL, empty, true, LBound) .
     eq start(P where B, SVDeclL, LBound) = $start(P, SVDeclL, empty, B, LBound) .
-    op $start : MTExec Program Map{Var, Value} Boolean Bound -> ConcolicState .
+    op $start : MTExec List{PairVarValue} Map{Var, Value} Boolean Bound -> ConcolicState .
     eq $start(P, nil, STR, B, LBound) = [ < P | init-CStore(STR, B) > ] [ < P | STR > {B} < {nil} ] [size(B)] [STR] [0 / LBound] . *** Don't negate initial conditions, only path conditions
-    eq $start(P, (Var := V ;) SVDeclL, STR, B, LBound) = $start(P, SVDeclL, insert(Var, V, STR), B, LBound) .
+    eq $start(P, (Var, V) SVDeclL, STR, B, LBound) = $start(P, SVDeclL, insert(Var, V, STR), B, LBound) .
 
     rl [C-skip] : 
         [ < skip ; IL || PRest | STR > ] [ SEPState {Constraints} < {Path} ] [N]

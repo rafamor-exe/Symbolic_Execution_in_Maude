@@ -83,15 +83,21 @@ fmod SMT-VAR-MOD is
     pr QID .
     pr SMT-VARSTATE-MOD .
 
-    sort Var .
+    sorts Var PairVarValue .
     subsort Var < AExp .
 
     op var : Qid -> Var [ctor] .
+
+    op _,_ : Var Value -> PairVarValue [ctor] .
 
 endfm
 
 view Var from TRIV to SMT-VAR-MOD is
   sort Elt to Var .
+endv
+
+view PairVarValue from TRIV to SMT-VAR-MOD is
+  sort Elt to PairVarValue .
 endv
 
 fmod SMT-AEXP-MOD is
@@ -115,6 +121,7 @@ fmod SMT-AEXP-MOD is
     op _>=_ : AExp AExp -> BVal [prec 37] .
     op _/\_ : BExp BExp -> BExp [ctor assoc] .
 
+    *** NOTE: evalB is not defined in *-maudeTypes because of possible collisions in operator range
     op evalB : BExp -> Boolean .
     op eval : AExp Map{Var, Value} -> Value .
     op eval : BExp Map{Var, Value} -> BVal .

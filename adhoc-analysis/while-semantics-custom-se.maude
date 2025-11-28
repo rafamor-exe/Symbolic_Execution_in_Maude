@@ -58,7 +58,7 @@ mod WHILE-MAUDE is
     pr WHILE-SE-BASICS .
     pr META-LEVEL * (op _=_ to _=M_) * (op _+_ to _+M_) .
     pr LEXICAL .
-    pr RAT .
+    protecting LIST{PairVarValue} .
 
     sorts SEState PState .
     sort ConstrainedStart .
@@ -71,27 +71,27 @@ mod WHILE-MAUDE is
     op _ where _ : Program Boolean -> ConstrainedStart [ctor] .
 
 
-    vars Var : Var .
+    var Var : Var .
     vars B Constraints Constraints' : Boolean .
     vars BExp BExp2 : BExp .
     vars P IL IL1 IL2 : Program .
-    var STR STR' : Map{Var, Value} .
+    vars STR STR' : Map{Var, Value} .
     var AExp : AExp .
     var Path : Path .
-    var SVDeclL : Program .
+    var SVDeclL : List{PairVarValue} .
     var V : Value .
 
     op start : Program -> SEState .
     op start : ConstrainedStart -> SEState .
     eq start(P) = $start(P, nil, empty, true) .
     eq start(P where B) = $start(P, nil, empty, B) .
-    op start : Program Program -> SEState .
-    op start : ConstrainedStart Program -> SEState .
+    op start : Program List{PairVarValue} -> SEState .
+    op start : ConstrainedStart List{PairVarValue} -> SEState .
     eq start(P, SVDeclL) = $start(P, SVDeclL, empty, true) .
     eq start(P where B, SVDeclL) = $start(P, SVDeclL, empty, B) .
-    op $start : Program Program Map{Var, Value} Boolean -> SEState .
+    op $start : Program List{PairVarValue} Map{Var, Value} Boolean -> SEState .
     eq $start(P, nil, STR, B) = < P | STR > {B} < {nil} .
-    eq $start(P, (Var := V ;) SVDeclL, STR, B) = $start(P, SVDeclL, insert(Var, V, STR), B) .
+    eq $start(P, (Var, V) SVDeclL, STR, B) = $start(P, SVDeclL, insert(Var, V, STR), B) .
     
 
     rl [skip] : 

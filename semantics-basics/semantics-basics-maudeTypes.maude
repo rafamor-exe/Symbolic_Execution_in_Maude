@@ -81,17 +81,11 @@ fmod CONCRETE-VAR-MOD is
 
     op var : Qid -> Var [ctor] .
 
-    ***op _,_ : Var Value -> PairVarValue [ctor] .
-
 endfm
 
 view Var from TRIV to CONCRETE-VAR-MOD is
   sort Elt to Var .
 endv
-
-***view PairVarValue from TRIV to CONCRETE-VAR-MOD is
-***  sort Elt to PairVarValue .
-***endv
 
 fmod CONCRETE-AEXP-MOD is
 
@@ -113,7 +107,6 @@ fmod CONCRETE-AEXP-MOD is
     op _>_ : AExp AExp -> BVal [prec 37] .
     op _>=_ : AExp AExp -> BVal [prec 37] .
     op _/\_ : BExp BExp -> BExp [ctor assoc] .
-    ***op not_ : BVal -> BVal .
 
     op eval : AExp Map{Var, Value} -> Value .
     op eval : BExp Map{Var, Value} -> BVal .

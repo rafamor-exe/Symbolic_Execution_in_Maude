@@ -4,6 +4,7 @@ import argparse
 from z3 import *
 import re
 
+ADHOC_CONCOLIC_IMPL = 'adhoc-analysis/while-semantics-concolic.maude'
 
 class SMTAssignmentHook (maude.Hook):
 
@@ -113,7 +114,7 @@ def get_args():
     parser.add_argument("--pattern", action="store", help="Pattern to match", default='')
     parser.add_argument("--svars", action="store", help="Symbolic variables", default=[])
     parser.add_argument("--op", action="store", help="Maude operation", default="search")
-    parser.add_argument("--file", action="store", help="File containing the semantics", default="while-semantics-concolic.maude")
+    parser.add_argument("--file", action="store", help="File containing the semantics", default=ADHOC_CONCOLIC_IMPL)
     parser.add_argument("--mod", action="store", help="Semantics module", default="WHILE-MAUDE")
 
     parser.add_argument("--modL", action="store", help="List of Maude modules to transform to SMT", default="")
@@ -132,7 +133,7 @@ if __name__ == '__main__':
     maude.connectEqHook('get-SMTassignment', SMThook)
     args = get_args()
     maude.load(args.file)
-    if args.file == 'while-semantics-concolic.maude':
+    if args.file == ADHOC_CONCOLIC_IMPL:
         wmod = maude.getModule(args.mod)
         t = wmod.parseTerm(args.program)
         if args.op == "search":

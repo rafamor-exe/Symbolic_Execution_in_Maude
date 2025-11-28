@@ -1,4 +1,5 @@
 load ../semantics-basics/semantics-basics-smtTypes.maude
+***set trace on .
 
 fmod WHILE-LANG-INSTS-MOD is
 
@@ -39,6 +40,7 @@ endfm
 mod WHILE-MAUDE is
 
     pr WHILE-BASICS .
+    protecting LIST{PairVarValue} .
 
     sort State .
     
@@ -46,22 +48,20 @@ mod WHILE-MAUDE is
     op errState : -> State [ctor] . 
 
     vars Var Var1 Var2 : Var .
-    var BExp BExp2 : BExp .
+    vars BExp BExp2 : BExp .
     vars IL IL1 IL2 P : Program .
     var STR : Map{Var, Value} .
-    var VarState : VarState .
     var AExp : AExp .
-    var SVDeclL : Program .
+    var SVDeclL : List{PairVarValue} .
     var V : Value .
 
     op start : Program -> State .
     eq start(P) = $start(P, nil, empty) .
-    op start : Program Program -> State .
-    eq start(P, nil) = $start(P, nil, empty) .
-    eq start(P, (Var := V ;) SVDeclL) = $start(P, (Var := V ;) SVDeclL, empty) .
-    op $start : Program Program Map{Var, Value} -> State .
+    op start : Program List{PairVarValue} -> State .
+    eq start(P, SVDeclL) = $start(P, SVDeclL, empty) .
+    op $start : Program List{PairVarValue} Map{Var, Value} -> State .
     eq $start(P, nil, STR) = < P | STR > .
-    eq $start(P, (Var := V ;) SVDeclL, STR) = $start(P, SVDeclL, insert(Var, V, STR)) .
+    eq $start(P, (Var, V) SVDeclL, STR) = $start(P, SVDeclL, insert(Var, V, STR)) .
 
     rl [skip] : 
         < skip ; IL | STR >
@@ -77,24 +77,24 @@ mod WHILE-MAUDE is
         < if BExp then { IL1 } else { IL2 } IL | STR >
         =>
         < IL1 IL | STR >
-        if eval(BExp, STR) = true .
+        if evalB(eval(BExp, STR)) = true .
 
     crl [if..else] : 
         < if BExp then { IL1 } else { IL2 } IL | STR >
         =>
         < IL2 IL | STR >
-        if eval(BExp, STR) =/== true = true .
+        if evalB(not eval(BExp, STR)) = true .
     
 
     crl [while..loop] : 
         < while BExp do { IL1 } IL | STR >
         =>
         < IL1 while BExp do { IL1 } IL | STR >
-        if eval(BExp, STR) = true .
+        if evalB(eval(BExp, STR)) = true .
         
     crl [while..exit] : 
         < while BExp do { IL1 } IL | STR >
         =>
         < IL | STR >
-        if eval(BExp, STR) =/== true = true .
+        if evalB(not eval(BExp, STR)) = true .
 endm

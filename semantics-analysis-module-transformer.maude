@@ -31,6 +31,10 @@ fmod MODULE-TRANSFORMER is
     pr META-LEVEL .
     pr STRING-OPS .
 
+    sort TrType .
+    
+    ops symb conc : -> TrType [ctor] .
+
     vars Trm T1 T2 Tcond Tmod Constraints Path : Term .
     var AttrSet : AttrSet .
     var RlSet : RuleSet .
@@ -42,7 +46,8 @@ fmod MODULE-TRANSFORMER is
     var OpDeclSet : OpDeclSet .
     var MembAxSet : MembAxSet .
     var EquationSet : EquationSet .
-    vars InstId StateOp OpId ModId Q ValOp TrId : Qid .
+    vars InstId StateOp OpId ModId Q ValOp : Qid .
+    var TrId : TrType .
     vars M AccM : Module .
     var TL : TypeList .
     var T : Type .
@@ -57,8 +62,8 @@ fmod MODULE-TRANSFORMER is
     var MConst : Constant .
     var B : Bool .
 
-    op modRl : Module Qid Qid -> Module .
-    eq modRl(M, StateOp, 'symb) = mod 'SYMBOLIC-MOD is
+    op modRl : Module Qid TrType -> Module .
+    eq modRl(M, StateOp, symb) = mod 'SYMBOLIC-MOD is
                                     getImports(M)
                                     sorts getSorts(M) .
                                     getSubsorts(M)
@@ -67,7 +72,7 @@ fmod MODULE-TRANSFORMER is
                                     getEqs(M)
                                     rlToSymbolic(getRls(M), M)
                                   endm .
-    eq modRl(M, StateOp, 'conc) = mod 'CONCOLIC-MOD is
+    eq modRl(M, StateOp, conc) = mod 'CONCOLIC-MOD is
                                     getImports(M)
                                     sorts getSorts(M) .
                                     getSubsorts(M)
@@ -278,8 +283,8 @@ fmod MODULE-TRANSFORMER is
     ***                                            modSEEqs(getEqs(M), ValOp) inclSEEqs(StateOp)
     ***                                            getRls(M)
     ***                                         endm) .
-    op transformModSymb : QidList Qid Qid Qid -> Module .
-    op transformModSymb : QidList Qid Qid Qid Module -> Module .
+    op transformModSymb : QidList Qid Qid TrType -> Module .
+    op transformModSymb : QidList Qid Qid TrType Module -> Module .
     eq transformModSymb(ModIdList, StateOp, ValOp, TrId) = transformModSymb(ModIdList, StateOp, ValOp, TrId, mod 'SEMANTICS is nil sorts none . none none none none none endm) .
     eq transformModSymb(nil, StateOp, ValOp, TrId, M) = modRl(mod 'PARTIAL-SYMBOLIC-MOD is
                                                                 inclSEImports(getImports(M))
@@ -311,7 +316,8 @@ mod VERIFICATION-COMMANDS is
     pr MODULE-TRANSFORMER .
     pr LEXICAL .
 
-    vars ModId StateOp SearchType ValOp TrId TargetSt : Qid .
+    vars ModId StateOp SearchType ValOp TargetSt : Qid .
+    var TrId : TrType .
     var PatternSEState : Term .
     var InitSEState : String . 
     var SearchCond : Condition .
@@ -320,7 +326,7 @@ mod VERIFICATION-COMMANDS is
     var ModIdList : QidList .
     var NeModIdList : NeQidList .
 
-    op searchTr : NeQidList Qid Qid Qid Qid String Term Condition Qid Bound Nat -> ResultTriple .
+    op searchTr : NeQidList Qid Qid TrType Qid String Term Condition Qid Bound Nat -> ResultTriple .
     eq searchTr(ModId, StateOp, ValOp, TrId, TargetSt,
                   InitSEState,
                   PatternSEState,
@@ -354,6 +360,8 @@ mod VERIFICATION-COMMANDS is
                              Bound,
                              SolN) .
     
+    op searchMaudeSE : NeQidList Qid String Term Condition Qid Bound Nat -> SmtResult2? .
+    
     op searchSymb : NeQidList Qid Qid String Term Condition Qid Bound Nat -> ResultTriple .
     eq searchSymb(ModId NeModIdList, StateOp, ValOp,
                   InitSEState,
@@ -362,7 +370,7 @@ mod VERIFICATION-COMMANDS is
                   SearchType,
                   Bound,
                   SolN)
-                  = searchTr(ModId NeModIdList, StateOp, ValOp, 'symb, 'SEState,
+                  = searchTr(ModId NeModIdList, StateOp, ValOp, symb, 'SEState,
                         InitSEState,
                         PatternSEState,
                         SearchCond,
@@ -378,7 +386,7 @@ mod VERIFICATION-COMMANDS is
                       SearchType,
                       Bound,
                       SolN)
-                      = searchTr(ModId NeModIdList, StateOp, ValOp, 'conc, 'ConcolicState,
+                      = searchTr(ModId NeModIdList, StateOp, ValOp, conc, 'ConcolicState,
                                  InitSEState,
                                  PatternSEState,
                                  SearchCond,
