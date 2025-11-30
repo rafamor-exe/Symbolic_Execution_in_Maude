@@ -1,0 +1,6 @@
+load smt
+load smt-check
+load ../semantics-analysis-module-transformer.maude
+
+red searchMaudeSE('WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD, 'State, "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) >", '<_|_>['nil.Program, 'STR:Map`{Var`,Value`}], nil, '*, unbounded, 0, 'QF_LRA, false) .
+red searchMaudeSE('WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD, 'State, "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) >", '<_|_>['nil.Program, 'STR:Map`{Var`,Value`}], nil, '*, unbounded, 1, 'QF_LRA, false) .

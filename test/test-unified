@@ -21,11 +21,19 @@ python3 semantics-analysis-ext.py --program "[< var('var2) := val((1/1).Real) ; 
 
 -------------
 *** Incorporated MaudeSE (need to load smt-check.maude)
+*** - MaudeSE metaSmtSearch does not allow '! (does not reduce)
 - It needs to be executed from python, so this does not fully reduce
-red searchMaudeSE('WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD, 'State, "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) >", 'FinalState:State, nil, '!, unbounded, 1, 'QF_LRA, false) .
+- MaudeSE needs a file to read, does not allow loading modules and reducing like maude Python library
+- Idea: either force user to write search in file or generate temp file with a script
+python3 semantics-analysis-ext.py --file "test/test-tr-maude-se" --analysis "maude-se"
 
-*** Does not fully reduce yet!!
-python3 semantics-analysis-ext.py --program "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) >" --pattern "'FinalSt:State" --file "semantics-analysis-module-transformer.maude" --analysis "maude-se"  --logic "'QF_LRA" --fold "false" --modL "'WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD" --stSort "'State" --solN 0 --maudeDir "/bin/" --maudeSEDir ""
+maude-se test/test-tr-maude-se
+
+
+*** Does not reduce because it need MaudeSE
+*** red searchMaudeSE('WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD, 'State, "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) >", 'FinalState:State, nil, '!, unbounded, 0, 'QF_LRA, false) .
+
+***python3 semantics-analysis-ext.py --program "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) >" --pattern "'FinalSt:State" --file "semantics-analysis-module-transformer.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "'WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD" --stSort "'State" --solN 0 --maudeDir "/bin/" --maudeSEDir ""
 
 **********************
 
