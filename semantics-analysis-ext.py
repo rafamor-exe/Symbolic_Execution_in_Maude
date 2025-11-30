@@ -22,8 +22,6 @@ def get_args():
     parser.add_argument("--bound", action="store", help="Search bound", default="unbounded")
     parser.add_argument("--solN", action="store", help="Solution number", default=0)
 
-    parser.add_argument("--maudeDir", action="store", help="Path to Maude", default="")
-    parser.add_argument("--maudeSEDir", action="store", help="Path to MaudeSE Python library", default="")
     parser.add_argument("--logic", action="store", help="Logic to use in MaudeSE analysis", default="'QF_LRA")
     parser.add_argument("--fold", action="store", help="Allow folding in MaudeSE analysis", default="false")
     return parser.parse_args()
@@ -32,20 +30,30 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
     if args.analysis == "maude-se":
-        #t = "searchMaudeSE(" \
-        #                +args.modL+"," \
-        #                +args.stSort+"," \
-        #                +'\"'+args.program+'\"'+"," \
-        #                +args.pattern+"," \
-        #                +args.sCond+"," \
-        #                +str(args.sType)+"," \
-        #                +str(args.bound)+"," \
-        #                +str(args.solN)+"," \
-        #                +str(args.logic)+"," \
-        #                +str(args.fold)+")"
-        sys.argv = ["maude-se", args.file, "-no-meta"]
         import maudeSE
+
+        maudeSE.maude.init(advise=True)
+        maudeSE.maude.load("smt.maude")
+        maudeSE.maude.load("smt-check")
+        maudeSE.maude.load("semantics-analysis-module-transformer.maude")
+        mod = maudeSE.maude.getModule('MAUDE-SE-EXT')
+
+        sys.argv = ["maude-se", args.file, "-no-meta"]
         maudeSE.main()
+
+        t = "searchMaudeSE(" \
+                        +args.modL+"," \
+                        +args.stSort+"," \
+                        +'\"'+args.program+'\"'+"," \
+                        +args.pattern+"," \
+                        +args.sCond+"," \
+                        +str(args.sType)+"," \
+                        +str(args.bound)+"," \
+                        +str(args.solN)+"," \
+                        +str(args.logic)+"," \
+                        +str(args.fold)+")"
+        t = mod.parseTerm(t)
+        t.reduce()
     else:
         import maude
         from maudeSMTHook import SMTAssignmentHook
@@ -88,7 +96,7 @@ if __name__ == '__main__':
                                     +str(args.solN)+")"
                 t = mod.parseTerm(t)
                 t.reduce()                
-        print(t)
+    print(t)
 
 
     
