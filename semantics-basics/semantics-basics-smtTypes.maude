@@ -24,6 +24,7 @@ fmod SMT-VARSTATE-MOD is
     var F : Float .
 
     eq val(F) = val(toReal(F)) .
+    eq not not B = B .
 
     op _+_ : Value Value -> Value [gather (E e) prec 33] .
     eq val(R1) + val(R2) = val(R1 + R2) .

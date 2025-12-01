@@ -3,6 +3,8 @@ import sys
 
 ADHOC_CONCOLIC_IMPL = 'adhoc-analysis/while-semantics-concolic.maude'
 
+SEMANTICS_TRANSFORMER_MAUDE = 'semantics-analysis-module-transformer.maude'
+
 def get_args():
     parser = argparse.ArgumentParser(description="Argument Parser for Maude While Language Concolic Engine", 
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -35,7 +37,8 @@ if __name__ == '__main__':
         maudeSE.maude.init(advise=True)
         maudeSE.maude.load("smt.maude")
         maudeSE.maude.load("smt-check")
-        maudeSE.maude.load("semantics-analysis-module-transformer.maude")
+        maudeSE.maude.load(SEMANTICS_TRANSFORMER_MAUDE)
+        maudeSE.maude.load(args.file)
         mod = maudeSE.maude.getModule('MAUDE-SE-EXT')
 
         sys.argv = ["maude-se", args.file, "-no-meta"]
@@ -78,12 +81,10 @@ if __name__ == '__main__':
                 t.rewrite()
                 print(t)
         else:
-            # Semantic transformation module loaded
-            # Search over transformed module for concolic execution
             if args.analysis == "concolic":
+                maude.load(SEMANTICS_TRANSFORMER_MAUDE)
                 maude.load(args.file)
                 mod = maude.getModule('VERIFICATION-COMMANDS')
-                #pattern = mod.parseTerm(args.pattern)
                 t = "searchConcolic(" \
                                     +args.modL+"," \
                                     +args.stSort+"," \

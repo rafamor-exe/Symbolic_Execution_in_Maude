@@ -1,7 +1,7 @@
 load semantics-basics/semantics-basics-smtTypes.maude
 
 *** Test transformer with while language module
-load language-semantics/while-semantics-concrete.maude
+***load language-semantics/while-semantics-concurrent.maude
 ***set trace on .
 
 fmod SMT-CONNECTION is
