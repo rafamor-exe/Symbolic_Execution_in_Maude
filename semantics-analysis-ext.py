@@ -41,6 +41,8 @@ if __name__ == '__main__':
         maudeSE.maude.load(args.file)
         mod = maudeSE.maude.getModule('MAUDE-SE-EXT')
 
+        # MaudeSE main still needs to be invoked to be able to reduce
+        # It is invoked with the language semantics instead of the transformer because of collision ("multiple parses" Maude warning)  
         sys.argv = ["maude-se", args.file, "-no-meta"]
         maudeSE.main()
 
@@ -57,6 +59,23 @@ if __name__ == '__main__':
                         +str(args.fold)+")"
         t = mod.parseTerm(t)
         t.reduce()
+        print(t)
+        print("---------")
+        print("With path:")
+        path = "searchPathMaudeSE(" \
+                                  +args.modL+"," \
+                                  +args.stSort+"," \
+                                  +'\"'+args.program+'\"'+"," \
+                                  +args.pattern+"," \
+                                  +args.sCond+"," \
+                                  +str(args.sType)+"," \
+                                  +str(args.bound)+"," \
+                                  +str(args.solN)+"," \
+                                  +str(args.logic)+"," \
+                                  +str(args.fold)+")"
+        path = mod.parseTerm(path)
+        path.reduce()
+        print(path)
     else:
         import maude
         from maudeSMTHook import SMTAssignmentHook
@@ -97,7 +116,7 @@ if __name__ == '__main__':
                                     +str(args.solN)+")"
                 t = mod.parseTerm(t)
                 t.reduce()                
-    print(t)
+        print(t)
 
 
     

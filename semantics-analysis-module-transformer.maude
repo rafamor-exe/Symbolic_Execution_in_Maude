@@ -116,16 +116,14 @@ fmod MODULE-TRANSFORMER is
     ceq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, M) = crl '_`{_`}<`{_`}[T1, 'Constraints:Boolean, 'Path:Path] => '_`{_`}<`{_`}[T2, 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]] if 'Constraints':Boolean := '_and_['Constraints:Boolean, 'evalB[Tcond]] /\ 'metaCheck[upTerm(M), 'upTerm['Constraints':Boolean]] = 'true.Bool [label(InstId) AttrSet] . rlToSymbolic(RlSet, M)
         if (Tcond = 'val['true.Bool]) := Cond .
     
-    *** TODO: Transform rules to concolic
-    ***     - Take into account that symbolic rules must not be applied to internal symbolic state during concolic exec
-    ***     - Create another module? Just changing the rules to use the underlying equational theory 
-    
+    *** State var general definition
     op stateVar : Qid -> Variable .
     eq stateVar(StateOp) = qid(string('State) + ":" + string(StateOp)) .
     
     op rlToConcolic : RuleSet Qid Module -> RuleSet .
     eq rlToConcolic(none, StateOp, M) = none .
-    *** '<_|_>['P:Program, 'SymbSTR:Map`{Var`,Value`}]
+    *** Symbolic rules must not be applied to internal symbolic state during concolic exec
+    *** These rules cannot be merged into one with 'if_then_else_fi because that distinction should be done at this level (transformation), not delayed
     eq rlToConcolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet, StateOp, M) = (crl '`[_`]`[_`]`[_`]`[_`]`[_/_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
                                                                                =>
                                                                                '`[_`]`[_`]`[_`]`[_`]`[_/_`][T2, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
@@ -468,4 +466,23 @@ mod MAUDE-SE-EXT is
                                      Bound,
                                      SolN,
                                      Logic, Fold) .
+    
+    op searchPathMaudeSE : NeQidList Qid String Term Condition Qid Bound Nat Qid Bool -> Trace2Result? .
+    eq searchPathMaudeSE(NeModIdList, StateOp,
+                         InitSEState,
+                         PatternSEState,
+                         SearchCond,
+                         SearchType,
+                         Bound,
+                         SolN,
+                         Logic, Fold)
+                         = metaSmtSearchPath(transformModMaudeSE(NeModIdList, mod 'SEMANTICS is nil sorts none . none none none none none endm),
+                                             getTerm(metaParse(transformModMaudeSE(NeModIdList, mod 'SEMANTICS is nil sorts none . none none none none none endm),
+                                                             tokenize(InitSEState), StateOp)),
+                                             PatternSEState,
+                                             SearchCond,
+                                             SearchType,
+                                             Bound,
+                                             SolN,
+                                             Logic, Fold) .
 endm
