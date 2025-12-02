@@ -1,0 +1,157 @@
+load smt-conversion.maude
+
+view Real from TRIV to REAL is
+  sort Elt to Real .
+endv
+
+fmod SMT-VARSTATE-MOD is
+
+    pr REAL-INTEGER .
+    pr SMT-CONVERSION .
+
+    sort AExp .
+    sorts Value BVal .
+    subsort Value < AExp .
+
+    op val : Real -> Value [ctor] .
+    op val : Integer -> Value [ctor] .
+    op val : Boolean -> BVal [ctor] .
+    op val : Float -> Value .
+
+    vars R R1 R2 : Real .
+    vars B B1 B2 : Boolean .
+    vars I I1 I2 : Integer .
+    var F : Float .
+
+    eq val(F) = val(toReal(F)) .
+    eq not not B = B .
+
+    op _+_ : Value Value -> Value [gather (E e) prec 33] .
+    eq val(R1) + val(R2) = val(R1 + R2) .
+    eq val(I1) + val(I2) = val(I1 + I2) .
+    op _*_ : Value Value -> Value [gather (E e) prec 31] .
+    eq val(R1) * val(R2) = val(R1 * R2) .
+    eq val(I1) * val(I2) = val(I1 * I2) .
+    op _-_ : Value Value -> Value [gather (E e) prec 33] .
+    eq val(R1) - val(R2) = val(R1 - R2) .
+    eq val(I1) - val(I2) = val(I1 - I2) .
+    op _/_ : Value Value -> Value [gather (E e) prec 31] .
+    eq val(R1) / val(R2) = val(R1 / R2) .
+    eq val(I1) / val(I2) = val(I1 div I2) .
+
+    op _===_ : BVal BVal -> BVal [gather (e E) prec 51] .
+    eq val(B1) === val(B2) = val(B1 === B2) .
+    op _=/==_ : BVal BVal -> BVal [gather (e E) prec 51] .
+    eq val(B1) =/== val(B2) = val(B1 =/== B2) .
+    op not_ : BVal -> BVal [prec 53] .
+    eq not val(B1) = val(not B1) .
+    op _and_ : BVal BVal -> BVal [gather (e E) prec 55] .
+    eq val(B1) and val(B2) = val(B1 and B2) .
+    op _or_ : BVal BVal -> BVal [gather (e E) prec 57] .
+    eq val(B1) or val(B2) = val(B1 or B2) .
+    op _xor_ : BVal BVal -> BVal [gather (e E) prec 59] .
+    eq val(B1) xor val(B2) = val(B1 xor B2) .
+    op _implies_ : BVal BVal -> BVal [gather (e E) prec 61] .
+    eq val(B1) implies val(B2) = val(B1 implies B2) .
+
+    op _===_ : Value Value -> BVal [gather (e E) prec 51] .
+    eq val(R1) === val(R2) = val(R1 === R2) .
+    eq val(I1) === val(I2) = val(I1 === I2) .
+    op _=/==_ : Value Value -> BVal [gather (e E) prec 51] .
+    eq val(R1) =/== val(R2) = val(R1 =/== R2) .
+    eq val(I1) =/== val(I2) = val(I1 =/== I2) .
+    op _<_ : Value Value -> BVal [prec 37] .
+    eq val(R1) < val(R2) = val(R1 < R2) .
+    eq val(I1) < val(I2) = val(I1 < I2) .
+    op _<=_ : Value Value -> BVal [prec 37] .
+    eq val(R1) <= val(R2) = val(R1 <= R2) .
+    eq val(I1) <= val(I2) = val(I1 <= I2) .
+    op _>_ : Value Value -> BVal [prec 37] .
+    eq val(R1) > val(R2) = val(R1 > R2) .
+    eq val(I1) > val(I2) = val(I1 > I2) .
+    op _>=_ : Value Value -> BVal [prec 37] .
+    eq val(R1) >= val(R2) = val(R1 >= R2) .
+    eq val(I1) >= val(I2) = val(I1 >= I2) .
+
+endfm
+
+view Value from TRIV to SMT-VARSTATE-MOD is
+  sort Elt to Value .
+endv
+
+fmod SMT-VAR-MOD is
+
+    pr QID .
+    pr SMT-VARSTATE-MOD .
+
+    sorts Var PairVarValue .
+    subsort Var < AExp .
+
+    op var : Qid -> Var [ctor] .
+
+    op _,_ : Var Value -> PairVarValue [ctor] .
+
+endfm
+
+view Var from TRIV to SMT-VAR-MOD is
+  sort Elt to Var .
+endv
+
+view PairVarValue from TRIV to SMT-VAR-MOD is
+  sort Elt to PairVarValue .
+endv
+
+fmod SMT-AEXP-MOD is
+
+    pr SMT-VAR-MOD .
+    pr MAP{Var, Value} .
+
+    sort BExp .
+    subsort BVal < BExp .
+
+    op _+_ : AExp AExp -> AExp [gather (E e) prec 33] .
+    op _*_ : AExp AExp -> AExp [gather (E e) prec 31] .
+    op _-_ : AExp AExp -> AExp [gather (E e) prec 33] .
+    op _/_ : AExp AExp -> AExp [gather (E e) prec 31] .
+
+    op _=_ : AExp AExp -> BVal [gather (e E) prec 51] .
+    op _!=_ : AExp AExp -> BVal [gather (e E) prec 51] .
+    op _<_ : AExp AExp -> BVal [prec 37] .
+    op _<=_ : AExp AExp -> BVal [prec 37] .
+    op _>_ : AExp AExp -> BVal [prec 37] .
+    op _>=_ : AExp AExp -> BVal [prec 37] .
+    op _/\_ : BExp BExp -> BExp [ctor assoc] .
+
+    *** NOTE: evalB is not defined in *-maudeTypes because of possible collisions in operator range
+    op evalB : BExp -> Boolean .
+    op eval : AExp Map{Var, Value} -> Value .
+    op eval : BExp Map{Var, Value} -> BVal .
+
+    vars AExp AExp1 AExp2 : AExp .
+    vars BExp1 BExp : BExp .
+    var STR : Map{Var, Value} .
+    var Var : Var .
+    var V : Value .
+    var BV : BVal .
+    var B : Boolean .
+
+    eq eval(AExp1 + AExp2, STR) = eval(AExp1, STR) + eval(AExp2, STR) .
+    eq eval(AExp1 * AExp2, STR) = eval(AExp1, STR) * eval(AExp2, STR) .
+    eq eval(AExp1 - AExp2, STR) = eval(AExp1, STR) - eval(AExp2, STR) .
+    eq eval(AExp1 / AExp2, STR) = eval(AExp1, STR) / eval(AExp2, STR) .
+    eq eval(AExp1 = AExp2, STR) = eval(AExp1, STR) === eval(AExp2, STR) .
+    eq eval(AExp1 != AExp2, STR) = eval(AExp1, STR) =/== eval(AExp2, STR) .
+    eq eval(AExp1 < AExp2, STR) = eval(AExp1, STR) < eval(AExp2, STR) .
+    eq eval(AExp1 <= AExp2, STR) = eval(AExp1, STR) <= eval(AExp2, STR) .
+    eq eval(AExp1 > AExp2, STR) = eval(AExp1, STR) > eval(AExp2, STR) .
+    eq eval(AExp1 >= AExp2, STR) = eval(AExp1, STR) >= eval(AExp2, STR) .
+    eq eval(BExp1 /\ BExp, STR) = eval(BExp1, STR) and eval(BExp, STR) .
+    eq eval(not BExp1, STR) = not eval(BExp1, STR) .
+    eq eval(Var, ((Var |-> V), STR)) = V .
+    eq eval(V, STR) = V .
+    eq eval(val(B), STR) = val(B) .
+    eq evalB(val(B)) = B .
+
+    eq not not BExp = BExp .
+
+endfm

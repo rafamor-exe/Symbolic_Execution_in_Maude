@@ -1,0 +1,121 @@
+load ../semantics-basics/semantics-basics-maudeTypes.maude
+
+fmod WHILE-LANG-INSTS-MOD is
+
+    protecting CONCRETE-AEXP-MOD .
+
+    sort Inst .
+
+    op skip ; : -> Inst [ctor prec 20] .
+    op _ := _ ; : Var AExp -> Inst [ctor prec 20] .
+
+endfm
+
+view Inst from TRIV to WHILE-LANG-INSTS-MOD is
+  sort Elt to Inst .
+endv
+
+fmod WHILE-LANG-BLOCK-MOD is
+
+    protecting WHILE-LANG-INSTS-MOD .
+    protecting LIST{Inst} * (sort List{Inst} to Program) .
+
+    op if _ then {_} else {_} : BExp Program Program -> Inst [ctor prec 20] .
+    op if _ then {_} : BExp Program -> Inst [prec 20] .
+
+    op while _ do {_} : BExp Program -> Inst [ctor prec 20] .
+
+    var B : BExp .
+    var IL1 : Program .
+
+    eq if B then {IL1} = if B then {IL1} else {nil} .
+
+endfm
+
+fmod WHILE-BASICS is
+    protecting WHILE-LANG-BLOCK-MOD .
+endfm
+
+mod WHILE-MAUDE is
+
+    protecting WHILE-BASICS .
+
+    sort State .
+    sorts CThread MTExec .
+    subsort CThread Program < MTExec .
+
+    op _ [_] : Program Nat -> CThread [ctor] .
+    op noProgram : -> MTExec [ctor] .
+    op _ || _ : MTExec MTExec -> MTExec [ctor assoc comm id: noProgram] .
+
+    
+    op < _ | _ > : MTExec Map{Var, Value} -> State [ctor] . 
+    op errState : -> State [ctor] . 
+
+    vars Var Var1 Var2 : Var .
+    var BExp BExp2 : BExp .
+    vars IL IL1 IL2 : Program .
+    vars STR STR2 : Map{Var, Value} .
+    var AExp : AExp .
+    var V : Value .
+    vars P PRest P2 : MTExec .
+
+    op start : Program -> State .
+    eq start(P) = < P | empty > .
+
+    rl [skip] : 
+        < skip ; IL || PRest | STR >
+        =>
+        < IL || PRest | STR > .
+
+    rl [assign] : 
+        < Var := AExp ; IL || PRest | STR >
+        =>
+        < IL || PRest | insert(Var, eval(AExp, STR), STR) > .
+
+    crl [if..then] : 
+        < if BExp then { IL1 } else { IL2 } IL || PRest | STR >
+        =>
+        < IL1 IL || PRest | STR >
+        if eval(BExp, STR) = val(true) .
+
+    crl [if..else] : 
+        < if BExp then { IL1 } else { IL2 } IL || PRest | STR >
+        =>
+        < IL2 IL || PRest | STR >
+        if (not eval(BExp, STR)) = val(true) .
+    
+
+    crl [while..loop] : 
+        < while BExp do { IL1 } IL || PRest | STR >
+        =>
+        < IL1 while BExp do { IL1 } IL || PRest | STR >
+        if eval(BExp, STR) = val(true) .
+        
+    crl [while..exit] : 
+        < while BExp do { IL1 } IL || PRest | STR >
+        =>
+        < IL || PRest | STR >
+        if (not eval(BExp, STR)) = val(true) .
+
+    *** Auxiliary
+
+    op getProgram : State -> MTExec .
+    eq getProgram(< P | STR >) = P .
+
+    op getStore : State -> Map{Var, Value} .
+    eq getStore(< P | STR >) = STR .
+
+    op updateProgram : State MTExec -> State .
+    eq updateProgram(< P | STR >, P2) = < P2 | STR > .
+
+    op updateStore : State Map{Var, Value} -> State .
+    eq updateStore(< P | STR >, STR2) = < P | STR2 > .
+    
+    op insertToSt : State Var Value -> State .
+    eq insertToSt(< P | STR >, Var, V) = < P | insert(Var, V, STR) > .
+
+    
+    *** Ignore
+    op test : Bool Int -> Rat .
+endm

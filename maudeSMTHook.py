@@ -1,9 +1,7 @@
-import maude
 
-import argparse
+import maude
 from z3 import *
 import re
-
 
 class SMTAssignmentHook (maude.Hook):
 
@@ -99,36 +97,9 @@ class SMTAssignmentHook (maude.Hook):
                     #print("int matched")
                     l[i] = re.sub(r'\.Integer', '', l[i])
                     #print(l[i])
+                match_real = re.search(r'.Real', l[i])
+                if match_real:
+                    #print("real matched")
+                    l[i] = re.sub(r'\.Real', '', l[i])
+                    #print(l[i])
         return l, var_dic
-
-def get_args():
-    parser = argparse.ArgumentParser(description="Argument Parser for Maude While Language Concolic Engine", 
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--program", action="store", help="Program to load", default='')
-    parser.add_argument("--pattern", action="store", help="Pattern to match", default='')
-    parser.add_argument("--svars", action="store", help="Symbolic variables", default=[])
-    parser.add_argument("--op", action="store", help="Maude operation", default="search")
-    return parser.parse_args()
-
-
-if __name__ == '__main__':
-    maude.init(advise=False)
-    SMThook = SMTAssignmentHook()
-    maude.connectEqHook('get-SMTassignment', SMThook)
-    maude.load('while-semantics-concolic.maude')
-    args = get_args()
-    wmod = maude.getModule('WHILE-MAUDE')
-    t = wmod.parseTerm(args.program)
-    if args.op == "search":
-        pattern = wmod.parseTerm(args.pattern)
-        #print(t)
-        i = 0
-        for solution, substitution, path, num in t.search(maude.ANY_STEPS, pattern):
-            print("\n--------------\n", f"[{i}]", solution, 'with SUBS: \n\n', substitution, "\nand PATH:\n\n")
-            #for step in path():
-            #    print(step)
-            print("\n--------------\n")
-            i += 1
-    else:
-        t.rewrite()
-        print(t)

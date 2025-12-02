@@ -1,0 +1,100 @@
+load ../semantics-basics/semantics-basics-smtTypes.maude
+***set trace on .
+
+fmod WHILE-LANG-INSTS-MOD is
+
+    pr SMT-AEXP-MOD .
+
+    sort Inst .
+
+    op skip ; : -> Inst [ctor prec 20] .
+    op _ := _ ; : Var AExp -> Inst [ctor prec 20] .
+
+endfm
+
+view Inst from TRIV to WHILE-LANG-INSTS-MOD is
+  sort Elt to Inst .
+endv
+
+fmod WHILE-LANG-BLOCK-MOD is
+
+    pr WHILE-LANG-INSTS-MOD .
+    pr LIST{Inst} * (sort List{Inst} to Program) .
+
+    op if _ then {_} else {_} : BExp Program Program -> Inst [ctor prec 20] .
+    op if _ then {_} : BExp Program -> Inst [prec 20] .
+
+    op while _ do {_} : BExp Program -> Inst [ctor prec 20] .
+
+    var B : BExp .
+    var IL1 : Program .
+
+    eq if B then {IL1} = if B then {IL1} else {nil} .
+
+endfm
+
+fmod WHILE-BASICS is
+    pr WHILE-LANG-BLOCK-MOD .
+endfm
+
+mod WHILE-MAUDE is
+
+    pr WHILE-BASICS .
+    protecting LIST{PairVarValue} .
+
+    sort State .
+    
+    op < _ | _ > : Program Map{Var, Value} -> State [ctor] . 
+    op errState : -> State [ctor] . 
+
+    vars Var Var1 Var2 : Var .
+    vars BExp BExp2 : BExp .
+    vars IL IL1 IL2 P : Program .
+    var STR : Map{Var, Value} .
+    var AExp : AExp .
+    var SVDeclL : List{PairVarValue} .
+    var V : Value .
+
+    op start : Program -> State .
+    eq start(P) = $start(P, nil, empty) .
+    op start : Program List{PairVarValue} -> State .
+    eq start(P, SVDeclL) = $start(P, SVDeclL, empty) .
+    op $start : Program List{PairVarValue} Map{Var, Value} -> State .
+    eq $start(P, nil, STR) = < P | STR > .
+    eq $start(P, (Var, V) SVDeclL, STR) = $start(P, SVDeclL, insert(Var, V, STR)) .
+
+    rl [skip] : 
+        < skip ; IL | STR >
+        =>
+        < IL | STR > .
+
+    rl [assign] : 
+        < Var := AExp ; IL | STR >
+        =>
+        < IL | insert(Var, eval(AExp, STR), STR) > .
+
+    crl [if..then] : 
+        < if BExp then { IL1 } else { IL2 } IL | STR >
+        =>
+        < IL1 IL | STR >
+        if evalB(eval(BExp, STR)) = true .
+
+    crl [if..else] : 
+        < if BExp then { IL1 } else { IL2 } IL | STR >
+        =>
+        < IL2 IL | STR >
+        if evalB(not eval(BExp, STR)) = true .
+    
+
+    crl [while..loop] : 
+        < while BExp do { IL1 } IL | STR >
+        =>
+        < IL1 while BExp do { IL1 } IL | STR >
+        if evalB(eval(BExp, STR)) = true .
+        
+    crl [while..exit] : 
+        < while BExp do { IL1 } IL | STR >
+        =>
+        < IL | STR >
+        if evalB(not eval(BExp, STR)) = true .
+endm

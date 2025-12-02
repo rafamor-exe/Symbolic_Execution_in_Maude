@@ -1,0 +1,75 @@
+*** Concrete semantics SMT types (Just semantics) (full concrete program)
+
+search start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } }, var('var1) := val(-1/1) ;) =>! FinalState:State .
+
+*****************
+*** Unified system
+'WHILE-MAUDE 'CONCRETE-VARSTATE-MOD 'CONCRETE-AEXP-MOD 'CONCRETE-VAR-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD
+
+'CONCRETE-VARSTATE-MOD 'CONCRETE-VAR-MOD 'CONCRETE-AEXP-MOD
+
+load language-semantics/while-semantics-concrete.maude
+
+red in VERIFICATION-COMMANDS : searchSymb('WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD, 'State, 'val, "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) > {p:Real < (5/1).Real} < {nil}", 'FinalState:SEState, nil, '!, unbounded, 0) .
+red in VERIFICATION-COMMANDS : searchSymb('WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD, 'State, 'val, "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) > {p:Real < (5/1).Real} < {nil}", 'FinalState:SEState, nil, '!, unbounded, 1) .
+
+red in VERIFICATION-COMMANDS : transformModSymb('WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD, 'State, 'val, symb) .
+red in VERIFICATION-COMMANDS : transformModSymb('WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD, 'State, 'val, conc) .
+
+-------------
+*** Concolic
+python3 semantics-analysis-ext.py --program "[< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | \$apply-SMTassignment(var('var1) |-> val(p:Real), get-SMTassignment(p:Real < 5/1))>][< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | var('var1) |-> val(p:Real) >{p:Real < 5/1}<{nil}][1][var('var1) |-> val(p:Real)][0 / unbounded]" --pattern "'ConcS:ConcolicState" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "'WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD" --stSort "'State" --valOp "'val" --solN 0
+python3 semantics-analysis-ext.py --program "[< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | \$apply-SMTassignment(var('var1) |-> val(p:Real), get-SMTassignment(p:Real < 5/1))>][< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} | var('var1) |-> val(p:Real) >{p:Real < 5/1}<{nil}][1][var('var1) |-> val(p:Real)][0 / unbounded]" --pattern "'ConcS:ConcolicState" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "'WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD" --stSort "'State" --valOp "'val" --solN 1
+
+- Concurrent while
+python3 semantics-analysis-ext.py --program "[< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} || var('var2) := val((0/1).Real) ; | \$apply-SMTassignment(var('var1) |-> val(p:Real), get-SMTassignment(p:Real < 5/1))>][< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} || var('var2) := val((0/1).Real) ; | var('var1) |-> val(p:Real) >{p:Real < 5/1}<{nil}][1][var('var1) |-> val(p:Real)][0 / unbounded]" --pattern "'ConcS:ConcolicState" --file "language-semantics/while-semantics-concurrent.maude" --analysis "concolic" --modL "'WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD" --stSort "'State" --valOp "'val" --solN 0
+
+-------------
+*** Incorporated MaudeSE (need to load smt-check.maude)
+*** - MaudeSE metaSmtSearch does not allow '! (does not reduce)
+- It needs to be executed from python
+
+python3 semantics-analysis-ext.py --program "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) >" --pattern "'<_|_>['nil.Program, 'STR:Map\`{Var\`,Value\`}]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "'WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD" --stSort "'State" --solN 0
+python3 semantics-analysis-ext.py --program "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) >" --pattern "'<_|_>['nil.Program, 'STR:Map\`{Var\`,Value\`}]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "'WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD" --stSort "'State" --solN 1
+*** Directly over a file
+maude-se test/test-tr-maude-se -no-meta
+
+
+*** Concurrent while
+- 7 solutions:
+python3 semantics-analysis-ext.py --program "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } || var('var2) := val((0/1).Real) ; | var('var1) |-> val(p:Real) >" --pattern "'<_|_>['_||_['nil.Program, 'nil.Program], 'STR:Map\`{Var\`,Value\`}]" --file "language-semantics/while-semantics-concurrent.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "'WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD" --stSort "'State" --solN 0
+
+*** Does not reduce because it need MaudeSE
+*** red searchMaudeSE('WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD, 'State, "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) >", 'FinalState:State, nil, '!, unbounded, 0, 'QF_LRA, false) .
+
+**********************
+
+*** Custom SE + Concolic
+search start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } } where (p:Real < 5/1), (var('var1), val(p:Real))) =>! FinalState:SEState .
+search start(var('z) := val(0) ; while (var('y) < var('x)) do { var('z) := var('z) + val(1) ; var('y) := var('y) + val(1) ; } where (p:Integer < 5 and (p:Integer > 0) and (q:Integer < 5 and (q:Integer > 0))), (var('x), val(p:Integer)) (var('y), val(q:Integer))) =>! FinalState:SEState .
+
+*** Concrete semantics SMT types + MaudeSE (only works without metaCheck conditions)
+smt-search [1] in WHILE-MAUDE : start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } }, (var('var1), val(p:Real))) =>* < nil | STR:Map{Var, Value} > such that p:Real > -3/1 and p:Real < 5/1 using QF_LRA .
+smt-search [2] in WHILE-MAUDE : start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } }, (var('var1), val(p:Real))) =>* < nil | STR:Map{Var, Value} > such that p:Real > -3/1 and p:Real < 5/1 using QF_LRA .
+smt-search [3] in WHILE-MAUDE : start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } }, (var('var1), val(p:Real))) =>* < nil | STR:Map{Var, Value} > such that p:Real > -3/1 and p:Real < 5/1 using QF_LRA .
+smt-search [4] in WHILE-MAUDE : start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } }, (var('var1), val(p:Real))) =>* < nil | STR:Map{Var, Value} > such that p:Real > -3/1 and p:Real < 5/1 using QF_LRA .
+
+smt-search [1] in WHILE-MAUDE : start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; }, (var('var1), val(p:Real))) =>* < nil | STR:Map{Var, Value} > such that p:Real > -3/1 and p:Real < 5/1 using QF_LRA .
+
+
+smt-search [1] in WHILE-MAUDE : start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; }, (var('var1), val(p:Real))) =>* < nil | STR:Map{Var, Value} > such that p:Real > -3/1 and p:Real < 5/1 using QF_LRA .
+smt-search [2] in WHILE-MAUDE : start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; }, (var('var1), val(p:Real))) =>* < nil | STR:Map{Var, Value} > such that p:Real > -3/1 and p:Real < 5/1 using QF_LRA .
+
+--------------------------
+
+*** InitState
+< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) > {p:Real < (5/1).Real} < {nil}
+-->
+[< var('var2) := val(1/1) ; if var('var1) < var('var2) then{var(
+    'var3) := val(0/1) ; if var('var1) < val(0/1) then{var('var3) := val(2/1) ; if var(
+    'var1) < val(-1/1) then{var('var3) := val(3/1) ;}else{nil}}else{nil}}else{nil} |
+    $apply-SMTassignment(var('var1) |-> val(p:Real), get-SMTassignment(p:Real < 5/1))
+    >][< var('var2) := val(1/1) ; if var('var1) < var('var2) then{var('var3) := val(
+    0/1) ; if var('var1) < val(0/1) then{var('var3) := val(2/1) ; if var('var1) < val(
+    -1/1) then{var('var3) := val(3/1) ;}else{nil}}else{nil}}else{nil} | var('var1) |->
+    val(p:Real) >{p:Real < 5/1}<{nil}][1][var('var1) |-> val(p:Real)][0 / unbounded]

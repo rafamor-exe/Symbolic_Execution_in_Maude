@@ -1,4 +1,4 @@
-load smt
+load smt.maude
 fmod SMT-CONVERSION is
     pr REAL-INTEGER .
     pr META-LEVEL .

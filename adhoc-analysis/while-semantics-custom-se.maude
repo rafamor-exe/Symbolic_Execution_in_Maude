@@ -1,0 +1,135 @@
+load ../semantics-basics/semantics-basics-smtTypes.maude
+
+fmod WHILE-LANG-INSTS-MOD is
+
+    pr SMT-AEXP-MOD .
+
+    sort Inst .
+
+    op skip ; : -> Inst [ctor prec 20] .
+    op _ := _ ; : Var AExp -> Inst [ctor prec 20] .
+
+endfm
+
+view Inst from TRIV to WHILE-LANG-INSTS-MOD is
+  sort Elt to Inst .
+endv
+
+fmod WHILE-LANG-BLOCK-MOD is
+
+    pr WHILE-LANG-INSTS-MOD .
+    pr LIST{Inst} * (sort List{Inst} to Program) .
+
+    op if _ then {_} else {_} : BExp Program Program -> Inst [ctor prec 20] .
+    op if _ then {_} : BExp Program -> Inst [prec 20] .
+
+    op while _ do {_} : BExp Program -> Inst [ctor prec 20] .
+
+    var B : BExp .
+    var IL1 : Program .
+
+    eq if B then {IL1} = if B then {IL1} else {nil} .
+
+endfm
+
+fmod WHILE-BASICS is
+    pr WHILE-LANG-BLOCK-MOD .
+endfm
+
+fmod WHILE-LANG-SE-LOCS-MOD is
+    pr QID .
+    sort Location .
+    ops skip assign if1 if2 while1 while2 : -> Location [ctor] .
+    op loc : Qid -> Location [ctor] .
+endfm
+
+view Location from TRIV to WHILE-LANG-SE-LOCS-MOD is
+  sort Elt to Location .
+endv
+
+fmod WHILE-SE-BASICS is
+    pr WHILE-LANG-BLOCK-MOD .
+    pr WHILE-LANG-SE-LOCS-MOD .
+    pr LIST{Location} * (sort List{Location} to Path) .
+endfm
+
+mod WHILE-MAUDE is
+
+    pr WHILE-SE-BASICS .
+    pr META-LEVEL * (op _=_ to _=M_) * (op _+_ to _+M_) .
+    pr LEXICAL .
+    protecting LIST{PairVarValue} .
+
+    sorts SEState PState .
+    sort ConstrainedStart .
+    
+    op < _ | _ > : Program Map{Var, Value} -> PState [ctor] . 
+    op errState : -> PState [ctor] .
+
+    op _ {_} < {_} : PState Boolean Path -> SEState [ctor] . 
+
+    op _ where _ : Program Boolean -> ConstrainedStart [ctor] .
+
+
+    var Var : Var .
+    vars B Constraints Constraints' : Boolean .
+    vars BExp BExp2 : BExp .
+    vars P IL IL1 IL2 : Program .
+    vars STR STR' : Map{Var, Value} .
+    var AExp : AExp .
+    var Path : Path .
+    var SVDeclL : List{PairVarValue} .
+    var V : Value .
+
+    op start : Program -> SEState .
+    op start : ConstrainedStart -> SEState .
+    eq start(P) = $start(P, nil, empty, true) .
+    eq start(P where B) = $start(P, nil, empty, B) .
+    op start : Program List{PairVarValue} -> SEState .
+    op start : ConstrainedStart List{PairVarValue} -> SEState .
+    eq start(P, SVDeclL) = $start(P, SVDeclL, empty, true) .
+    eq start(P where B, SVDeclL) = $start(P, SVDeclL, empty, B) .
+    op $start : Program List{PairVarValue} Map{Var, Value} Boolean -> SEState .
+    eq $start(P, nil, STR, B) = < P | STR > {B} < {nil} .
+    eq $start(P, (Var, V) SVDeclL, STR, B) = $start(P, SVDeclL, insert(Var, V, STR), B) .
+    
+
+    rl [skip] : 
+        < skip ; IL | STR > {Constraints} < {Path}
+        =>
+        < IL | STR > {Constraints} < {Path loc('skip)} .
+
+    rl [assign] : 
+        < Var := AExp ; IL | STR > {Constraints} < {Path}
+        =>
+        < IL | insert(Var, eval(AExp, STR), STR) > {Constraints} < {Path loc('assign)} .
+
+    crl [if..then] : 
+        < if BExp then { IL1 } else { IL2 } IL | STR > {Constraints} < {Path}
+        =>
+        < IL1 IL | STR > {Constraints'} < {Path loc('if..then)}
+        if Constraints' := (Constraints and evalB(eval(BExp, STR)))
+           /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints')) .
+
+    crl [if..else] : 
+        < if BExp then { IL1 } else { IL2 } IL | STR > {Constraints} < {Path}
+        =>
+        < IL2 IL | STR > {Constraints'} < {Path loc('if..else)}
+        if Constraints' := (Constraints and evalB(not eval(BExp, STR)))
+           /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints')) .
+
+    crl [while..loop] : 
+        < while BExp do { IL1 } IL | STR > {Constraints} < {Path}
+        =>
+        < IL1 while BExp do { IL1 } IL | STR > {Constraints'} < {Path loc('while..loop)}
+        if Constraints' := (Constraints and evalB(eval(BExp, STR)))
+           /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints')) .
+        
+    crl [while..exit] : 
+        < while BExp do { IL1 } IL | STR > {Constraints} < {Path}
+        =>
+        < IL | STR > {Constraints'} < {Path loc('while..exit)}
+        if Constraints' := (Constraints and evalB(not eval(BExp, STR)))
+           /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints')) .
+
+endm

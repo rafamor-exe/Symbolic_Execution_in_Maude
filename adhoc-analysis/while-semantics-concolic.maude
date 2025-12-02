@@ -1,0 +1,224 @@
+load ../semantics-basics/semantics-basics-smtTypes.maude
+
+fmod WHILE-LANG-INSTS-MOD is
+
+    pr SMT-AEXP-MOD .
+
+    sort Inst .
+
+    op skip ; : -> Inst [ctor prec 20] .
+    op _ := _ ; : Var AExp -> Inst [ctor prec 20] .
+
+endfm
+
+view Inst from TRIV to WHILE-LANG-INSTS-MOD is
+  sort Elt to Inst .
+endv
+
+fmod WHILE-LANG-BLOCK-MOD is
+
+    pr WHILE-LANG-INSTS-MOD .
+    pr LIST{Inst} * (sort List{Inst} to Program) .
+
+    op if _ then {_} else {_} : BExp Program Program -> Inst [ctor prec 20] .
+    op if _ then {_} : BExp Program -> Inst [prec 20] .
+
+    op while _ do {_} : BExp Program -> Inst [ctor prec 20] .
+
+    var B : BExp .
+    var IL1 : Program .
+
+    eq if B then {IL1} = if B then {IL1} else {nil} .
+
+endfm
+
+fmod WHILE-BASICS is
+    pr WHILE-LANG-BLOCK-MOD .
+endfm
+
+fmod WHILE-LANG-SE-LOCS-MOD is
+    pr QID .
+    sort Location .
+    ops skip assign if1 if2 while1 while2 : -> Location [ctor] .
+    op loc : Qid -> Location [ctor] .
+endfm
+
+view Location from TRIV to WHILE-LANG-SE-LOCS-MOD is
+  sort Elt to Location .
+endv
+
+fmod WHILE-SE-BASICS is
+    pr WHILE-LANG-BLOCK-MOD .
+    pr WHILE-LANG-SE-LOCS-MOD .
+    pr LIST{Location} * (sort List{Location} to Path) .
+endfm
+
+fmod SMT-CONNECTION is
+    pr REAL-INTEGER .
+
+    sort Assignment .
+
+    op _<--_ : Real Real -> Assignment [ctor] . *** test syntax
+    op _<--_ : Integer Integer -> Assignment [ctor] . *** test syntax
+    op _,_ : Assignment Assignment -> Assignment .
+    op failed : -> Assignment [ctor] .
+
+    op get-SMTassignment : Boolean -> Assignment [special (id-hook SpecialHubSymbol)] .
+
+endfm
+
+mod WHILE-MAUDE is
+
+    pr WHILE-SE-BASICS .
+    pr LIST{Location} * (sort List{Location} to Path) .
+    pr META-LEVEL * (op _=_ to _=M_) * (op _+_ to _+M_) .
+    pr SMT-CONNECTION .
+    protecting LIST{PairVarValue} .
+
+    sorts SEState PState ConcolicState ConcolicStateCore .
+    sort ConstrainedStart .
+    sorts CThread MTExec .
+    subsort CThread Program < MTExec .
+
+    op _ [_] : Program Nat -> CThread [ctor] .
+    op noProgram : -> MTExec [ctor] .
+    op _ || _ : MTExec MTExec -> MTExec [ctor assoc comm id: noProgram] .
+
+
+    op < _ | _ > : MTExec Map{Var, Value} -> PState [ctor] . 
+    op errState : -> PState [ctor] .
+
+    op _ {_} < {_} : PState Boolean Path -> SEState [ctor] . 
+
+    op _ where _ : MTExec Boolean -> ConstrainedStart [ctor] .
+
+    op [_] [_] [_] : PState SEState Int -> ConcolicStateCore [ctor] .
+    op _ [_] [_/_] : ConcolicStateCore Map{Var, Value} Nat Bound -> ConcolicState [ctor] .
+
+
+    var Var : Var .
+    vars B Constraint C1 Constraints Constraints' : Boolean .
+    vars BExp BExp2 : BExp .
+    vars R Rconc : Real .
+    vars I Iconc : Integer .
+    vars IL IL1 IL2 : Program .
+    vars STR STR' SymbSTR STRInit : Map{Var, Value} .
+    var AExp : AExp .
+    var Path : Path .
+    var SVDeclL : List{PairVarValue} .
+    var V : Value .
+    vars SEPState CEPState : PState .
+    var N : Nat .
+    var Assignment : Assignment .
+    var LBound : Bound .
+    var LDepth : Nat .
+    vars P PRest : MTExec .
+
+    op start : MTExec -> ConcolicState .
+    op start : ConstrainedStart -> ConcolicState .
+    eq start(P) = $start(P, nil, empty, true, unbounded) .
+    eq start(P where B) = $start(P, nil, empty, B, unbounded) .
+    op start : MTExec List{PairVarValue} -> ConcolicState .
+    op start : ConstrainedStart List{PairVarValue} -> ConcolicState .
+    op start : MTExec List{PairVarValue} Bound -> ConcolicState .
+    op start : ConstrainedStart List{PairVarValue} Bound -> ConcolicState .
+    eq start(P, SVDeclL) = $start(P, SVDeclL, empty, true, unbounded) .
+    eq start(P where B, SVDeclL) = $start(P, SVDeclL, empty, B, unbounded) .
+    eq start(P, SVDeclL, LBound) = $start(P, SVDeclL, empty, true, LBound) .
+    eq start(P where B, SVDeclL, LBound) = $start(P, SVDeclL, empty, B, LBound) .
+    op $start : MTExec List{PairVarValue} Map{Var, Value} Boolean Bound -> ConcolicState .
+    eq $start(P, nil, STR, B, LBound) = [ < P | init-CStore(STR, B) > ] [ < P | STR > {B} < {nil} ] [size(B)] [STR] [0 / LBound] . *** Don't negate initial conditions, only path conditions
+    eq $start(P, (Var, V) SVDeclL, STR, B, LBound) = $start(P, SVDeclL, insert(Var, V, STR), B, LBound) .
+
+    rl [C-skip] : 
+        [ < skip ; IL || PRest | STR > ] [ SEPState {Constraints} < {Path} ] [N]
+        =>
+        [ < IL || PRest | STR > ] [ SEPState {Constraints} < {Path skip} ] [N] .
+
+    rl [C-assign] : 
+        [ < Var := AExp ; IL || PRest | STR > ] [ < P | SymbSTR > {Constraints} < {Path} ] [N]
+        =>
+        [ < IL || PRest | insert(Var, eval(AExp, STR), STR) > ] [ < P | insert(Var, eval(AExp, SymbSTR), SymbSTR) > {Constraints} < {Path assign} ] [N] .
+
+    crl [C-if..then] :
+        [ < if BExp then { IL1 } else { IL2 } IL || PRest | STR > ] [ < P | SymbSTR > {Constraints} < {Path} ] [N]
+        =>
+        [ < IL1 IL || PRest | STR > ] [ < P | SymbSTR > {Constraints'} < {Path if1} ] [N]
+        if Constraints' := (Constraints and evalB(eval(BExp, SymbSTR)))
+        /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(evalB(eval(BExp, STR)))) .
+    
+    crl [C-if..else-spawn] :
+        [ < if BExp then { IL1 } else { IL2 } IL || PRest | STR > ] [ < P | SymbSTR > {Constraints} < {Path} ] [N] [STRInit] [LDepth / LBound]
+        =>
+        [ < P | init-CStore(STRInit, Constraints') > ] [ < P | STRInit > {Constraints'} < {nil} ] [N + 1] [STRInit] [0 / LBound]
+        if metaCheck(upModule('WHILE-MAUDE, false), upTerm(evalB(eval(BExp, STR))))
+        /\ Constraints' := (Constraints and evalB(not eval(BExp, SymbSTR)))
+        /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints')) .
+
+    crl [C-if..else] :
+        [ < if BExp then { IL1 } else { IL2 } IL || PRest | STR > ] [ < P | SymbSTR > {Constraints} < {Path} ] [N]
+        =>
+        [ < IL2 IL || PRest | STR > ] [ < P | SymbSTR > {Constraints'} < {Path if2} ] [N]
+        if Constraints' := (Constraints and evalB(not eval(BExp, SymbSTR))) 
+        /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(evalB(not eval(BExp, STR)))) .
+    
+    crl [C-if..then-spawn] :
+        [ < if BExp then { IL1 } else { IL2 } IL || PRest | STR > ] [ < P | SymbSTR > {Constraints} < {Path} ] [N] [STRInit] [LDepth / LBound]
+        =>
+        [ < P | init-CStore(STRInit, Constraints') > ] [ < P | STRInit > {Constraints'} < {nil} ] [N + 1] [STRInit] [0 / LBound]
+        if metaCheck(upModule('WHILE-MAUDE, false), upTerm(evalB(not eval(BExp, STR))))
+        /\ Constraints' := (Constraints and evalB(eval(BExp, SymbSTR)))
+        /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints')) .
+    
+
+    crl [C-while..loop] : 
+        [ < while BExp do { IL1 } IL || PRest | STR > ] [ < P | SymbSTR > {Constraints} < {Path} ] [N] [STRInit] [LDepth / LBound]
+        =>
+        [ < IL1 while BExp do { IL1 } IL || PRest | STR > ] [ < P | SymbSTR > {Constraints'} < {Path while1} ] [N] [STRInit] [LDepth / LBound]
+        if Constraints' := (Constraints and evalB(eval(BExp, SymbSTR)))
+        /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(evalB(eval(BExp, STR)))) .
+    
+    crl [C-while..exit-spawn] : 
+        [ < while BExp do { IL1 } IL || PRest | STR > ] [ < P | SymbSTR > {Constraints} < {Path} ] [N] [STRInit] [LDepth / LBound]
+        =>
+        [ < P | init-CStore(STRInit, Constraints') > ] [ < P | STRInit > {Constraints'} < {nil} ] [N + 1] [STRInit] [LDepth / LBound]
+        if metaCheck(upModule('WHILE-MAUDE, false), upTerm(evalB(eval(BExp, STR))))
+        /\ Constraints' := (Constraints and evalB(not eval(BExp, SymbSTR)))
+        /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints')) .
+        
+    crl [C-while..exit] : 
+        [ < while BExp do { IL1 } IL || PRest | STR > ] [ < P | SymbSTR > {Constraints} < {Path} ] [N] [STRInit] [LDepth / LBound]
+        =>
+        [ < IL || PRest | STR > ] [ < P | SymbSTR > {Constraints'} < {Path while2} ] [N] [STRInit] [0 / LBound]
+        if Constraints' := (Constraints and evalB(not eval(BExp, SymbSTR))) 
+        /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(evalB(not eval(BExp, STR)))) .
+    
+    crl [C-while..loop-spawn] : 
+        [ < while BExp do { IL1 } IL || PRest | STR > ] [ < P | SymbSTR > {Constraints} < {Path} ] [N] [STRInit] [LDepth / LBound]
+        =>
+        [ < P | init-CStore(STRInit, Constraints') > ] [ < P | STRInit > {Constraints'} < {nil} ] [N + 1] [STRInit] [LDepth + 1 / LBound]
+        if metaCheck(upModule('WHILE-MAUDE, false), upTerm(evalB(not eval(BExp, STR))))
+        /\ Constraints' := (Constraints and evalB(eval(BExp, SymbSTR)))
+        /\ metaCheck(upModule('WHILE-MAUDE, false), upTerm(Constraints'))
+        /\ withinBounds(LDepth, LBound) .
+    
+    op withinBounds : Nat Bound -> Bool .
+    eq withinBounds(LDepth, unbounded) = true .
+    ceq withinBounds(LDepth, LBound) = true if LDepth < LBound .
+    eq withinBounds(LDepth, LBound) = false [owise] .
+
+    op init-CStore : Map{Var, Value} Boolean -> Map{Var, Value} .
+    eq init-CStore(STR, Constraints) = $apply-SMTassignment(STR, get-SMTassignment(Constraints)) .
+
+    op $apply-SMTassignment : Map{Var, Value} Assignment -> Map{Var, Value} .
+    eq $apply-SMTassignment((Var |-> val(R), STR), R <-- Rconc) = (Var |-> val(Rconc), STR) .
+    eq $apply-SMTassignment((Var |-> val(R), STR), R <-- Rconc ; Assignment) = (Var |-> val(Rconc), $apply-SMTassignment(STR, Assignment)) .
+    eq $apply-SMTassignment((Var |-> val(I), STR), I <-- Iconc) = (Var |-> val(Iconc), STR) .
+    eq $apply-SMTassignment((Var |-> val(I), STR), I <-- Iconc ; Assignment) = (Var |-> val(Iconc), $apply-SMTassignment(STR, Assignment)) .
+    eq $apply-SMTassignment(STR, failed) = STR .
+
+    op size : Boolean -> Nat .
+    eq size(C1) = 1 .
+    eq size ((C1 and Constraints)) = 1 + size(Constraints) .
+
+endm
