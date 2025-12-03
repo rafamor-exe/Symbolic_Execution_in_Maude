@@ -24,9 +24,15 @@ python3 semantics-analysis-ext.py --program "[< var('var2) := val((1/1).Real) ; 
 - Concurrent while
 python3 semantics-analysis-ext.py --program "[< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} || var('var2) := val((0/1).Real) ; | \$apply-SMTassignment(var('var1) |-> val(p:Real), get-SMTassignment(p:Real < 5/1))>][< var('var2) := val((1/1).Real) ; if var('var1) < var('var2) then{var('var3) := val((0/1).Real) ;} || var('var2) := val((0/1).Real) ; | var('var1) |-> val(p:Real) >{p:Real < 5/1}<{nil}][1][var('var1) |-> val(p:Real)][0 / unbounded]" --pattern "'ConcS:ConcolicState" --file "language-semantics/while-semantics-concurrent.maude" --analysis "concolic" --modL "'WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD" --stSort "'State" --valOp "'val" --solN 0
 
+- General target state pattern
+python3 semantics-analysis-ext.py --program "[< var('var2) := val((1).Integer) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val((0).Integer) ;} | \$apply-SMTassignment(var('var1) |-> val(p:Integer), get-SMTassignment(p:Integer < (5).Integer))>][< var('var2) := val((1).Integer) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val((0).Integer) ;} | var('var1) |-> val(p:Integer) >{p:Integer < (5).Integer}<{nil}][1][var('var1) |-> val(p:Integer)][0 / unbounded]" --pattern "concolicState('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "'WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD" --stSort "'State" --valOp "'val" --solN 1
+
+- Division by 0 error capture
+python3 semantics-analysis-ext.py --program "[< var('var2) := val((1).Integer) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val((0).Integer) ;} | \$apply-SMTassignment(var('var1) |-> val(p:Integer), get-SMTassignment(p:Integer < (5).Integer))>][< var('var2) := val((1).Integer) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val((0).Integer) ;} | var('var1) |-> val(p:Integer) >{p:Integer < (5).Integer}<{nil}][1][var('var1) |-> val(p:Integer)][0 / unbounded]" --pattern "concolicState('State, 'errState['P:Program, 'S:Map\`{Var\`,Value\`}])" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "'WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD" --stSort "'State" --valOp "'val" --solN 0
+
 -------------
 *** Incorporated MaudeSE (need to load smt-check.maude)
-*** - MaudeSE metaSmtSearch does not allow '! (does not reduce)
+*** - MaudeSE metaSmtSearch does not allow '! (does not reduce) (remember --sType "'*")
 - It needs to be executed from python
 
 python3 semantics-analysis-ext.py --program "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) >" --pattern "'<_|_>['nil.Program, 'STR:Map\`{Var\`,Value\`}]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "'WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD" --stSort "'State" --solN 0
@@ -38,6 +44,11 @@ maude-se test/test-tr-maude-se -no-meta
 *** Concurrent while
 - 7 solutions:
 python3 semantics-analysis-ext.py --program "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } || var('var2) := val((0/1).Real) ; | var('var1) |-> val(p:Real) >" --pattern "'<_|_>['_||_['nil.Program, 'nil.Program], 'STR:Map\`{Var\`,Value\`}]" --file "language-semantics/while-semantics-concurrent.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "'WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD" --stSort "'State" --solN 0
+
+NOT WORKING:
+- Division by 0 error capture
+python3 semantics-analysis-ext.py --program "< var('var2) := val((1).Integer) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val((0).Integer) ;} | var('var1) |-> val(p:Integer) >" --pattern "'errState['P:Program, 'S:Map\`{Var\`,Value\`}]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --modL "'WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD" --stSort "'State" --valOp "'val" --solN 0 --sType "'*"
+
 
 *** Does not reduce because it need MaudeSE
 *** red searchMaudeSE('WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD, 'State, "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) >", 'FinalState:State, nil, '!, unbounded, 0, 'QF_LRA, false) .

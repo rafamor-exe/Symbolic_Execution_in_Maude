@@ -116,7 +116,22 @@ if __name__ == '__main__':
                                     +str(args.solN)+")"
                 t = mod.parseTerm(t)
                 t.reduce()                
-        print(t)
+                print(t)
+                #print("---------")
+                #print("With path:")
+                #path = "searchPathConcolic(" \
+                #                           +args.modL+"," \
+                #                           +args.stSort+"," \
+                #                           +args.valOp+"," \
+                #                           +'\"'+args.program+'\"'+"," \
+                #                           +args.pattern+"," \
+                #                           +args.sCond+"," \
+                #                           +str(args.sType)+"," \
+                #                           +str(args.bound)+"," \
+                #                           +str(args.solN)+")"
+                #path = mod.parseTerm(path)
+                #path.reduce()
+                #print(path)
 
 
     

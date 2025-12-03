@@ -18,6 +18,8 @@ fmod SMT-VARSTATE-MOD is
     op val : Boolean -> BVal [ctor] .
     op val : Float -> Value .
 
+    op und : -> Value [ctor] .
+    
     vars R R1 R2 : Real .
     vars B B1 B2 : Boolean .
     vars I I1 I2 : Integer .
@@ -38,6 +40,8 @@ fmod SMT-VARSTATE-MOD is
     op _/_ : Value Value -> Value [gather (E e) prec 31] .
     eq val(R1) / val(R2) = val(R1 / R2) .
     eq val(I1) / val(I2) = val(I1 div I2) .
+    ***eq val(I1) / val((0).Integer) = und .
+    ***eq val(I1) / val(I2) = val(I1 div I2) [owise] .
 
     op _===_ : BVal BVal -> BVal [gather (e E) prec 51] .
     eq val(B1) === val(B2) = val(B1 === B2) .

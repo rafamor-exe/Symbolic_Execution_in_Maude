@@ -11,6 +11,8 @@ fmod CONCRETE-VARSTATE-MOD is
     op val : Bool -> BVal [ctor] .
     op val : Float -> Value .
 
+    ***op und : -> Value [ctor] .
+
     vars R R1 R2 : Rat .
     vars B B1 B2 : Bool .
     vars I I1 I2 : Int .

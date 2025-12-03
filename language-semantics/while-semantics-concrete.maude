@@ -43,7 +43,7 @@ mod WHILE-MAUDE is
     sort State .
     
     op < _ | _ > : Program Map{Var, Value} -> State [ctor] . 
-    op errState : -> State [ctor] . 
+    op errState : Program Map{Var, Value} -> State [ctor] . 
 
     vars Var Var1 Var2 : Var .
     var BExp BExp2 : BExp .
@@ -65,6 +65,11 @@ mod WHILE-MAUDE is
         < Var := AExp ; IL | STR >
         =>
         < IL | insert(Var, eval(AExp, STR), STR) > .
+        ***if eval(AExp, STR) =/= und then
+        ***    < IL | insert(Var, eval(AExp, STR), STR) >
+        ***else
+        ***    errState(Var := AExp ; IL, STR)
+        ***fi .
 
     crl [if..then] : 
         < if BExp then { IL1 } else { IL2 } IL | STR >
