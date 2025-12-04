@@ -49,6 +49,7 @@ if __name__ == '__main__':
         t = "searchMaudeSE(" \
                         +args.modL+"," \
                         +args.stSort+"," \
+                        +args.valOp+"," \
                         +'\"'+args.program+'\"'+"," \
                         +args.pattern+"," \
                         +args.sCond+"," \
@@ -65,6 +66,7 @@ if __name__ == '__main__':
         path = "searchPathMaudeSE(" \
                                   +args.modL+"," \
                                   +args.stSort+"," \
+                                  +args.valOp+"," \
                                   +'\"'+args.program+'\"'+"," \
                                   +args.pattern+"," \
                                   +args.sCond+"," \

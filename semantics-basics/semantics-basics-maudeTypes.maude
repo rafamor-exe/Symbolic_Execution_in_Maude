@@ -11,8 +11,6 @@ fmod CONCRETE-VARSTATE-MOD is
     op val : Bool -> BVal [ctor] .
     op val : Float -> Value .
 
-    ***op und : -> Value [ctor] .
-
     vars R R1 R2 : Rat .
     vars B B1 B2 : Bool .
     vars I I1 I2 : Int .
@@ -110,8 +108,10 @@ fmod CONCRETE-AEXP-MOD is
     op _>=_ : AExp AExp -> BVal [prec 37] .
     op _/\_ : BExp BExp -> BExp [ctor assoc] .
 
+    ***op evalB : BVal -> Bool .
     op eval : AExp Map{Var, Value} -> Value .
-    op eval : BExp Map{Var, Value} -> BVal .
+    op eval : BExp Map{Var, Value} -> Bool .
+    op eval : BVal -> Bool .
 
     vars AExp AExp1 AExp2 : AExp .
     vars BExp1 BExp : BExp .
@@ -124,17 +124,19 @@ fmod CONCRETE-AEXP-MOD is
     eq eval(AExp1 * AExp2, STR) = eval(AExp1, STR) * eval(AExp2, STR) .
     eq eval(AExp1 - AExp2, STR) = eval(AExp1, STR) - eval(AExp2, STR) .
     eq eval(AExp1 / AExp2, STR) = eval(AExp1, STR) / eval(AExp2, STR) .
-    eq eval(AExp1 = AExp2, STR) = eval(AExp1, STR) === eval(AExp2, STR) .
-    eq eval(AExp1 != AExp2, STR) = eval(AExp1, STR) =/== eval(AExp2, STR) .
-    eq eval(AExp1 < AExp2, STR) = eval(AExp1, STR) < eval(AExp2, STR) .
-    eq eval(AExp1 <= AExp2, STR) = eval(AExp1, STR) <= eval(AExp2, STR) .
-    eq eval(AExp1 > AExp2, STR) = eval(AExp1, STR) > eval(AExp2, STR) .
-    eq eval(AExp1 >= AExp2, STR) = eval(AExp1, STR) >= eval(AExp2, STR) .
+    eq eval(AExp1 = AExp2, STR) = eval(eval(AExp1, STR) === eval(AExp2, STR)) .
+    eq eval(AExp1 != AExp2, STR) = eval(eval(AExp1, STR) =/== eval(AExp2, STR)) .
+    eq eval(AExp1 < AExp2, STR) = eval(eval(AExp1, STR) < eval(AExp2, STR)) .
+    eq eval(AExp1 <= AExp2, STR) = eval(eval(AExp1, STR) <= eval(AExp2, STR)) .
+    eq eval(AExp1 > AExp2, STR) = eval(eval(AExp1, STR) > eval(AExp2, STR)) .
+    eq eval(AExp1 >= AExp2, STR) = eval(eval(AExp1, STR) >= eval(AExp2, STR)) .
     eq eval(BExp1 /\ BExp, STR) = eval(BExp1, STR) and eval(BExp, STR) .
     eq eval(not BExp1, STR) = not eval(BExp1, STR) .
     eq eval(Var, ((Var |-> V), STR)) = V .
     eq eval(V, STR) = V .
-    eq eval(val(B), STR) = val(B) .
+    eq eval(val(B), STR) = B .
+    eq eval(val(B)) = B .
+    ***eq evalB(val(B)) = B .
 
     eq not not BExp = BExp .
 

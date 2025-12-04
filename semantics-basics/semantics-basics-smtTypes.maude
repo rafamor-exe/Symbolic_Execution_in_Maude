@@ -40,8 +40,6 @@ fmod SMT-VARSTATE-MOD is
     op _/_ : Value Value -> Value [gather (E e) prec 31] .
     eq val(R1) / val(R2) = val(R1 / R2) .
     eq val(I1) / val(I2) = val(I1 div I2) .
-    ***eq val(I1) / val((0).Integer) = und .
-    ***eq val(I1) / val(I2) = val(I1 div I2) [owise] .
 
     op _===_ : BVal BVal -> BVal [gather (e E) prec 51] .
     eq val(B1) === val(B2) = val(B1 === B2) .
@@ -126,10 +124,10 @@ fmod SMT-AEXP-MOD is
     op _>=_ : AExp AExp -> BVal [prec 37] .
     op _/\_ : BExp BExp -> BExp [ctor assoc] .
 
-    *** NOTE: evalB is not defined in *-maudeTypes because of possible collisions in operator range
-    op evalB : BExp -> Boolean .
+    ***op evalB : BVal -> Boolean .
     op eval : AExp Map{Var, Value} -> Value .
-    op eval : BExp Map{Var, Value} -> BVal .
+    op eval : BExp Map{Var, Value} -> Boolean .
+    op eval : BVal -> Boolean .
 
     vars AExp AExp1 AExp2 : AExp .
     vars BExp1 BExp : BExp .
@@ -143,18 +141,19 @@ fmod SMT-AEXP-MOD is
     eq eval(AExp1 * AExp2, STR) = eval(AExp1, STR) * eval(AExp2, STR) .
     eq eval(AExp1 - AExp2, STR) = eval(AExp1, STR) - eval(AExp2, STR) .
     eq eval(AExp1 / AExp2, STR) = eval(AExp1, STR) / eval(AExp2, STR) .
-    eq eval(AExp1 = AExp2, STR) = eval(AExp1, STR) === eval(AExp2, STR) .
-    eq eval(AExp1 != AExp2, STR) = eval(AExp1, STR) =/== eval(AExp2, STR) .
-    eq eval(AExp1 < AExp2, STR) = eval(AExp1, STR) < eval(AExp2, STR) .
-    eq eval(AExp1 <= AExp2, STR) = eval(AExp1, STR) <= eval(AExp2, STR) .
-    eq eval(AExp1 > AExp2, STR) = eval(AExp1, STR) > eval(AExp2, STR) .
-    eq eval(AExp1 >= AExp2, STR) = eval(AExp1, STR) >= eval(AExp2, STR) .
+    eq eval(AExp1 = AExp2, STR) = eval(eval(AExp1, STR) === eval(AExp2, STR)) .
+    eq eval(AExp1 != AExp2, STR) = eval(eval(AExp1, STR) =/== eval(AExp2, STR)) .
+    eq eval(AExp1 < AExp2, STR) = eval(eval(AExp1, STR) < eval(AExp2, STR)) .
+    eq eval(AExp1 <= AExp2, STR) = eval(eval(AExp1, STR) <= eval(AExp2, STR)) .
+    eq eval(AExp1 > AExp2, STR) = eval(eval(AExp1, STR) > eval(AExp2, STR)) .
+    eq eval(AExp1 >= AExp2, STR) = eval(eval(AExp1, STR) >= eval(AExp2, STR)) .
     eq eval(BExp1 /\ BExp, STR) = eval(BExp1, STR) and eval(BExp, STR) .
     eq eval(not BExp1, STR) = not eval(BExp1, STR) .
     eq eval(Var, ((Var |-> V), STR)) = V .
     eq eval(V, STR) = V .
-    eq eval(val(B), STR) = val(B) .
-    eq evalB(val(B)) = B .
+    eq eval(val(B), STR) = B .
+    eq eval(val(B)) = B .
+    ***eq evalB(val(B)) = B .
 
     eq not not BExp = BExp .
 

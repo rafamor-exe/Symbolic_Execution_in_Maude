@@ -65,36 +65,31 @@ mod WHILE-MAUDE is
         < Var := AExp ; IL | STR >
         =>
         < IL | insert(Var, eval(AExp, STR), STR) > .
-        ***if eval(AExp, STR) =/= und then
-        ***    < IL | insert(Var, eval(AExp, STR), STR) >
-        ***else
-        ***    errState(Var := AExp ; IL, STR)
-        ***fi .
 
     crl [if..then] : 
         < if BExp then { IL1 } else { IL2 } IL | STR >
         =>
         < IL1 IL | STR >
-        if eval(BExp, STR) = val(true) .
+        if eval(BExp, STR) .
 
     crl [if..else] : 
         < if BExp then { IL1 } else { IL2 } IL | STR >
         =>
         < IL2 IL | STR >
-        if (not eval(BExp, STR)) = val(true) .
+        if not eval(BExp, STR) .
     
 
     crl [while..loop] : 
         < while BExp do { IL1 } IL | STR >
         =>
         < IL1 while BExp do { IL1 } IL | STR >
-        if eval(BExp, STR) = val(true) .
+        if eval(BExp, STR) .
         
     crl [while..exit] : 
         < while BExp do { IL1 } IL | STR >
         =>
         < IL | STR >
-        if (not eval(BExp, STR)) = val(true) .
+        if not eval(BExp, STR).
 
     *** Auxiliary
 
@@ -109,10 +104,6 @@ mod WHILE-MAUDE is
 
     op updateStore : State Map{Var, Value} -> State .
     eq updateStore(< P | STR >, STR2) = < P | STR2 > .
-    
-    op insertToSt : State Var Value -> State .
-    eq insertToSt(< P | STR >, Var, V) = < P | insert(Var, V, STR) > .
-
     
     *** Ignore
     op test : Bool Int -> Rat .
