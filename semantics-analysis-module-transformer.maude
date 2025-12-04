@@ -39,7 +39,7 @@ fmod MODULE-TRANSFORMER is
 
     sort TrType .
     
-    ops symb conc maudeSE : -> TrType [ctor] .
+    ops symb conc maudeSE clconc : -> TrType [ctor] .
 
     vars Trm T1 T2 Tcond Tmod Constraints Path : Term .
     var AttrSet : AttrSet .
@@ -80,7 +80,7 @@ fmod MODULE-TRANSFORMER is
                                     getOps(M)
                                     getMbs(M)
                                     getEqs(M)
-                                    rlToSymbolic(getRls(M), M)
+                                    rlToSymbolic(getRls(M))
                                   endm .
     eq modRl(M, StateOp, conc) = mod 'CONCOLIC-MOD is
                                     getImports(M)
@@ -89,10 +89,20 @@ fmod MODULE-TRANSFORMER is
                                     getOps(M)
                                     getMbs(M)
                                     getEqs(M)
-                                    rlToConcolic(getRls(M), StateOp, M)
+                                    rlToConcolic(getRls(M), StateOp)
                                   endm .
     
     eq modRl(M, StateOp, maudeSE) = M .
+
+    eq modRl(M, StateOp, clconc) = mod 'CONCOLIC-MOD is
+                                    getImports(M)
+                                    sorts getSorts(M) .
+                                    getSubsorts(M)
+                                    getOps(M)
+                                    getMbs(M)
+                                    getEqs(M)
+                                    rlToClConcolic(getRls(M), StateOp) inclClConcCrl(StateOp)
+                                   endm .
     
     *** Generic Term substitution: substitute T1 by T2 in Trm
     op subT : Term Term Term -> Term .
@@ -108,11 +118,11 @@ fmod MODULE-TRANSFORMER is
     eq subTL((Trm, NeTL), T1, T2) = subT(Trm, T1, T2), subTL(NeTL, T1, T2) .
 
 
-    op rlToSymbolic : RuleSet Module -> RuleSet .
-    eq rlToSymbolic(none, M) = none .
-    eq rlToSymbolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet, M) = rl '_`{_`}<`{_`}[T1, 'Constraints:Boolean, 'Path:Path] => '_`{_`}<`{_`}[T2, 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]] [label(InstId) AttrSet] . rlToSymbolic(RlSet, M) .
+    op rlToSymbolic : RuleSet -> RuleSet .
+    eq rlToSymbolic(none) = none .
+    eq rlToSymbolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet) = rl '_`{_`}<`{_`}[T1, 'Constraints:Boolean, 'Path:Path] => '_`{_`}<`{_`}[T2, 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]] [label(InstId) AttrSet] . rlToSymbolic(RlSet) .
     *** TODO: parametrize language-specific sorts (Map, BExp)
-    ceq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, M) = crl '_`{_`}<`{_`}[T1, 'Constraints:Boolean, 'Path:Path] => '_`{_`}<`{_`}[T2, 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]] if 'Constraints':Boolean := '_and_['Constraints:Boolean, Tcond] /\ 'metaCheck[upTerm(M), 'upTerm['Constraints':Boolean]] = 'true.Bool [label(InstId) AttrSet] . rlToSymbolic(RlSet, M)
+    ceq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet) = crl '_`{_`}<`{_`}[T1, 'Constraints:Boolean, 'Path:Path] => '_`{_`}<`{_`}[T2, 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]] if 'Constraints':Boolean := '_and_['Constraints:Boolean, Tcond] /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints':Boolean]] = 'true.Bool [label(InstId) AttrSet] . rlToSymbolic(RlSet)
         if (Tcond = 'true.Boolean) := Cond .
     
     *** State var general definition
@@ -131,11 +141,11 @@ fmod MODULE-TRANSFORMER is
     op concolicState : Qid Term -> Term .
     eq concolicState(StateOp, T1) = '`[_`]`[_`]`[_`]`[_`]`[_/_`][T1, symbState(StateOp, 1), 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound] .
 
-    op rlToConcolic : RuleSet Qid Module -> RuleSet .
-    eq rlToConcolic(none, StateOp, M) = none .
+    op rlToConcolic : RuleSet Qid -> RuleSet .
+    eq rlToConcolic(none, StateOp) = none .
     *** Symbolic rules must not be applied to internal symbolic state during concolic exec
     *** These rules cannot be merged into one with 'if_then_else_fi because that distinction should be done at this level (transformation), not delayed
-    eq rlToConcolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet, StateOp, M) = ***(crl '`[_`]`[_`]`[_`]`[_`]`[_/_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
+    eq rlToConcolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet, StateOp) = ***(crl '`[_`]`[_`]`[_`]`[_`]`[_/_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
                                                                                ***=>
                                                                                ***'`[_`]`[_`]`[_`]`[_`]`[_/_`][T2, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
                                                                                ***if '_==_['getStore[T1], 'getStore[T2]] = 'true.Bool
@@ -148,7 +158,7 @@ fmod MODULE-TRANSFORMER is
                                                                                ***if 'insert['Var:Var, 'Val:Value, 'STR:Map`{Var`,Value`}] := 'getStore[T2]
                                                                                ***[label(qid(string(InstId) + "-bis")) AttrSet] .)
                                                                                [label(InstId) AttrSet] .)
-                                                                               rlToConcolic(RlSet, StateOp, M) .
+                                                                               rlToConcolic(RlSet, StateOp) .
     ***eq rlToConcolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet, StateOp, M) = crl '`[_`]`[_`]`[_`]`[_`]`[_/_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
     ***                                                                           =>
     ***                                                                           '`[_`]`[_`]`[_`]`[_`]`[_/_`][T2, '_`{_`}<`{_`}['insertToSt[stateVar(StateOp), 'Var:Var, 'Val:Value], 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
@@ -157,22 +167,43 @@ fmod MODULE-TRANSFORMER is
     ***                                                                           rlToConcolic(RlSet, StateOp, M) .
     
     *** TODO: Generalize hardcoded STR variable indicating the concrete store
-    ceq rlToConcolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, StateOp, M) = (crl '`[_`]`[_`]`[_`]`[_`]`[_/_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
+    ceq rlToConcolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, StateOp) = (crl '`[_`]`[_`]`[_`]`[_`]`[_/_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
                                                                                           =>
                                                                                           '`[_`]`[_`]`[_`]`[_`]`[_/_`][T2, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints':Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
                                                                                           if 'Constraints':Boolean := '_and_['Constraints:Boolean, subT(Tcond, 'STR:Map`{Var`,Value`}, 'getStore[stateVar(StateOp)])]
-                                                                                          /\ 'metaCheck[upTerm(M), 'upTerm[Tcond]] = 'true.Bool
+                                                                                          /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm[Tcond]] = 'true.Bool
                                                                                           [label(InstId) AttrSet] .)
                                                                                           (crl '`[_`]`[_`]`[_`]`[_`]`[_/_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
                                                                                           =>
                                                                                           '`[_`]`[_`]`[_`]`[_`]`[_/_`][subT('updateProgram[T2, 'getProgram[stateVar(StateOp)]], 'STR:Map`{Var`,Value`}, 'init-CStore['STRInit:Map`{Var`,Value`}, 'Constraints':Boolean]),
                                                                                                                       '_`{_`}<`{_`}['updateStore[stateVar(StateOp), 'STRInit:Map`{Var`,Value`}], 'Constraints':Boolean, 'nil.Path], '_+_['N:Nat, 's_['0.Nat]], 'STRInit:Map`{Var`,Value`}, '0.Nat, 'LBound:Bound]
-                                                                                          if 'metaCheck[upTerm(M), 'upTerm[Tcond]] = 'true.Bool
+                                                                                          if 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm[Tcond]] = 'true.Bool
                                                                                           /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, 'not_[subT(Tcond, 'STR:Map`{Var`,Value`}, 'getStore[stateVar(StateOp)])]]
-                                                                                          /\ 'metaCheck[upTerm(M), 'upTerm['Constraints':Boolean]] = 'true.Bool
+                                                                                          /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints':Boolean]] = 'true.Bool
                                                                                           [label(qid(string(InstId) + "-bis")) AttrSet] .)
-                                                                                          rlToConcolic(RlSet, StateOp, M)
+                                                                                          rlToConcolic(RlSet, StateOp)
         if (Tcond = 'true.Boolean) := Cond .
+
+    op rlToClConcolic : RuleSet Qid -> RuleSet .
+    eq rlToClConcolic(none, StateOp) = none .
+    eq rlToClConcolic(rl T1 => T2 [AttrSet] . RlSet, StateOp) = rlToConcolic(rl T1 => T2 [AttrSet] . RlSet, StateOp)
+                                                                   rlToClConcolic(RlSet, StateOp) .
+    ceq rlToClConcolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, StateOp) = (crl '`[_`]`[_`]`[_`]`[_`]`[_/_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
+                                                                                          =>
+                                                                                          '`[_`]`[_`]`[_`]`[_`]`[_/_`][T2, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints':Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
+                                                                                          if 'Constraints':Boolean := '_and_['Constraints:Boolean, subT(Tcond, 'STR:Map`{Var`,Value`}, 'getStore[stateVar(StateOp)])]
+                                                                                          /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm[Tcond]] = 'true.Bool
+                                                                                          [label(InstId) AttrSet] .)
+                                                                                          rlToConcolic(RlSet, StateOp)
+        if (Tcond = 'true.Boolean) := Cond .
+    
+    op inclClConcCrl : Qid -> RuleSet .
+    ***eq inclClConcCrl(StateOp) = (crl '`[_`]`[_`]`[_`]`[_`]`[_/_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
+    ***                                =>
+    ***                                '`[_`]`[_`]`[_`]`[_`]`[_/_`][subT('updateProgram[T2, 'getProgram[stateVar(StateOp)]], 'STR:Map`{Var`,Value`}, 'init-CStore['STRInit:Map`{Var`,Value`}, 'Constraints':Boolean]),
+    ***                                                            '_`{_`}<`{_`}['updateStore[stateVar(StateOp), 'STRInit:Map`{Var`,Value`}], 'Constraints':Boolean, 'nil.Path], '_+_['N:Nat, 's_['0.Nat]], 'STRInit:Map`{Var`,Value`}, '0.Nat, 'LBound:Bound]
+    ***                                if 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints:Boolean]] = 'true.Bool
+    ***                                [label(qid("re-exec")) AttrSet] .)
     
     ***op rlToMaudeSE : RuleSet Module -> RuleSet .
     ***eq rlToMaudeSE(none, M) = none .
