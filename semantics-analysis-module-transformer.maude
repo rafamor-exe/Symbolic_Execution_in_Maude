@@ -137,46 +137,46 @@ fmod MODULE-TRANSFORMER is
     eq symbState(StateOp, N) = '_`{_`}<`{_`}[stateVar(StateOp, N), 'Constraints:Boolean, 'Path:Path] .
 
     op concolicState : Qid -> Term .
-    eq concolicState(StateOp) = '`[_`]`[_`]`[_`]`[_`]`[_/_`][stateVar(StateOp, 0), symbState(StateOp, 1), 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound] .
+    eq concolicState(StateOp) = '`[_`]`[_`]`[_`]`[_`][stateVar(StateOp, 0), symbState(StateOp, 1), 'N:Nat, 'STRInit:Map`{Var`,Value`}] .
     op concolicState : Qid Term -> Term .
-    eq concolicState(StateOp, T1) = '`[_`]`[_`]`[_`]`[_`]`[_/_`][T1, symbState(StateOp, 1), 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound] .
+    eq concolicState(StateOp, T1) = '`[_`]`[_`]`[_`]`[_`][T1, symbState(StateOp, 1), 'N:Nat, 'STRInit:Map`{Var`,Value`}] .
 
     op rlToConcolic : RuleSet Qid -> RuleSet .
     eq rlToConcolic(none, StateOp) = none .
     *** Symbolic rules must not be applied to internal symbolic state during concolic exec
     *** These rules cannot be merged into one with 'if_then_else_fi because that distinction should be done at this level (transformation), not delayed
-    eq rlToConcolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet, StateOp) = ***(crl '`[_`]`[_`]`[_`]`[_`]`[_/_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
+    eq rlToConcolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet, StateOp) = ***(crl '`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}]
                                                                                ***=>
-                                                                               ***'`[_`]`[_`]`[_`]`[_`]`[_/_`][T2, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
+                                                                               ***'`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Map`{Var`,Value`}]
                                                                                ***if '_==_['getStore[T1], 'getStore[T2]] = 'true.Bool
                                                                                ***[label(InstId) AttrSet] .)
                                                                                *** if the store is not the same update it in the symb state using the same mechanism as in the original rl but over the symb store
-                                                                               (rl '`[_`]`[_`]`[_`]`[_`]`[_/_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
+                                                                               (rl '`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}]
                                                                                =>
-                                                                               '`[_`]`[_`]`[_`]`[_`]`[_/_`][T2, '_`{_`}<`{_`}[subT('updateProgram[T2, 'getProgram[stateVar(StateOp)]], 'STR:Map`{Var`,Value`}, 'getStore[stateVar(StateOp)]), 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
+                                                                               '`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}<`{_`}[subT('updateProgram[T2, 'getProgram[stateVar(StateOp)]], 'STR:Map`{Var`,Value`}, 'getStore[stateVar(StateOp)]), 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Map`{Var`,Value`}]
                                                                                ***if '_=/=_['getStore[T1], 'getStore[T2]] = 'true.Bool
                                                                                ***if 'insert['Var:Var, 'Val:Value, 'STR:Map`{Var`,Value`}] := 'getStore[T2]
                                                                                ***[label(qid(string(InstId) + "-bis")) AttrSet] .)
                                                                                [label(InstId) AttrSet] .)
                                                                                rlToConcolic(RlSet, StateOp) .
-    ***eq rlToConcolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet, StateOp, M) = crl '`[_`]`[_`]`[_`]`[_`]`[_/_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
+    ***eq rlToConcolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet, StateOp, M) = crl '`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}]
     ***                                                                           =>
-    ***                                                                           '`[_`]`[_`]`[_`]`[_`]`[_/_`][T2, '_`{_`}<`{_`}['insertToSt[stateVar(StateOp), 'Var:Var, 'Val:Value], 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
+    ***                                                                           '`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}<`{_`}['insertToSt[stateVar(StateOp), 'Var:Var, 'Val:Value], 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Map`{Var`,Value`}]
     ***                                                                           if 'insert['Var:Var, 'Val:Value, 'STR:Map`{Var`,Value`}] := 'getStore[T2]
     ***                                                                           [label(InstId) AttrSet] .
     ***                                                                           rlToConcolic(RlSet, StateOp, M) .
     
     *** TODO: Generalize hardcoded STR variable indicating the concrete store
-    ceq rlToConcolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, StateOp) = (crl '`[_`]`[_`]`[_`]`[_`]`[_/_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
+    ceq rlToConcolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, StateOp) = (crl '`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}]
                                                                                           =>
-                                                                                          '`[_`]`[_`]`[_`]`[_`]`[_/_`][T2, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints':Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
+                                                                                          '`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints':Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Map`{Var`,Value`}]
                                                                                           if 'Constraints':Boolean := '_and_['Constraints:Boolean, subT(Tcond, 'STR:Map`{Var`,Value`}, 'getStore[stateVar(StateOp)])]
                                                                                           /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm[Tcond]] = 'true.Bool
                                                                                           [label(InstId) AttrSet] .)
-                                                                                          (crl '`[_`]`[_`]`[_`]`[_`]`[_/_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
+                                                                                          (crl '`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}]
                                                                                           =>
-                                                                                          '`[_`]`[_`]`[_`]`[_`]`[_/_`][subT('updateProgram[T2, 'getProgram[stateVar(StateOp)]], 'STR:Map`{Var`,Value`}, 'init-CStore['STRInit:Map`{Var`,Value`}, 'Constraints':Boolean]),
-                                                                                                                      '_`{_`}<`{_`}['updateStore[stateVar(StateOp), 'STRInit:Map`{Var`,Value`}], 'Constraints':Boolean, 'nil.Path], '_+_['N:Nat, 's_['0.Nat]], 'STRInit:Map`{Var`,Value`}, '0.Nat, 'LBound:Bound]
+                                                                                          '`[_`]`[_`]`[_`]`[_`][subT('updateProgram[T2, 'getProgram[stateVar(StateOp)]], 'STR:Map`{Var`,Value`}, 'init-CStore['STRInit:Map`{Var`,Value`}, 'Constraints':Boolean]),
+                                                                                                                      '_`{_`}<`{_`}['updateStore[stateVar(StateOp), 'STRInit:Map`{Var`,Value`}], 'Constraints':Boolean, 'nil.Path], '_+_['N:Nat, 's_['0.Nat]], 'STRInit:Map`{Var`,Value`}]
                                                                                           if 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm[Tcond]] = 'true.Bool
                                                                                           /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, 'not_[subT(Tcond, 'STR:Map`{Var`,Value`}, 'getStore[stateVar(StateOp)])]]
                                                                                           /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints':Boolean]] = 'true.Bool
@@ -188,9 +188,9 @@ fmod MODULE-TRANSFORMER is
     eq rlToClConcolic(none, StateOp) = none .
     eq rlToClConcolic(rl T1 => T2 [AttrSet] . RlSet, StateOp) = rlToConcolic(rl T1 => T2 [AttrSet] . RlSet, StateOp)
                                                                    rlToClConcolic(RlSet, StateOp) .
-    ceq rlToClConcolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, StateOp) = (crl '`[_`]`[_`]`[_`]`[_`]`[_/_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
+    ceq rlToClConcolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, StateOp) = (crl '`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}]
                                                                                           =>
-                                                                                          '`[_`]`[_`]`[_`]`[_`]`[_/_`][T2, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints':Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
+                                                                                          '`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints':Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Map`{Var`,Value`}]
                                                                                           if 'Constraints':Boolean := '_and_['Constraints:Boolean, subT(Tcond, 'STR:Map`{Var`,Value`}, 'getStore[stateVar(StateOp)])]
                                                                                           /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm[Tcond]] = 'true.Bool
                                                                                           [label(InstId) AttrSet] .)
@@ -198,10 +198,10 @@ fmod MODULE-TRANSFORMER is
         if (Tcond = 'true.Boolean) := Cond .
     
     op inclClConcCrl : Qid -> RuleSet .
-    ***eq inclClConcCrl(StateOp) = (crl '`[_`]`[_`]`[_`]`[_`]`[_/_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}, 'LDepth:Nat, 'LBound:Bound]
+    ***eq inclClConcCrl(StateOp) = (crl '`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}]
     ***                                =>
-    ***                                '`[_`]`[_`]`[_`]`[_`]`[_/_`][subT('updateProgram[T2, 'getProgram[stateVar(StateOp)]], 'STR:Map`{Var`,Value`}, 'init-CStore['STRInit:Map`{Var`,Value`}, 'Constraints':Boolean]),
-    ***                                                            '_`{_`}<`{_`}['updateStore[stateVar(StateOp), 'STRInit:Map`{Var`,Value`}], 'Constraints':Boolean, 'nil.Path], '_+_['N:Nat, 's_['0.Nat]], 'STRInit:Map`{Var`,Value`}, '0.Nat, 'LBound:Bound]
+    ***                                '`[_`]`[_`]`[_`]`[_`][subT('updateProgram[T2, 'getProgram[stateVar(StateOp)]], 'STR:Map`{Var`,Value`}, 'init-CStore['STRInit:Map`{Var`,Value`}, 'Constraints':Boolean]),
+    ***                                                            '_`{_`}<`{_`}['updateStore[stateVar(StateOp), 'STRInit:Map`{Var`,Value`}], 'Constraints':Boolean, 'nil.Path], '_+_['N:Nat, 's_['0.Nat]], 'STRInit:Map`{Var`,Value`}]
     ***                                if 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints:Boolean]] = 'true.Bool
     ***                                [label(qid("re-exec")) AttrSet] .)
     
@@ -264,8 +264,8 @@ fmod MODULE-TRANSFORMER is
                                              (op '_`{_`}<`{_`} : StateOp 'Boolean 'Path -> 'SEState [ctor] .)
                                              (op '_where_ : 'Program 'Boolean -> 'ConstrainedStart [ctor] .)
                                              ***(op 'evalB : 'BExp -> 'Boolean [none] .)
-                                             (op '`[_`]`[_`]`[_`]`[_`]`[_/_`] : StateOp 'SEState 'Int 'Map`{Var`,Value`} 'Nat 'Bound -> 'ConcolicState [ctor] .)
-                                             ***(op '_`[_`]`[_/_`] : 'ConcolicStateCore 'Map`{Var`,Value`} 'Nat 'Bound -> 'ConcolicState [ctor] .)
+                                             (op '`[_`]`[_`]`[_`]`[_`] : StateOp 'SEState 'Int 'Map`{Var`,Value`} -> 'ConcolicState [ctor] .)
+                                             ***(op '_`[_`] : 'ConcolicStateCore 'Map`{Var`,Value`} -> 'ConcolicState [ctor] .)
                                              (op 'init-CStore : 'Map`{Var`,Value`} 'Boolean -> 'Map`{Var`,Value`} [none] .)
                                              (op '$apply-SMTassignment : 'Map`{Var`,Value`} 'AssignmentSMT -> 'Map`{Var`,Value`} [none] .) .
                                              ***(op 'size : 'Boolean -> 'Nat [none] .)
