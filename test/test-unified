@@ -27,8 +27,13 @@ python3 semantics-analysis-ext.py --program "[< var('var2) := val((1/1).Real) ; 
 - General target state pattern
 python3 semantics-analysis-ext.py --program "[< var('var2) := val((1).Integer) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val((0).Integer) ;} | \$apply-SMTassignment(var('var1) |-> val(p:Integer), get-SMTassignment(p:Integer < (5).Integer))>][< var('var2) := val((1).Integer) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val((0).Integer) ;} | var('var1) |-> val(p:Integer) >{p:Integer < (5).Integer}<{nil}][1][var('var1) |-> val(p:Integer)]" --pattern "concolicState('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --solN 1
 
+python3 semantics-analysis-ext.py --program "start(< var('var2) := val((1).Integer) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val((0).Integer) ; } | (empty).Map\`{Var\`,Value\`} > where p:Integer < 5, (var('var1), val(p:Integer)))" --pattern "concolicState('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --solN 1
+
 ***- Division by 0 error capture
 ***python3 semantics-analysis-ext.py --program "[< var('var2) := val((1).Integer) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val((0).Integer) ;} | \$apply-SMTassignment(var('var1) |-> val(p:Integer), get-SMTassignment(p:Integer < (5).Integer))>][< var('var2) := val((1).Integer) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val((0).Integer) ;} | var('var1) |-> val(p:Integer) >{p:Integer < (5).Integer}<{nil}][1][var('var1) |-> val(p:Integer)]" --pattern "concolicState('State, 'errState['P:Program, 'S:Map\`{Var\`,Value\`}])" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --solN 0
+
+*** Init state in MaudeTypes
+python3 semantics-analysis-ext.py --program "start(var('var2) := val(10000) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val(0) ; })" --pattern "concolicState('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer)" --symbCond "var1 < 5" --solN 0
 
 -------------
 *** Incorporated MaudeSE (need to load smt-check.maude)

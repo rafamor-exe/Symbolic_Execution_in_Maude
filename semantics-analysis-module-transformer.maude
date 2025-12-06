@@ -19,6 +19,7 @@ fmod SMT-CONNECTION is
     pr SMT-CONVERSION .
     pr SE-LOCS-MOD .
     pr LIST{Location} * (sort List{Location} to Path) .
+    pr LIST{PairVarValue} .
 
     sort AssignmentSMT .
 
@@ -262,16 +263,16 @@ fmod MODULE-TRANSFORMER is
     op modSEOps : OpDeclSet Qid Qid -> OpDeclSet .
     eq modSEOps(OpDeclSet, StateOp, ValOp) = useSMTsorts(OpDeclSet, ValOp) ***OpDeclSet
                                              (op '_`{_`}<`{_`} : StateOp 'Boolean 'Path -> 'SEState [ctor] .)
-                                             (op '_where_ : 'Program 'Boolean -> 'ConstrainedStart [ctor] .)
+                                             (op '_where_ : StateOp 'Boolean -> 'ConstrainedStart [ctor] .)
                                              ***(op 'evalB : 'BExp -> 'Boolean [none] .)
                                              (op '`[_`]`[_`]`[_`]`[_`] : StateOp 'SEState 'Int 'Map`{Var`,Value`} -> 'ConcolicState [ctor] .)
                                              ***(op '_`[_`] : 'ConcolicStateCore 'Map`{Var`,Value`} -> 'ConcolicState [ctor] .)
                                              (op 'init-CStore : 'Map`{Var`,Value`} 'Boolean -> 'Map`{Var`,Value`} [none] .)
-                                             (op '$apply-SMTassignment : 'Map`{Var`,Value`} 'AssignmentSMT -> 'Map`{Var`,Value`} [none] .) .
+                                             (op '$apply-SMTassignment : 'Map`{Var`,Value`} 'AssignmentSMT -> 'Map`{Var`,Value`} [none] .)
                                              ***(op 'size : 'Boolean -> 'Nat [none] .)
-                                             ***(op 'start : 'Program 'List`{PairVarValue`} -> 'SEState [none] .)
-                                             ***(op 'start : 'ConstrainedStart 'List`{PairVarValue`} -> 'SEState [none] .)
-                                             ***(op '$start : StateOp 'List`{PairVarValue`} 'Map`{Var`,Value`} 'Boolean -> 'SEState [none] .)
+                                             (op 'start : StateOp 'List`{PairVarValue`} -> 'ConcolicState [none] .)
+                                             (op 'start : 'ConstrainedStart 'List`{PairVarValue`} -> 'ConcolicState [none] .)
+                                             (op '$start : StateOp 'List`{PairVarValue`} 'Map`{Var`,Value`} 'Boolean -> 'ConcolicState [none] .) .
                                              
                                              ***(op 'start : 'ConstrainedStart -> 'SEState [none] .)
                                              ***(op 'start : 'ConstrainedStart 'Program -> 'SEState [none] .)
@@ -289,7 +290,7 @@ fmod MODULE-TRANSFORMER is
     op subSEConstSorts : Constant -> Constant .
     eq subSEConstSorts(MConst) = qid(string(getName(MConst)) + "." + string(toSMTSorts(getType(MConst)))) .
 
-    *** Substitute all Vars and Conts in Term
+    *** Substitute all Vars and Consts in TermList with SMT correspondence
     op searchSubVarConst : TermList -> TermList .
     eq searchSubVarConst(empty) = empty .
     eq searchSubVarConst(MConst) = subSEConstSorts(MConst) .
@@ -332,13 +333,13 @@ fmod MODULE-TRANSFORMER is
                             (eq '$apply-SMTassignment['_`,_['_|->_['Var:Var, 'val['I:Integer]], 'STR:Map`{Var`,Value`}], '_<--_['I:Integer, 'Iconc:Integer]] = '_`,_['_|->_['Var:Var, 'val['Iconc:Integer]], 'STR:Map`{Var`,Value`}] [none] .)
                             (eq '$apply-SMTassignment['_`,_['_|->_['Var:Var, 'val['I:Integer]], 'STR:Map`{Var`,Value`}], '_`,_['_<--_['I:Integer, 'Iconc:Integer], 'AssignmentSMT:AssignmentSMT]] = '_`,_['_|->_['Var:Var, 'val['Iconc:Integer]], '$apply-SMTassignment['STR:Map`{Var`,Value`}, 'AssignmentSMT:AssignmentSMT]] [none] .)
                             (eq '$apply-SMTassignment['STR:Map`{Var`,Value`}, 'failed.AssignmentSMT] = 'STR:Map`{Var`,Value`} [none] .)
-                            (eq 'not_['not_['B:Boolean]] = 'B:Boolean [none] .) .
+                            (eq 'not_['not_['B:Boolean]] = 'B:Boolean [none] .)
                             ***(eq 'size['C1:Boolean] = ''s_['0.Nat] [none] .)
                             ***(eq 'size['_and_['C1:Boolean, 'Constraints:Boolean]] = ''s_['0.Nat] + 'size['Constraints:Boolean] [none] .)
-                            ***(eq 'start['P:Program, 'SVDeclL:List`{PairVarValue`}] = '$start['start['P:Program], 'SVDeclL:List`{PairVarValue`}, 'empty.Map`{Var`,Value`}, 'true.Boolean] [none] .)
-                            ***(eq 'start['_where_['P:Program, 'B:Boolean, 'SVDeclL:List`{PairVarValue`}]] = '$start['start['P:Program], 'SVDeclL:List`{PairVarValue`}, 'empty.Map`{Var`,Value`}, 'B:Boolean] [none] .)
-                            ***(eq '$start[stateVar(StateOp), nil, 'STR:Map`{Var`,Value`}, 'B:Boolean] = '_`{_`}<`{_`}['updateStore[stateVar(StateOp), 'STR:Map`{Var`,Value`}], 'B:Boolean, 'nil.Path] [none] .)
-                            ***(eq '$start[stateVar(StateOp), '__['_`,_['Var:Var, 'V:Value], 'SVDeclL:List`{PairVarValue`}], 'STR:Map`{Var`,Value`}, 'B:Boolean] = '$start[stateVar(StateOp), 'SVDeclL:List`{PairVarValue`}, 'insert['Var:Var, 'V:Value, 'STR:Map`{Var`,Value`}], 'B:Boolean] [none] .)
+                            (eq 'start[stateVar(StateOp), 'SVDeclL:List`{PairVarValue`}] = '$start[stateVar(StateOp), 'SVDeclL:List`{PairVarValue`}, 'empty.Map`{Var`,Value`}, 'true.Boolean] [none] .)
+                            (eq 'start['_where_[stateVar(StateOp), 'B:Boolean], 'SVDeclL:List`{PairVarValue`}] = '$start[stateVar(StateOp), 'SVDeclL:List`{PairVarValue`}, 'empty.Map`{Var`,Value`}, 'B:Boolean] [none] .)
+                            (eq '$start[stateVar(StateOp), 'nil.List`{PairVarValue`}, 'STR:Map`{Var`,Value`}, 'B:Boolean] = '`[_`]`[_`]`[_`]`[_`]['updateStore[stateVar(StateOp), 'init-CStore['STR:Map`{Var`,Value`}, 'B:Boolean]], '_`{_`}<`{_`}['updateStore[stateVar(StateOp), 'STR:Map`{Var`,Value`}], 'B:Boolean, 'nil.Path], '0.Nat, 'STR:Map`{Var`,Value`}] [none] .)
+                            (eq '$start[stateVar(StateOp), '__['_`,_['Var:Var, 'V:Value], 'SVDeclL:List`{PairVarValue`}], 'STR:Map`{Var`,Value`}, 'B:Boolean] = '$start[stateVar(StateOp), 'SVDeclL:List`{PairVarValue`}, 'insert['Var:Var, 'V:Value, 'STR:Map`{Var`,Value`}], 'B:Boolean] [none] .) .
 
     op modCond : Condition -> Condition .
     eq modCond(T1 = T2) = searchSubVarConst(T1) = searchSubVarConst(T2) .
