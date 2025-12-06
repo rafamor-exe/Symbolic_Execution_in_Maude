@@ -30,6 +30,10 @@ fmod SMT-CONNECTION is
 
     op get-SMTassignment : Boolean -> AssignmentSMT [special (id-hook SpecialHubSymbol)] .
 
+    var I : Integer .
+    op s_ : Integer -> Integer [iter] .
+    eq s(I) = I + 1 .
+
 endfm
 
 fmod MODULE-TRANSFORMER is
@@ -71,6 +75,7 @@ fmod MODULE-TRANSFORMER is
     var MConst : Constant .
     var B : Bool .
     var N : Nat .
+    var I : Integer .
 
     op modRl : Module Qid TrType -> Module .
     op modRl : Module TrType -> Module .
@@ -243,6 +248,7 @@ fmod MODULE-TRANSFORMER is
     eq toSMTSorts('Bool TL) = 'Boolean toSMTSorts(TL) .
     eq toSMTSorts('Int TL) = 'Integer toSMTSorts(TL) .
     eq toSMTSorts('Rat TL) = 'Real toSMTSorts(TL) .
+    eq toSMTSorts('Zero TL) = 'Integer toSMTSorts(TL) .
     eq toSMTSorts(T TL) = T toSMTSorts(TL) [owise] .
 
     ***op modSESubsorts : SubsortDeclSet -> SubsortDeclSet .
@@ -442,90 +448,106 @@ mod VERIFICATION-COMMANDS is
     var ModIdList : QidList .
     var NeModIdList : NeQidList .
     var M : Module .
+    var SVDeclL : List{PairVarValue} .
+    var SymbCond : Boolean .
 
-    op searchTr : Module Qid Qid TrType Qid String Term Condition Qid Bound Nat -> ResultTriple .
+    op searchTr : Module Qid Qid TrType Qid String Term Condition Qid Bound Nat List{PairVarValue} Boolean -> ResultTriple .
     eq searchTr(M, StateOp, ValOp, TrId, TargetSt,
                   InitSEState,
                   PatternSEState,
                   SearchCond,
                   SearchType,
                   Bound,
-                  SolN)
+                  SolN,
+                  SVDeclL,
+                  SymbCond)
                   =
                   metaSearch(transformModSymb(M, StateOp, ValOp, TrId),
-                             getTerm(metaParse(transformModSymb(M, StateOp, ValOp, TrId),
-                                               tokenize(InitSEState), TargetSt)),
+                             'start['_where_[searchSubVarConst(getTerm(metaParse(M, tokenize(InitSEState), StateOp))), upTerm(SymbCond)], upTerm(SVDeclL)],
                              PatternSEState,
                              SearchCond,
                              SearchType,
                              Bound,
                              SolN) .
     
-    op searchPathTr : Module Qid Qid TrType Qid String Term Condition Qid Bound Nat -> Trace? .
+    op searchPathTr : Module Qid Qid TrType Qid String Term Condition Qid Bound Nat List{PairVarValue} Boolean -> Trace? .
     eq searchPathTr(M, StateOp, ValOp, TrId, TargetSt,
                     InitSEState,
                     PatternSEState,
                     SearchCond,
                     SearchType,
                     Bound,
-                    SolN)
+                    SolN,
+                    SVDeclL,
+                    SymbCond)
                     =
                     metaSearchPath(transformModSymb(M, StateOp, ValOp, TrId),
-                                   getTerm(metaParse(transformModSymb(M, StateOp, ValOp, TrId),
-                                                     tokenize(InitSEState), TargetSt)),
+                                   'start['_where_[searchSubVarConst(getTerm(metaParse(M, tokenize(InitSEState), StateOp))), upTerm(SymbCond)], upTerm(SVDeclL)],
                                    PatternSEState,
                                    SearchCond,
                                    SearchType,
                                    Bound,
                                    SolN) .
     
-    op searchSymb : Module Qid Qid String Term Condition Qid Bound Nat -> ResultTriple .
+    op searchSymb : Module Qid Qid String Term Condition Qid Bound Nat List{PairVarValue} Boolean -> ResultTriple .
     eq searchSymb(M, StateOp, ValOp,
                   InitSEState,
                   PatternSEState,
                   SearchCond,
                   SearchType,
                   Bound,
-                  SolN)
+                  SolN,
+                  SVDeclL,
+                  SymbCond)
                   = searchTr(M, StateOp, ValOp, symb, 'SEState,
                         InitSEState,
                         PatternSEState,
                         SearchCond,
                         SearchType,
                         Bound,
-                        SolN) .
+                        SolN,
+                        SVDeclL,
+                        SymbCond) .
 
-    op searchConcolic : Module Qid Qid String Term Condition Qid Bound Nat -> ResultTriple .
+    op searchConcolic : Module Qid Qid String Term Condition Qid Bound Nat List{PairVarValue} Boolean -> ResultTriple .
     eq searchConcolic(M, StateOp, ValOp,
                       InitSEState,
                       PatternSEState,
                       SearchCond,
                       SearchType,
                       Bound,
-                      SolN)
+                      SolN,
+                      SVDeclL,
+                      SymbCond)
                       = searchTr(M, StateOp, ValOp, conc, 'ConcolicState,
                                  InitSEState,
                                  PatternSEState,
                                  SearchCond,
                                  SearchType,
                                  Bound,
-                                 SolN) .
+                                 SolN,
+                                 SVDeclL,
+                                 SymbCond) .
 
-    op searchPathConcolic : Module Qid Qid String Term Condition Qid Bound Nat -> Trace? .
+    op searchPathConcolic : Module Qid Qid String Term Condition Qid Bound Nat List{PairVarValue} Boolean -> Trace? .
     eq searchPathConcolic(M, StateOp, ValOp,
                           InitSEState,
                           PatternSEState,
                           SearchCond,
                           SearchType,
                           Bound,
-                          SolN)
+                          SolN,
+                          SVDeclL,
+                          SymbCond)
                           = searchPathTr(M, StateOp, ValOp, conc, 'ConcolicState,
                                          InitSEState,
                                          PatternSEState,
                                          SearchCond,
                                          SearchType,
                                          Bound,
-                                         SolN) .
+                                         SolN,
+                                         SVDeclL,
+                                         SymbCond) .
 
 endm
 

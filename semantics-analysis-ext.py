@@ -10,7 +10,6 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--program", action="store", help="Program to load", default='')
     parser.add_argument("--pattern", action="store", help="Pattern to match", default='')
-    parser.add_argument("--svars", action="store", help="Symbolic variables", default=[])
     parser.add_argument("--op", action="store", help="Maude operation", default="search")
     parser.add_argument("--file", action="store", help="File containing the semantics", default=ADHOC_CONCOLIC_IMPL)
     parser.add_argument("--mod", action="store", help="Semantics module", default="WHILE-MAUDE")
@@ -23,6 +22,9 @@ def get_args():
     parser.add_argument("--sType", action="store", help="Search type", default="'!")
     parser.add_argument("--bound", action="store", help="Search bound", default="unbounded")
     parser.add_argument("--solN", action="store", help="Solution number", default=0)
+
+    parser.add_argument("--svars", action="store", help="List of symbolic variables pairs of the form (name, type)", default=[])
+    parser.add_argument("--symbCond", action="store", help="Initial symbolic conditions", default="true")
 
     parser.add_argument("--logic", action="store", help="Logic to use in MaudeSE analysis", default="'QF_LRA")
     parser.add_argument("--fold", action="store", help="Allow folding in MaudeSE analysis", default="false")
@@ -106,6 +108,20 @@ if __name__ == '__main__':
                 maude.load(SEMANTICS_TRANSFORMER_MAUDE)
                 maude.load(args.file)
                 mod = maude.getModule('VERIFICATION-COMMANDS')
+                svPairs = ""
+                svDict = {}
+                i = 0
+                for sv in args.svars.split(";"):
+                    sv = sv[1:-1].replace(" ", "").split(",")
+                    svN = sv[0]
+                    svT = sv[1]
+                    svDict[svN] = svN + str(i) + ":" + svT
+                    svPairs += "( var( \'" + svN + " ) , val( " + svDict[svN] + " ) ) "
+                    i += 1
+
+                for var, val in svDict.items():
+                    symbCond = args.symbCond.replace(var, val)
+
                 t = "searchConcolic(" \
                                     +args.modL+"," \
                                     +args.stSort+"," \
@@ -115,7 +131,9 @@ if __name__ == '__main__':
                                     +args.sCond+"," \
                                     +str(args.sType)+"," \
                                     +str(args.bound)+"," \
-                                    +str(args.solN)+")"
+                                    +str(args.solN)+"," \
+                                    +str(svPairs)+"," \
+                                    +str(symbCond)+")"
                 t = mod.parseTerm(t)
                 t.reduce()                
                 print(t)
