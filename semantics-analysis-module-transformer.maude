@@ -169,11 +169,11 @@ fmod MODULE-TRANSFORMER is
     *** TODO: Generalize hardcoded STR variable indicating the concrete store
     ceq rlToConcolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, StateOp) = (crl '`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}]
                                                                                           =>
-                                                                                          '`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints':Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Map`{Var`,Value`}]
+                                                                                          '`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}<`{_`}[subT('updateProgram[T2, 'getProgram[stateVar(StateOp)]], 'STR:Map`{Var`,Value`}, 'getStore[stateVar(StateOp)]), 'Constraints':Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Map`{Var`,Value`}]
                                                                                           if 'Constraints':Boolean := '_and_['Constraints:Boolean, subT(Tcond, 'STR:Map`{Var`,Value`}, 'getStore[stateVar(StateOp)])]
                                                                                           /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm[Tcond]] = 'true.Bool
                                                                                           [label(InstId) AttrSet] .)
-                                                                                          (crl '`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}]
+                                                                                      (crl '`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Map`{Var`,Value`}]
                                                                                           =>
                                                                                           '`[_`]`[_`]`[_`]`[_`][subT('updateProgram[T2, 'getProgram[stateVar(StateOp)]], 'STR:Map`{Var`,Value`}, 'init-CStore['STRInit:Map`{Var`,Value`}, 'Constraints':Boolean]),
                                                                                                                       '_`{_`}<`{_`}['updateStore[stateVar(StateOp), 'STRInit:Map`{Var`,Value`}], 'Constraints':Boolean, 'nil.Path], '_+_['N:Nat, 's_['0.Nat]], 'STRInit:Map`{Var`,Value`}]
