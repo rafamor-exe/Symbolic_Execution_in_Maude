@@ -51,7 +51,7 @@ class SMTAssignmentHook (maude.Hook):
             else:
                 var_type = "Bool"
                 #val_ext = ":" + var_type
-            assignments += f"{svar}:{var_type} <-- {model[svar]}{val_ext} ; "
+            assignments += f"{svar}:{var_type} <-- {model[svar]}{val_ext} , "
             #print(assignments)
         return module.parseTerm(assignments[:-3])
 

@@ -29,11 +29,6 @@ fmod SMT-CONNECTION is
     op failed : -> AssignmentSMT [ctor] .
 
     op get-SMTassignment : Boolean -> AssignmentSMT [special (id-hook SpecialHubSymbol)] .
-
-    var I : Integer .
-    op s_ : Integer -> Integer [iter] .
-    eq s(I) = I + 1 .
-
 endfm
 
 fmod MODULE-TRANSFORMER is
@@ -278,7 +273,8 @@ fmod MODULE-TRANSFORMER is
                                              ***(op 'size : 'Boolean -> 'Nat [none] .)
                                              (op 'start : StateOp 'List`{PairVarValue`} -> 'ConcolicState [none] .)
                                              (op 'start : 'ConstrainedStart 'List`{PairVarValue`} -> 'ConcolicState [none] .)
-                                             (op '$start : StateOp 'List`{PairVarValue`} 'Map`{Var`,Value`} 'Boolean -> 'ConcolicState [none] .) .
+                                             (op '$start : StateOp 'List`{PairVarValue`} 'Map`{Var`,Value`} 'Boolean -> 'ConcolicState [none] .)
+                                             (op 'startSE : StateOp 'List`{PairVarValue`} 'Map`{Var`,Value`} -> StateOp [none] .) .
                                              
                                              ***(op 'start : 'ConstrainedStart -> 'SEState [none] .)
                                              ***(op 'start : 'ConstrainedStart 'Program -> 'SEState [none] .)
@@ -345,7 +341,9 @@ fmod MODULE-TRANSFORMER is
                             (eq 'start[stateVar(StateOp), 'SVDeclL:List`{PairVarValue`}] = '$start[stateVar(StateOp), 'SVDeclL:List`{PairVarValue`}, 'empty.Map`{Var`,Value`}, 'true.Boolean] [none] .)
                             (eq 'start['_where_[stateVar(StateOp), 'B:Boolean], 'SVDeclL:List`{PairVarValue`}] = '$start[stateVar(StateOp), 'SVDeclL:List`{PairVarValue`}, 'empty.Map`{Var`,Value`}, 'B:Boolean] [none] .)
                             (eq '$start[stateVar(StateOp), 'nil.List`{PairVarValue`}, 'STR:Map`{Var`,Value`}, 'B:Boolean] = '`[_`]`[_`]`[_`]`[_`]['updateStore[stateVar(StateOp), 'init-CStore['STR:Map`{Var`,Value`}, 'B:Boolean]], '_`{_`}<`{_`}['updateStore[stateVar(StateOp), 'STR:Map`{Var`,Value`}], 'B:Boolean, 'nil.Path], '0.Nat, 'STR:Map`{Var`,Value`}] [none] .)
-                            (eq '$start[stateVar(StateOp), '__['_`,_['Var:Var, 'V:Value], 'SVDeclL:List`{PairVarValue`}], 'STR:Map`{Var`,Value`}, 'B:Boolean] = '$start[stateVar(StateOp), 'SVDeclL:List`{PairVarValue`}, 'insert['Var:Var, 'V:Value, 'STR:Map`{Var`,Value`}], 'B:Boolean] [none] .) .
+                            (eq '$start[stateVar(StateOp), '__['_`,_['Var:Var, 'V:Value], 'SVDeclL:List`{PairVarValue`}], 'STR:Map`{Var`,Value`}, 'B:Boolean] = '$start[stateVar(StateOp), 'SVDeclL:List`{PairVarValue`}, 'insert['Var:Var, 'V:Value, 'STR:Map`{Var`,Value`}], 'B:Boolean] [none] .)
+                            (eq 'startSE[stateVar(StateOp), 'nil.List`{PairVarValue`}, 'STR:Map`{Var`,Value`}] = 'updateStore[stateVar(StateOp), 'STR:Map`{Var`,Value`}] [none] .)
+                            (eq 'startSE[stateVar(StateOp), '__['_`,_['Var:Var, 'V:Value], 'SVDeclL:List`{PairVarValue`}], 'STR:Map`{Var`,Value`}] = 'startSE[stateVar(StateOp), 'SVDeclL:List`{PairVarValue`}, 'insert['Var:Var, 'V:Value, 'STR:Map`{Var`,Value`}]] [none] .) .
 
     op modCond : Condition -> Condition .
     eq modCond(T1 = T2) = searchSubVarConst(T1) = searchSubVarConst(T2) .
@@ -463,7 +461,11 @@ mod VERIFICATION-COMMANDS is
                   SymbCond)
                   =
                   metaSearch(transformModSymb(M, StateOp, ValOp, TrId),
-                             'start['_where_[searchSubVarConst(getTerm(metaParse(M, tokenize(InitSEState), StateOp))), upTerm(SymbCond)], upTerm(SVDeclL)],
+                             searchSubVarConst('start['_where_[getTerm(metaParse(transformModSymb(M, StateOp, ValOp, TrId),
+                                                                                       tokenize(InitSEState),
+                                                                                       StateOp)),
+                                                               upTerm(SymbCond)],
+                                                      upTerm(SVDeclL)]),
                              PatternSEState,
                              SearchCond,
                              SearchType,
@@ -482,7 +484,11 @@ mod VERIFICATION-COMMANDS is
                     SymbCond)
                     =
                     metaSearchPath(transformModSymb(M, StateOp, ValOp, TrId),
-                                   'start['_where_[searchSubVarConst(getTerm(metaParse(M, tokenize(InitSEState), StateOp))), upTerm(SymbCond)], upTerm(SVDeclL)],
+                                   searchSubVarConst('start['_where_[getTerm(metaParse(transformModSymb(M, StateOp, ValOp, TrId),
+                                                                                       tokenize(InitSEState),
+                                                                                       StateOp)),
+                                                                             upTerm(SymbCond)],
+                                                            upTerm(SVDeclL)]),
                                    PatternSEState,
                                    SearchCond,
                                    SearchType,
@@ -565,8 +571,9 @@ mod MAUDE-SE-EXT is
     var NeModIdList : NeQidList .
     var Fold : Bool .
     var M : Module .
+    var SVDeclL : List{PairVarValue} .
 
-    op searchMaudeSE : Module Qid Qid String Term Condition Qid Bound Nat Qid Bool -> SmtResult2? .
+    op searchMaudeSE : Module Qid Qid String Term Condition Qid Bound Nat Qid Bool List{PairVarValue} -> SmtResult2? .
     eq searchMaudeSE(M, StateOp, ValOp,
                      InitSEState,
                      PatternSEState,
@@ -574,10 +581,13 @@ mod MAUDE-SE-EXT is
                      SearchType,
                      Bound,
                      SolN,
-                     Logic, Fold)
+                     Logic, Fold,
+                     SVDeclL)
                      = metaSmtSearch(transformModSymb(M, StateOp, ValOp, maudeSE),
-                                   getTerm(metaParse(transformModSymb(M, StateOp, ValOp, maudeSE),
-                                                     tokenize(InitSEState), StateOp)),
+                                     searchSubVarConst('startSE[getTerm(metaParse(transformModSymb(M, StateOp, ValOp, maudeSE),
+                                                                                  tokenize(InitSEState),
+                                                                                  StateOp)),
+                                                                upTerm(SVDeclL), 'empty.Map`{Var`,Value`}]),
                                      PatternSEState,
                                      SearchCond,
                                      SearchType,
@@ -585,7 +595,7 @@ mod MAUDE-SE-EXT is
                                      SolN,
                                      Logic, Fold) .
     
-    op searchPathMaudeSE : Module Qid Qid String Term Condition Qid Bound Nat Qid Bool -> Trace2Result? .
+    op searchPathMaudeSE : Module Qid Qid String Term Condition Qid Bound Nat Qid Bool List{PairVarValue} -> Trace2Result? .
     eq searchPathMaudeSE(M, StateOp, ValOp,
                          InitSEState,
                          PatternSEState,
@@ -593,10 +603,13 @@ mod MAUDE-SE-EXT is
                          SearchType,
                          Bound,
                          SolN,
-                         Logic, Fold)
+                         Logic, Fold,
+                         SVDeclL)
                          = metaSmtSearchPath(transformModSymb(M, StateOp, ValOp, maudeSE),
-                                   getTerm(metaParse(transformModSymb(M, StateOp, ValOp, maudeSE),
-                                                     tokenize(InitSEState), StateOp)),
+                                             searchSubVarConst('startSE[getTerm(metaParse(transformModSymb(M, StateOp, ValOp, maudeSE),
+                                                                                  tokenize(InitSEState),
+                                                                                  StateOp)),
+                                                                upTerm(SVDeclL), 'empty.Map`{Var`,Value`}]),
                                              PatternSEState,
                                              SearchCond,
                                              SearchType,

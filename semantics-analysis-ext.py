@@ -1,5 +1,6 @@
 import argparse
 import sys
+import re
 
 ADHOC_CONCOLIC_IMPL = 'adhoc-analysis/while-semantics-concolic.maude'
 
@@ -23,8 +24,8 @@ def get_args():
     parser.add_argument("--bound", action="store", help="Search bound", default="unbounded")
     parser.add_argument("--solN", action="store", help="Solution number", default=0)
 
-    parser.add_argument("--svars", action="store", help="List of symbolic variables pairs of the form (name, type)", default=[])
-    parser.add_argument("--symbCond", action="store", help="Initial symbolic conditions", default="true")
+    parser.add_argument("--svars", action="store", help="List of symbolic variables pairs of the form (name, type) ; (name2, type2) ; ... ; (nameN, typeN)", default=[])
+    parser.add_argument("--symbCond", action="store", help="Initial symbolic conditions", default="(true).Boolean")
 
     parser.add_argument("--logic", action="store", help="Logic to use in MaudeSE analysis", default="'QF_LRA")
     parser.add_argument("--fold", action="store", help="Allow folding in MaudeSE analysis", default="false")
@@ -33,6 +34,24 @@ def get_args():
 
 if __name__ == '__main__':
     args = get_args()
+
+    # Parse symbolic var-val pairs
+    svPairs = ""
+    svDict = {}
+    i = 0
+    for sv in args.svars.split(";"):
+        sv = re.sub(r"[\( \)]", "", sv).split(",")
+        svN = sv[0]
+        svT = sv[1]
+        svDict[svN] = svN + str(i) + ":" + svT
+        svPairs += "( var( \'" + svN + " ) , val( " + svDict[svN] + " ) ) "
+        i += 1
+    symbCond = args.symbCond
+    for var, val in svDict.items():
+        symbCond = symbCond.replace(var, val)
+
+
+    # Select analysis
     if args.analysis == "maude-se":
         import maudeSE
 
@@ -54,12 +73,13 @@ if __name__ == '__main__':
                         +args.valOp+"," \
                         +'\"'+args.program+'\"'+"," \
                         +args.pattern+"," \
-                        +args.sCond+"," \
+                        +"upTerm("+ symbCond + ") = 'true.Boolean /\\ " +args.sCond+"," \
                         +str(args.sType)+"," \
                         +str(args.bound)+"," \
                         +str(args.solN)+"," \
                         +str(args.logic)+"," \
-                        +str(args.fold)+")"
+                        +str(args.fold)+"," \
+                        +svPairs+")"
         t = mod.parseTerm(t)
         t.reduce()
         print(t)
@@ -71,12 +91,13 @@ if __name__ == '__main__':
                                   +args.valOp+"," \
                                   +'\"'+args.program+'\"'+"," \
                                   +args.pattern+"," \
-                                  +args.sCond+"," \
+                                  +"upTerm("+ symbCond + ") = 'true.Boolean /\\ " +args.sCond+"," \
                                   +str(args.sType)+"," \
                                   +str(args.bound)+"," \
                                   +str(args.solN)+"," \
                                   +str(args.logic)+"," \
-                                  +str(args.fold)+")"
+                                  +str(args.fold)+"," \
+                                  +svPairs+")"
         path = mod.parseTerm(path)
         path.reduce()
         print(path)
@@ -108,19 +129,6 @@ if __name__ == '__main__':
                 maude.load(SEMANTICS_TRANSFORMER_MAUDE)
                 maude.load(args.file)
                 mod = maude.getModule('VERIFICATION-COMMANDS')
-                svPairs = ""
-                svDict = {}
-                i = 0
-                for sv in args.svars.split(";"):
-                    sv = sv[1:-1].replace(" ", "").split(",")
-                    svN = sv[0]
-                    svT = sv[1]
-                    svDict[svN] = svN + str(i) + ":" + svT
-                    svPairs += "( var( \'" + svN + " ) , val( " + svDict[svN] + " ) ) "
-                    i += 1
-
-                for var, val in svDict.items():
-                    symbCond = args.symbCond.replace(var, val)
 
                 t = "searchConcolic(" \
                                     +args.modL+"," \
@@ -132,8 +140,8 @@ if __name__ == '__main__':
                                     +str(args.sType)+"," \
                                     +str(args.bound)+"," \
                                     +str(args.solN)+"," \
-                                    +str(svPairs)+"," \
-                                    +str(symbCond)+")"
+                                    +svPairs+"," \
+                                    +symbCond+")"
                 t = mod.parseTerm(t)
                 t.reduce()                
                 print(t)
