@@ -45,7 +45,7 @@ if __name__ == '__main__':
         svN = sv[0]
         svT = sv[1]
         svDict[svN] = svN + str(i) + ":" + svT
-        svPairs += "( var( \'" + svN + " ) , val( " + svDict[svN] + " ) ) "
+        svPairs += "( \'" + svN + " , " + svDict[svN] + " ) "
         i += 1
     symbCond = args.symbCond
     for var, val in svDict.items():
@@ -59,8 +59,8 @@ if __name__ == '__main__':
         maudeSE.maude.init(advise=True)
         maudeSE.maude.load("smt.maude")
         maudeSE.maude.load("smt-check")
+        maudeSE.load(args.file)
         maudeSE.maude.load(SEMANTICS_TRANSFORMER_MAUDE)
-        maudeSE.maude.load(args.file)
         mod = maudeSE.maude.getModule('MAUDE-SE-EXT')
 
         # MaudeSE main still needs to be invoked to be able to reduce
@@ -127,8 +127,8 @@ if __name__ == '__main__':
                 print(t)
         else:
             if args.analysis == "concolic":
-                maude.load(SEMANTICS_TRANSFORMER_MAUDE)
                 maude.load(args.file)
+                maude.load(SEMANTICS_TRANSFORMER_MAUDE)
                 mod = maude.getModule('VERIFICATION-COMMANDS')
 
                 t = "searchConcolic(" \

@@ -1,4 +1,4 @@
-load semantics-basics/semantics-basics-smtTypes.maude
+load semantics-basics/smt-conversion.maude
 
 *** Test transformer with while language module
 ***load language-semantics/while-semantics-concrete.maude
@@ -19,16 +19,24 @@ fmod SMT-CONNECTION is
     pr SMT-CONVERSION .
     pr SE-LOCS-MOD .
     pr LIST{Location} * (sort List{Location} to Path) .
-    pr LIST{PairVarValue} .
 
     sort AssignmentSMT .
+    sorts PairSVar PairSVarL NePairSVarL .
+    subsort PairSVar < NePairSVarL < PairSVarL .
 
-    op _<--_ : Real Real -> AssignmentSMT [ctor] . *** test syntax
-    op _<--_ : Integer Integer -> AssignmentSMT [ctor] . *** test syntax
+    op _<--_ : Real Real -> AssignmentSMT [ctor] .
+    op _<--_ : Integer Integer -> AssignmentSMT [ctor] .
     op _,_ : AssignmentSMT AssignmentSMT -> AssignmentSMT .
     op failed : -> AssignmentSMT [ctor] .
 
     op get-SMTassignment : Boolean -> AssignmentSMT [special (id-hook SpecialHubSymbol)] .
+
+    *** Symbolic variable initialization pair
+    op _,_ : Qid Integer -> PairSVar [ctor] .
+    op _,_ : Qid Real -> PairSVar [ctor] .
+
+    op nil : -> PairSVarL [ctor] .
+    op __ : PairSVarL PairSVarL -> PairSVarL [ctor assoc id: nil prec 25] .
 endfm
 
 fmod MODULE-TRANSFORMER is
@@ -271,10 +279,10 @@ fmod MODULE-TRANSFORMER is
                                              (op 'init-CStore : 'Map`{Var`,Value`} 'Boolean -> 'Map`{Var`,Value`} [none] .)
                                              (op '$apply-SMTassignment : 'Map`{Var`,Value`} 'AssignmentSMT -> 'Map`{Var`,Value`} [none] .)
                                              ***(op 'size : 'Boolean -> 'Nat [none] .)
-                                             (op 'start : StateOp 'List`{PairVarValue`} -> 'ConcolicState [none] .)
-                                             (op 'start : 'ConstrainedStart 'List`{PairVarValue`} -> 'ConcolicState [none] .)
-                                             (op '$start : StateOp 'List`{PairVarValue`} 'Map`{Var`,Value`} 'Boolean -> 'ConcolicState [none] .)
-                                             (op 'startSE : StateOp 'List`{PairVarValue`} 'Map`{Var`,Value`} -> StateOp [none] .) .
+                                             (op 'start : StateOp 'PairSVarL -> 'ConcolicState [none] .)
+                                             (op 'start : 'ConstrainedStart 'PairSVarL -> 'ConcolicState [none] .)
+                                             (op '$start : StateOp 'PairSVarL 'Map`{Var`,Value`} 'Boolean -> 'ConcolicState [none] .)
+                                             (op 'startSE : StateOp 'PairSVarL 'Map`{Var`,Value`} -> StateOp [none] .) .
                                              
                                              ***(op 'start : 'ConstrainedStart -> 'SEState [none] .)
                                              ***(op 'start : 'ConstrainedStart 'Program -> 'SEState [none] .)
@@ -338,12 +346,14 @@ fmod MODULE-TRANSFORMER is
                             (eq 'not_['not_['B:Boolean]] = 'B:Boolean [none] .)
                             ***(eq 'size['C1:Boolean] = ''s_['0.Nat] [none] .)
                             ***(eq 'size['_and_['C1:Boolean, 'Constraints:Boolean]] = ''s_['0.Nat] + 'size['Constraints:Boolean] [none] .)
-                            (eq 'start[stateVar(StateOp), 'SVDeclL:List`{PairVarValue`}] = '$start[stateVar(StateOp), 'SVDeclL:List`{PairVarValue`}, 'empty.Map`{Var`,Value`}, 'true.Boolean] [none] .)
-                            (eq 'start['_where_[stateVar(StateOp), 'B:Boolean], 'SVDeclL:List`{PairVarValue`}] = '$start[stateVar(StateOp), 'SVDeclL:List`{PairVarValue`}, 'empty.Map`{Var`,Value`}, 'B:Boolean] [none] .)
-                            (eq '$start[stateVar(StateOp), 'nil.List`{PairVarValue`}, 'STR:Map`{Var`,Value`}, 'B:Boolean] = '`[_`]`[_`]`[_`]`[_`]['updateStore[stateVar(StateOp), 'init-CStore['STR:Map`{Var`,Value`}, 'B:Boolean]], '_`{_`}<`{_`}['updateStore[stateVar(StateOp), 'STR:Map`{Var`,Value`}], 'B:Boolean, 'nil.Path], '0.Nat, 'STR:Map`{Var`,Value`}] [none] .)
-                            (eq '$start[stateVar(StateOp), '__['_`,_['Var:Var, 'V:Value], 'SVDeclL:List`{PairVarValue`}], 'STR:Map`{Var`,Value`}, 'B:Boolean] = '$start[stateVar(StateOp), 'SVDeclL:List`{PairVarValue`}, 'insert['Var:Var, 'V:Value, 'STR:Map`{Var`,Value`}], 'B:Boolean] [none] .)
-                            (eq 'startSE[stateVar(StateOp), 'nil.List`{PairVarValue`}, 'STR:Map`{Var`,Value`}] = 'updateStore[stateVar(StateOp), 'STR:Map`{Var`,Value`}] [none] .)
-                            (eq 'startSE[stateVar(StateOp), '__['_`,_['Var:Var, 'V:Value], 'SVDeclL:List`{PairVarValue`}], 'STR:Map`{Var`,Value`}] = 'startSE[stateVar(StateOp), 'SVDeclL:List`{PairVarValue`}, 'insert['Var:Var, 'V:Value, 'STR:Map`{Var`,Value`}]] [none] .) .
+                            (eq 'start[stateVar(StateOp), 'SVDeclL:PairSVarL] = '$start[stateVar(StateOp), 'SVDeclL:PairSVarL, 'empty.Map`{Var`,Value`}, 'true.Boolean] [none] .)
+                            (eq 'start['_where_[stateVar(StateOp), 'B:Boolean], 'SVDeclL:PairSVarL] = '$start[stateVar(StateOp), 'SVDeclL:PairSVarL, 'empty.Map`{Var`,Value`}, 'B:Boolean] [none] .)
+                            (eq '$start[stateVar(StateOp), 'nil.PairSVarL, 'STR:Map`{Var`,Value`}, 'B:Boolean] = '`[_`]`[_`]`[_`]`[_`]['updateStore[stateVar(StateOp), 'init-CStore['STR:Map`{Var`,Value`}, 'B:Boolean]], '_`{_`}<`{_`}['updateStore[stateVar(StateOp), 'STR:Map`{Var`,Value`}], 'B:Boolean, 'nil.Path], '0.Nat, 'STR:Map`{Var`,Value`}] [none] .)
+                            (eq '$start[stateVar(StateOp), '__['_`,_['Var:Qid, 'I1:Integer], 'SVDeclL:PairSVarL], 'STR:Map`{Var`,Value`}, 'B:Boolean] = '$start[stateVar(StateOp), 'SVDeclL:PairSVarL, 'insert['var['Var:Qid], 'val['I1:Integer], 'STR:Map`{Var`,Value`}], 'B:Boolean] [none] .)
+                            (eq '$start[stateVar(StateOp), '__['_`,_['Var:Qid, 'R1:Real], 'SVDeclL:PairSVarL], 'STR:Map`{Var`,Value`}, 'B:Boolean] = '$start[stateVar(StateOp), 'SVDeclL:PairSVarL, 'insert['var['Var:Qid], 'val['R1:Real], 'STR:Map`{Var`,Value`}], 'B:Boolean] [none] .)
+                            (eq 'startSE[stateVar(StateOp), 'nil.PairSVarL, 'STR:Map`{Var`,Value`}] = 'updateStore[stateVar(StateOp), 'STR:Map`{Var`,Value`}] [none] .)
+                            (eq 'startSE[stateVar(StateOp), '__['_`,_['Var:Qid, 'I1:Integer], 'SVDeclL:PairSVarL], 'STR:Map`{Var`,Value`}] = 'startSE[stateVar(StateOp), 'SVDeclL:PairSVarL, 'insert['var['Var:Qid], 'val['I1:Integer], 'STR:Map`{Var`,Value`}]] [none] .)
+                            (eq 'startSE[stateVar(StateOp), '__['_`,_['Var:Qid, 'R1:Real], 'SVDeclL:PairSVarL], 'STR:Map`{Var`,Value`}] = 'startSE[stateVar(StateOp), 'SVDeclL:PairSVarL, 'insert['var['Var:Qid], 'val['R1:Real], 'STR:Map`{Var`,Value`}]] [none] .) .
 
     op modCond : Condition -> Condition .
     eq modCond(T1 = T2) = searchSubVarConst(T1) = searchSubVarConst(T2) .
@@ -446,10 +456,10 @@ mod VERIFICATION-COMMANDS is
     var ModIdList : QidList .
     var NeModIdList : NeQidList .
     var M : Module .
-    var SVDeclL : List{PairVarValue} .
+    var SVDeclL : PairSVarL .
     var SymbCond : Boolean .
 
-    op searchTr : Module Qid Qid TrType Qid String Term Condition Qid Bound Nat List{PairVarValue} Boolean -> ResultTriple .
+    op searchTr : Module Qid Qid TrType Qid String Term Condition Qid Bound Nat PairSVarL Boolean -> ResultTriple .
     eq searchTr(M, StateOp, ValOp, TrId, TargetSt,
                   InitSEState,
                   PatternSEState,
@@ -472,7 +482,7 @@ mod VERIFICATION-COMMANDS is
                              Bound,
                              SolN) .
     
-    op searchPathTr : Module Qid Qid TrType Qid String Term Condition Qid Bound Nat List{PairVarValue} Boolean -> Trace? .
+    op searchPathTr : Module Qid Qid TrType Qid String Term Condition Qid Bound Nat PairSVarL Boolean -> Trace? .
     eq searchPathTr(M, StateOp, ValOp, TrId, TargetSt,
                     InitSEState,
                     PatternSEState,
@@ -495,7 +505,7 @@ mod VERIFICATION-COMMANDS is
                                    Bound,
                                    SolN) .
     
-    op searchSymb : Module Qid Qid String Term Condition Qid Bound Nat List{PairVarValue} Boolean -> ResultTriple .
+    op searchSymb : Module Qid Qid String Term Condition Qid Bound Nat PairSVarL Boolean -> ResultTriple .
     eq searchSymb(M, StateOp, ValOp,
                   InitSEState,
                   PatternSEState,
@@ -515,7 +525,7 @@ mod VERIFICATION-COMMANDS is
                         SVDeclL,
                         SymbCond) .
 
-    op searchConcolic : Module Qid Qid String Term Condition Qid Bound Nat List{PairVarValue} Boolean -> ResultTriple .
+    op searchConcolic : Module Qid Qid String Term Condition Qid Bound Nat PairSVarL Boolean -> ResultTriple .
     eq searchConcolic(M, StateOp, ValOp,
                       InitSEState,
                       PatternSEState,
@@ -535,7 +545,7 @@ mod VERIFICATION-COMMANDS is
                                  SVDeclL,
                                  SymbCond) .
 
-    op searchPathConcolic : Module Qid Qid String Term Condition Qid Bound Nat List{PairVarValue} Boolean -> Trace? .
+    op searchPathConcolic : Module Qid Qid String Term Condition Qid Bound Nat PairSVarL Boolean -> Trace? .
     eq searchPathConcolic(M, StateOp, ValOp,
                           InitSEState,
                           PatternSEState,
@@ -571,9 +581,9 @@ mod MAUDE-SE-EXT is
     var NeModIdList : NeQidList .
     var Fold : Bool .
     var M : Module .
-    var SVDeclL : List{PairVarValue} .
+    var SVDeclL : PairSVarL .
 
-    op searchMaudeSE : Module Qid Qid String Term Condition Qid Bound Nat Qid Bool List{PairVarValue} -> SmtResult2? .
+    op searchMaudeSE : Module Qid Qid String Term Condition Qid Bound Nat Qid Bool PairSVarL -> SmtResult2? .
     eq searchMaudeSE(M, StateOp, ValOp,
                      InitSEState,
                      PatternSEState,
@@ -595,7 +605,7 @@ mod MAUDE-SE-EXT is
                                      SolN,
                                      Logic, Fold) .
     
-    op searchPathMaudeSE : Module Qid Qid String Term Condition Qid Bound Nat Qid Bool List{PairVarValue} -> Trace2Result? .
+    op searchPathMaudeSE : Module Qid Qid String Term Condition Qid Bound Nat Qid Bool PairSVarL -> Trace2Result? .
     eq searchPathMaudeSE(M, StateOp, ValOp,
                          InitSEState,
                          PatternSEState,

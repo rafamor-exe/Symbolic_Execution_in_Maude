@@ -76,21 +76,15 @@ fmod CONCRETE-VAR-MOD is
     protecting QID .
     protecting CONCRETE-VARSTATE-MOD .
 
-    sorts Var PairVarValue .
+    sort Var .
     subsort Var < AExp .
 
     op var : Qid -> Var [ctor] .
-
-    op _,_ : Var Value -> PairVarValue [ctor] .
 
 endfm
 
 view Var from TRIV to CONCRETE-VAR-MOD is
   sort Elt to Var .
-endv
-
-view PairVarValue from TRIV to SMT-VAR-MOD is
-  sort Elt to PairVarValue .
 endv
 
 fmod CONCRETE-AEXP-MOD is
