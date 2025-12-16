@@ -5,14 +5,12 @@ fmod REC-LANG-TERM-MOD is
     protecting CONCRETE-AEXP-MOD .
 
     sorts Term .
-    subsort AExp < Term . ***preregularity check fails
+    subsort AExp < Term .
 
     op _+_ : Term Term -> Term [gather (E e) prec 33] .
     op _-_ : Term Term -> Term [gather (E e) prec 33] .
     op _*_ : Term Term -> Term [gather (E e) prec 31] .
 
-    ***op t : Value -> Term [ctor] .
-    ***op t : Var -> Term [ctor] .
     
 endfm
 
@@ -133,16 +131,6 @@ mod REC-MAUDE is
     eq start(P, nil, FSTR, STR) = < P | FSTR | STR > .
     eq start(P, (F [ParamL] = T) FDecL, FSTR, STR) = start(P, FDecL, insert(F, (F [ParamL] = T), FSTR), STR) .
 
-    ***rl [skip] : 
-    ***    < skip ; IL | STR >
-    ***    =>
-    ***    < IL | STR > .
-***
-    ***rl [assign] : 
-    ***    < Var := AExp ; IL | STR >
-    ***    =>
-    ***    < IL | insert(Var, eval(AExp, STR), STR) > .
-***
     rl [apply-func] :
         < F [Args] | (F |-> FDec, FSTR) | STR >
         =>
@@ -161,19 +149,6 @@ mod REC-MAUDE is
         < T2 | FSTR | STR >
         if eval(T, STR) =/= val(0) .
         ***if T => val(N:NzInt) .
-
-
-    ***crl [while..loop] : 
-    ***    < while BExp do { IL1 } IL | STR >
-    ***    =>
-    ***    < IL1 while BExp do { IL1 } IL | STR >
-    ***    if eval(BExp, STR) .
-    ***    
-    ***crl [while..exit] : 
-    ***    < while BExp do { IL1 } IL | STR >
-    ***    =>
-    ***    < IL | STR >
-    ***    if not eval(BExp, STR).
 
     *** Auxiliary
 
