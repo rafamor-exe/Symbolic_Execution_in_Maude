@@ -1,0 +1,194 @@
+load ../semantics-basics/semantics-basics-maudeTypes.maude
+
+fmod REC-LANG-TERM-MOD is
+
+    protecting CONCRETE-AEXP-MOD .
+
+    sorts Term .
+    subsort AExp < Term . ***preregularity check fails
+
+    op _+_ : Term Term -> Term [gather (E e) prec 33] .
+    op _-_ : Term Term -> Term [gather (E e) prec 33] .
+    op _*_ : Term Term -> Term [gather (E e) prec 31] .
+
+    ***op t : Value -> Term [ctor] .
+    ***op t : Var -> Term [ctor] .
+    
+endfm
+
+view Term from TRIV to REC-LANG-TERM-MOD is
+  sort Elt to Term .
+endv
+
+fmod REC-LANG-BLOCK-MOD is
+
+    protecting REC-LANG-TERM-MOD .
+    protecting LIST{Term} * (sort List{Term} to Program) .
+    protecting STRING .
+
+    sorts FTerm FDecl .
+    sorts Args NeArgs .
+    subsort FTerm < Term < NeArgs < Args .
+
+    op if _ then {_} else {_} : Term Term Term -> Term [ctor prec 20] .
+    op if _ then {_} : Term Term -> Term [prec 20] .
+
+    op _ ',_ : Args Args -> Args [ctor id: nil] .
+    op _ ',_ : NeArgs Args -> NeArgs [ctor ditto] .
+    op _ ',_ : Args NeArgs -> NeArgs [ctor ditto] .
+
+    op _[] : String -> FTerm [prec 20] .
+    op _[_] : String Args -> FTerm [ctor prec 20] .
+
+    vars T B : Term .
+    var IL1 : Program .
+    var F : String .
+
+    eq if B then {IL1} = if B then {IL1} else {nil} .
+
+    eq F [] = F [nil] .
+
+endfm
+ 
+fmod REC-LANG-FUNCDEC-MOD is
+
+    protecting REC-LANG-BLOCK-MOD .
+
+    sort FDec .
+    sorts ParamL NeParamL .
+    subsort Var < NeParamL < ParamL < Args .
+    subsort NeParamL < NeArgs .
+
+    op _ ',_ : ParamL ParamL -> ParamL [ctor id: nil] .
+    op _ ',_ : NeParamL ParamL -> NeParamL [ctor ditto] .
+    op _ ',_ : ParamL NeParamL -> NeParamL [ctor ditto] .
+
+    op _[_]=_ : String ParamL Term -> FDec [ctor prec 20] .
+
+    var F : String .
+    vars X Z : Var .
+    var ParamL : ParamL .
+    var NeParamL : NeParamL .
+    vars T T1 T2 Y : Term .
+    var Args : Args .
+    var NeArgs : NeArgs .
+    var V : Value .
+
+    op _[_] : FDec Args -> Term [prec 10] .
+    eq (F [nil] = T)[nil] = T .
+    eq (F [X] = T)[Y] = (F [nil] = T[X / Y])[nil] .
+    eq (F [X ', NeParamL] = T)[Y ', NeArgs] = (F [NeParamL] = T[X / Y])[NeArgs] .
+
+    op _[_/_] : Term Var Term -> Term [prec 10] .
+    eq V[X / Y] = V .
+    eq X[X / Y] = Y .
+    eq X[Z / Y] = X [owise] .
+    eq (T1 + T2)[X / Y] = (T1[X / Y] + T2[X / Y]) .
+    eq (T1 - T2)[X / Y] = (T1[X / Y] - T2[X / Y]) .
+    eq (T1 * T2)[X / Y] = (T1[X / Y] * T2[X / Y]) .
+    eq (if T then { T1 } else { T2 })[X / Y] = if T[X / Y] then { T1[X / Y] } else { T2[X / Y] } .
+    
+    eq (nil)[X / Y] = nil .
+    eq (T  ', Args)[X / Y] = (T[X / Y] ', Args[X / Y]) .
+    eq (F [Args])[X / Y] = F [Args[X / Y]] .
+    
+endfm
+
+view FDec from TRIV to REC-LANG-FUNCDEC-MOD is
+  sort Elt to FDec .
+endv
+
+fmod REC-BASICS is
+    protecting REC-LANG-FUNCDEC-MOD .
+    protecting LIST{FDec} * (sort List{FDec} to FDecL) .
+endfm
+
+mod REC-MAUDE is
+
+    protecting REC-BASICS .
+    protecting MAP{String, FDec} .
+
+    sort State .
+    
+    op < _ | _ | _ > : Program Map{String, FDec} Map{Var, Value} -> State [ctor] . 
+    op errState : Program Map{String, FDec} Map{Var, Value} -> State [ctor] . 
+
+    vars Var Var1 Var2 : Var .
+    var BExp BExp2 : BExp .
+    vars IL IL1 IL2 P : Program .
+    vars STR STR2 : Map{Var, Value} .
+    var AExp : AExp .
+    var V : Value .
+    vars T T1 T2 : Term .
+    var FDec : FDec .
+    var FDecL : FDecL .
+    var FSTR : Map{String, FDec} .
+    var F : String .
+    var ParamL : ParamL .
+    var Args : Args .
+
+    op start : Program FDecL -> State .
+    eq start(P, FDecL) = start(P, FDecL, empty, empty) .
+    op start : Program FDecL Map{String, FDec} Map{Var, Value} -> State .
+    eq start(P, nil, FSTR, STR) = < P | FSTR | STR > .
+    eq start(P, (F [ParamL] = T) FDecL, FSTR, STR) = start(P, FDecL, insert(F, (F [ParamL] = T), FSTR), STR) .
+
+    ***rl [skip] : 
+    ***    < skip ; IL | STR >
+    ***    =>
+    ***    < IL | STR > .
+***
+    ***rl [assign] : 
+    ***    < Var := AExp ; IL | STR >
+    ***    =>
+    ***    < IL | insert(Var, eval(AExp, STR), STR) > .
+***
+    rl [apply-func] :
+        < F [Args] | (F |-> FDec, FSTR) | STR >
+        =>
+        < FDec[Args] | FSTR | STR > .
+
+    crl [if..then] : 
+        < if T then { T1 } else { T2 } | FSTR | STR >
+        =>
+        < T1 | FSTR | STR >
+        if eval(T, STR) == val(0) .
+        ***if T => val(0) .
+
+    crl [if..else] : 
+        < if T then { T1 } else { T2 } | FSTR | STR >
+        =>
+        < T2 | FSTR | STR >
+        if eval(T, STR) =/= val(0) .
+        ***if T => val(N:NzInt) .
+
+
+    ***crl [while..loop] : 
+    ***    < while BExp do { IL1 } IL | STR >
+    ***    =>
+    ***    < IL1 while BExp do { IL1 } IL | STR >
+    ***    if eval(BExp, STR) .
+    ***    
+    ***crl [while..exit] : 
+    ***    < while BExp do { IL1 } IL | STR >
+    ***    =>
+    ***    < IL | STR >
+    ***    if not eval(BExp, STR).
+
+    *** Auxiliary
+
+    op getProgram : State -> Program .
+    eq getProgram(< P | FSTR | STR >) = P .
+
+    op getStore : State -> Map{Var, Value} .
+    eq getStore(< P | FSTR | STR >) = STR .
+
+    op updateProgram : State Program -> State .
+    eq updateProgram(< P | FSTR | STR >, IL) = < IL | FSTR | STR > .
+
+    op updateStore : State Map{Var, Value} -> State .
+    eq updateStore(< P | FSTR | STR >, STR2) = < P | FSTR | STR2 > .
+    
+    *** Ignore
+    op test : Bool Int -> Rat .
+endm

@@ -93,3 +93,11 @@ smt-search [2] in WHILE-MAUDE : start(var('var2) := val(1/1) ; if (var('var1) < 
     0/1) ; if var('var1) < val(0/1) then{var('var3) := val(2/1) ; if var('var1) < val(
     -1/1) then{var('var3) := val(3/1) ;}else{nil}}else{nil}}else{nil} | var('var1) |->
     val(p:Real) >{p:Real < 5/1}<{nil}][1][var('var1) |-> val(p:Real)][0 / unbounded]
+
+
+*************************
+Concrete semantics REC
+*************************
+rew < "f" [val(2)', val(3)] | "f" |-> "f" [var('x)', var('y)] = (var('x) + var('y)) | empty > .
+rew start("f" [val(0) ', val(3)], "f" [var('x)', var('y)] = if var('x) then {var('y)} else {val(0) - var('y)}) .
+rew start("f" [val(2) ', val(3)], "f" [var('x)', var('y)] = if var('x) then {var('y)} else {val(0) - var('y)}) .
