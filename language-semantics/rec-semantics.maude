@@ -4,43 +4,43 @@ fmod REC-LANG-TERM-MOD is
 
     protecting CONCRETE-AEXP-MOD .
 
-    sorts Term .
-    subsort IExp < Term .
+    sorts RECTerm .
+    subsort IExp < RECTerm .
 
-    op _+_ : Term Term -> Term [gather (E e) prec 33] .
-    op _-_ : Term Term -> Term [gather (E e) prec 33] .
-    op _*_ : Term Term -> Term [gather (E e) prec 31] .
+    op _+_ : RECTerm RECTerm -> RECTerm [gather (E e) prec 33] .
+    op _-_ : RECTerm RECTerm -> RECTerm [gather (E e) prec 33] .
+    op _*_ : RECTerm RECTerm -> RECTerm [gather (E e) prec 31] .
 
     
 endfm
 
-view Term from TRIV to REC-LANG-TERM-MOD is
-  sort Elt to Term .
+view RECTerm from TRIV to REC-LANG-TERM-MOD is
+  sort Elt to RECTerm .
 endv
 
 fmod REC-LANG-BLOCK-MOD is
 
     protecting REC-LANG-TERM-MOD .
-    protecting LIST{Term} * (sort List{Term} to Program) .
-    protecting STRING .
+    protecting LIST{RECTerm} * (sort List{RECTerm} to Program) .
+    protecting QID .
 
     sorts FTerm FDecl .
     sorts Args NeArgs .
-    subsort FTerm < Term < NeArgs < Args .
+    subsort FTerm < RECTerm < NeArgs < Args .
 
-    op if _ then {_} else {_} : Term Term Term -> Term [ctor prec 20] .
-    op if _ then {_} : Term Term -> Term [prec 20] .
+    op if _ then {_} else {_} : RECTerm RECTerm RECTerm -> RECTerm [ctor prec 20] .
+    op if _ then {_} : RECTerm RECTerm -> RECTerm [prec 20] .
 
     op _ ',_ : Args Args -> Args [ctor id: nil] .
     op _ ',_ : NeArgs Args -> NeArgs [ctor ditto] .
     op _ ',_ : Args NeArgs -> NeArgs [ctor ditto] .
 
-    op _[] : String -> FTerm [prec 20] .
-    op _[_] : String Args -> FTerm [ctor prec 20] .
+    op _[] : Qid -> FTerm [prec 20] .
+    op _[_] : Qid Args -> FTerm [ctor prec 20] .
 
-    vars T B : Term .
+    vars T B : RECTerm .
     var IL1 : Program .
-    var F : String .
+    var F : Qid .
 
     eq if B then {IL1} = if B then {IL1} else {nil} .
 
@@ -61,23 +61,23 @@ fmod REC-LANG-FUNCDEC-MOD is
     op _ ',_ : NeParamL ParamL -> NeParamL [ctor ditto] .
     op _ ',_ : ParamL NeParamL -> NeParamL [ctor ditto] .
 
-    op _[_]=_ : String ParamL Term -> FDec [ctor prec 20] .
+    op _[_]=_ : Qid ParamL RECTerm -> FDec [ctor prec 20] .
 
-    var F : String .
+    var F : Qid .
     vars X Z : IVar .
     var ParamL : ParamL .
     var NeParamL : NeParamL .
-    vars T T1 T2 Y : Term .
+    vars T T1 T2 Y : RECTerm .
     var Args : Args .
     var NeArgs : NeArgs .
     var V : IVal .
 
-    op _[_] : FDec Args -> Term [prec 10] .
+    op _[_] : FDec Args -> RECTerm [prec 10] .
     eq (F [nil] = T)[nil] = T .
     eq (F [X] = T)[Y] = (F [nil] = T[X / Y])[nil] .
     eq (F [X ', NeParamL] = T)[Y ', NeArgs] = (F [NeParamL] = T[X / Y])[NeArgs] .
 
-    op _[_/_] : Term IVar Term -> Term [prec 10] .
+    op _[_/_] : RECTerm IVar RECTerm -> RECTerm [prec 10] .
     eq V[X / Y] = V .
     eq X[X / Y] = Y .
     eq X[Z / Y] = X [owise] .
@@ -104,12 +104,12 @@ endfm
 mod REC-MAUDE is
 
     protecting REC-BASICS .
-    protecting MAP{String, FDec} .
+    protecting MAP{Qid, FDec} .
 
     sort State .
     
-    op < _ | _ | _ > : Program Map{String, FDec} Stores -> State [ctor] . 
-    op errState : Program Map{String, FDec} Stores -> State [ctor] . 
+    op < _ | _ | _ > : Program Map{Qid, FDec} Stores -> State [ctor] . 
+    op errState : Program Map{Qid, FDec} Stores -> State [ctor] . 
 
     vars IVar Var1 Var2 : IVar .
     var BExp BExp2 : BExp .
@@ -120,19 +120,34 @@ mod REC-MAUDE is
     var BSTR : BStore .
     var IExp : IExp .
     var V : IVal .
-    vars T T1 T2 : Term .
+    vars T T1 T2 : RECTerm .
     var FDec : FDec .
     var FDecL : FDecL .
-    var FSTR : Map{String, FDec} .
-    var F : String .
+    var FSTR : Map{Qid, FDec} .
+    var F : Qid .
     var ParamL : ParamL .
     var Args : Args .
 
     op start : Program FDecL -> State .
     eq start(P, FDecL) = start(P, FDecL, empty, (empty | empty | empty)) .
-    op start : Program FDecL Map{String, FDec} Stores -> State .
+    op start : Program FDecL Map{Qid, FDec} Stores -> State .
     eq start(P, nil, FSTR, STR) = < P | FSTR | STR > .
     eq start(P, (F [ParamL] = T) FDecL, FSTR, STR) = start(P, FDecL, insert(F, (F [ParamL] = T), FSTR), STR) .
+
+    rl [term-sum] :
+        < T1 + T2 | FSTR | (ISTR | RSTR | BSTR) >
+        =>
+        < val(evalI(T1, ISTR)) + val(evalI(T2, ISTR)) | FSTR | (ISTR | RSTR | BSTR) > .
+
+    rl [term-subtract] :
+        < T1 - T2 | FSTR | (ISTR | RSTR | BSTR) >
+        =>
+        < val(evalI(T1, ISTR)) - val(evalI(T2, ISTR)) | FSTR | (ISTR | RSTR | BSTR) > .
+
+    rl [term-mult] :
+        < T1 * T2 | FSTR | (ISTR | RSTR | BSTR) >
+        =>
+        < val(evalI(T1, ISTR)) * val(evalI(T2, ISTR)) | FSTR | (ISTR | RSTR | BSTR) > .
 
     rl [apply-func] :
         < F [Args] | (F |-> FDec, FSTR) | STR >

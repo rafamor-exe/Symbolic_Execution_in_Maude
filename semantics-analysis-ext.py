@@ -32,10 +32,7 @@ def get_args():
     parser.add_argument("--fold", action="store", help="Allow folding in MaudeSE analysis", default="false")
     return parser.parse_args()
 
-
-if __name__ == '__main__':
-    args = get_args()
-
+def getSymbVarCond(args) :
     # Parse symbolic var-val pairs
     svPairs = ""
     svDict = {}
@@ -50,7 +47,10 @@ if __name__ == '__main__':
     symbCond = args.symbCond
     for var, val in svDict.items():
         symbCond = symbCond.replace(var, val)
+    return svPairs, symbCond
 
+if __name__ == '__main__':
+    args = get_args()
 
     # Select analysis
     if args.analysis == "maude-se":
@@ -67,6 +67,8 @@ if __name__ == '__main__':
         # It is invoked with the language semantics instead of the transformer because of collision ("multiple parses" Maude warning)  
         sys.argv = ["maude-se", args.file, "-no-meta"]
         maudeSE.main()
+
+        svPairs, symbCond = getSymbVarCond(args)
 
         t = "searchMaudeSE(" \
                         +args.modL+"," \
@@ -126,11 +128,11 @@ if __name__ == '__main__':
                 t.rewrite()
                 print(t)
         else:
+            maude.load(args.file)
+            maude.load(SEMANTICS_TRANSFORMER_MAUDE)
+            mod = maude.getModule('VERIFICATION-COMMANDS')
             if args.analysis == "concolic":
-                maude.load(args.file)
-                maude.load(SEMANTICS_TRANSFORMER_MAUDE)
-                mod = maude.getModule('VERIFICATION-COMMANDS')
-
+                svPairs, symbCond = getSymbVarCond(args)
                 t = "searchConcolic(" \
                                     +args.modL+"," \
                                     +args.stSort+"," \
@@ -164,14 +166,15 @@ if __name__ == '__main__':
                     path = mod.parseTerm(path)
                     path.reduce()
                     print(path)
-                #t = "transformModSymb(" \
-                #                    +args.modL+"," \
-                #                    +args.stSort+"," \
-                #                    +args.valOp+"," \
-                #                    +"conc)"
-                #t = mod.parseTerm(t)
-                #t.reduce()
-                #print(t)
+            else:
+                t = "transformModSymb(" \
+                                    +args.modL+"," \
+                                    +args.stSort+"," \
+                                    +args.valOp+"," \
+                                    +"conc)"
+                t = mod.parseTerm(t)
+                t.reduce()
+                print(t)
 
 
     

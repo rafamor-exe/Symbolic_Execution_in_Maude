@@ -137,6 +137,12 @@ red in VERIFICATION-COMMANDS : metaParse(transformModSymb(upModule('WHILE-MAUDE,
 *************************
 Concrete semantics REC
 *************************
-rew < "f" [val(2)', val(3)] | "f" |-> "f" [var('x)', var('y)] = (var('x) + var('y)) | empty > .
-rew start("f" [val(0) ', val(3)], "f" [var('x)', var('y)] = if var('x) then {var('y)} else {val(0) - var('y)}) .
-rew start("f" [val(2) ', val(3)], "f" [var('x)', var('y)] = if var('x) then {var('y)} else {val(0) - var('y)}) .
+rew < "f" [val(2)', val(3)] | "f" |-> "f" [iv('x)', iv('y)] = (iv('x) + iv('y)) | empty > .
+rew start("f" [val(0) ', val(3)], "f" [iv('x)', iv('y)] = if iv('x) then {iv('y)} else {val(0) - iv('y)}) .
+rew start("f" [val(2) ', val(3)], "f" [iv('x)', iv('y)] = if iv('x) then {iv('y)} else {val(0) - iv('y)}) .
+rew start("f" [("f" [val(1) ', val(0)]) ', val(3)], "f" [iv('x)', iv('y)] = if iv('x) then {iv('y)} else {val(0) - iv('y)}) .
+
+
+python3 semantics-analysis-ext.py --program "start('f [iv('var1) ', val(3)], ('f [iv('x) ', iv('y)] = (iv('x) + iv('y))))" --pattern "concolicState('State)" --file "language-semantics/rec-semantics.maude" --analysis "concolic" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer)" --symbCond "var1 < 5" --solN 0
+python3 semantics-analysis-ext.py --program "start('f [iv('var1) ', val(3)], ('f [iv('x) ', iv('y)] = (iv('x) - iv('y))))" --pattern "concolicState('State)" --file "language-semantics/rec-semantics.maude" --analysis "concolic" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer)" --symbCond "var1 < 5" --solN 0
+python3 semantics-analysis-ext.py --program "start('f [iv('var1) ', val(3)], ('f [iv('x) ', iv('y)] = (iv('x) * iv('y))))" --pattern "concolicState('State)" --file "language-semantics/rec-semantics.maude" --analysis "concolic" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer)" --symbCond "var1 < 5" --solN 0
