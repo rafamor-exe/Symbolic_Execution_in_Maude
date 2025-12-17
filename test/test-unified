@@ -30,8 +30,7 @@ python3 semantics-analysis-ext.py --program "start(iv('var2) := val(10000) ; if 
 python3 semantics-analysis-ext.py --program "start(iv('var2) := val(3) ; if iv('var1) < iv('var2) then{iv('var3) := iv('var2) / val(0) ; })" --pattern "concolicState('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer) ; (var4, Real)" --symbCond "var1 < 5 and var4 > 1/1" --solN 0
 
 ***- Division by 0 error capture
-***python3 semantics-analysis-ext.py --program "[< var('var2) := val((1).Integer) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val((0).Integer) ;} | \$apply-SMTassignment(var('var1) |-> val(p:Integer), get-SMTassignment(p:Integer < (5).Integer))>][< var('var2) := val((1).Integer) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val((0).Integer) ;} | var('var1) |-> val(p:Integer) >{p:Integer < (5).Integer}<{nil}][1][var('var1) |-> val(p:Integer)]" --pattern "concolicState('State, 'errState['P:Program, 'S:Stores])" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --solN 0
-
+python3 semantics-analysis-ext.py --program "start(iv('var2) := val(3) ; if iv('var1) < iv('var2) then{iv('var3) := iv('var2) / val(0) ; })" --pattern "concolicState('State, '<_|_>['__['_:=_;['IV:IVar, '_/_['IE:IExp, 'val['0.Integer]]], 'P:Program], 'STR:Stores])" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer)" --symbCond "var1 < 5" --sType "'*" --solN 0
 -------------
 *** Incorporated MaudeSE (need to load smt-check.maude)
 *** - MaudeSE metaSmtSearch does not allow '! (does not reduce) (remember --sType "'*")
