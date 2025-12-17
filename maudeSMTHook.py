@@ -49,9 +49,9 @@ class SMTAssignmentHook (maude.Hook):
                 if not re.search(r'/', str(model[svar])):
                     val_ext = "/1"
             else:
-                var_type = "Bool"
-                #val_ext = ":" + var_type
-            assignments += f"{svar}:{var_type} <-- {model[svar]}{val_ext} , "
+                var_type = "Boolean"
+                #val_ext = "." + var_type
+            assignments += f"{svar}:{var_type} <-- {str(model[svar]).lower()}{val_ext} , "
             #print(assignments)
         return module.parseTerm(assignments[:-3])
 
@@ -67,6 +67,7 @@ class SMTAssignmentHook (maude.Hook):
             "<=": lambda a, b: a <= b,
             ">=": lambda a, b: a >= b,
             "==": lambda a, b: a == b,
+            "===": lambda a, b: a == b,
             "!=": lambda a, b: a != b,
         }
         #print(lhs_list)
@@ -74,6 +75,11 @@ class SMTAssignmentHook (maude.Hook):
         if lhs_list[0] != 'not':
             constraint = ops[op](eval(''.join(lhs_list), lvar_dic), eval(''.join(rhs_list), rvar_dic))
         else:
+            #print("a")
+            #print(op)
+            #print(ops[op])
+            #print(eval(''.join(lhs_list[1:]), lvar_dic))
+            #print(eval(''.join(rhs_list), rvar_dic))
             constraint = Not(ops[op](eval(''.join(lhs_list[1:]), lvar_dic), eval(''.join(rhs_list), rvar_dic)))
         #print(constraint)
         return constraint
@@ -101,5 +107,10 @@ class SMTAssignmentHook (maude.Hook):
                 if match_real:
                     #print("real matched")
                     l[i] = re.sub(r'\.Real', '', l[i])
+                    #print(l[i])
+                match_bool = re.search(r'.Boolean', l[i])
+                if match_bool:
+                    #print("boolean matched")
+                    l[i] = re.sub(r'\.Boolean', '', l[i]).capitalize()
                     #print(l[i])
         return l, var_dic
