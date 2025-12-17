@@ -7,7 +7,9 @@ fmod WHILE-LANG-INSTS-MOD is
     sort Inst .
 
     op skip ; : -> Inst [ctor prec 20] .
-    op _ := _ ; : Var AExp -> Inst [ctor prec 20] .
+    op _ := _ ; : Var IExp -> Inst [ctor prec 20] .
+    op _ := _ ; : Var RExp -> Inst [ctor prec 20] .
+    op _ := _ ; : Var BExp -> Inst [ctor prec 20] .
 
 endfm
 
@@ -42,29 +44,44 @@ mod WHILE-MAUDE is
 
     sort State .
     
-    op < _ | _ > : Program Map{Var, Value} -> State [ctor] . 
-    op errState : Program Map{Var, Value} -> State [ctor] . 
+    op < _ | _ > : Program Stores -> State [ctor] . 
+    op errState : Program Stores -> State [ctor] . 
 
     vars Var Var1 Var2 : Var .
-    var BExp BExp2 : BExp .
+    var IVar : IVar .
+    var RVar : RVar .
+    var BVar : BVar .
+    vars BExp BExp2 : BExp .
     vars IL IL1 IL2 P : Program .
-    vars STR STR2 : Map{Var, Value} .
-    var AExp : AExp .
-    var SVDeclL : Program .
-    var V : Value .
+    vars STR STR2 : Stores .
+    var ISTR : IStore .
+    var RSTR : RStore .
+    var BSTR : BStore .
+    var IExp : IExp .
+    var RExp : RExp .
 
     op start : Program -> State .
-    eq start(P) = < P | empty > .
+    eq start(P) = < P | (empty | empty | empty) > .
 
     rl [skip] : 
         < skip ; IL | STR >
         =>
         < IL | STR > .
 
-    rl [assign] : 
-        < Var := AExp ; IL | STR >
+    rl [assign-I] : 
+        < IVar := IExp ; IL | (ISTR | RSTR | BSTR) >
         =>
-        < IL | insert(Var, eval(AExp, STR), STR) > .
+        < IL | insert(IVar, val(eval(IExp, ISTR)), ISTR) | RSTR | BSTR > .
+    
+    rl [assign-R] : 
+        < RVar := RExp ; IL | (ISTR | RSTR | BSTR) >
+        =>
+        < IL | ISTR | insert(RVar, val(eval(RExp, RSTR)), RSTR) | BSTR > .
+
+    rl [assign-B] : 
+        < BVar := BExp ; IL | (ISTR | RSTR | BSTR) >
+        =>
+        < IL | ISTR | RSTR | insert(BVar, val(eval(BExp, BSTR)), BSTR) > .
 
     crl [if..then] : 
         < if BExp then { IL1 } else { IL2 } IL | STR >
@@ -89,20 +106,20 @@ mod WHILE-MAUDE is
         < while BExp do { IL1 } IL | STR >
         =>
         < IL | STR >
-        if not eval(BExp, STR).
+        if not eval(BExp, STR) .
 
     *** Auxiliary
 
     op getProgram : State -> Program .
     eq getProgram(< P | STR >) = P .
 
-    op getStore : State -> Map{Var, Value} .
+    op getStore : State -> Stores .
     eq getStore(< P | STR >) = STR .
 
     op updateProgram : State Program -> State .
     eq updateProgram(< P | STR >, IL) = < IL | STR > .
 
-    op updateStore : State Map{Var, Value} -> State .
+    op updateStore : State Stores -> State .
     eq updateStore(< P | STR >, STR2) = < P | STR2 > .
     
     *** Ignore

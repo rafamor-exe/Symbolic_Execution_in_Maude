@@ -164,6 +164,14 @@ if __name__ == '__main__':
                     path = mod.parseTerm(path)
                     path.reduce()
                     print(path)
+                #t = "transformModSymb(" \
+                #                    +args.modL+"," \
+                #                    +args.stSort+"," \
+                #                    +args.valOp+"," \
+                #                    +"conc)"
+                #t = mod.parseTerm(t)
+                #t.reduce()
+                #print(t)
 
 
     

@@ -18,45 +18,45 @@ red in VERIFICATION-COMMANDS : transformModSymb(upModule('WHILE-MAUDE, true), 'S
 
 -------------
 *** Concolic
-python3 semantics-analysis-ext.py --program "start(var('var2) := val(1/1) ; if var('var1) < var('var2) then{var('var3) := val(0/1) ; })" --pattern "concolicState('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Real)" --symbCond "var1 < 5/1" --solN 0
-python3 semantics-analysis-ext.py --program "start(var('var2) := val(1/1) ; if var('var1) < var('var2) then{var('var3) := val(0/1) ; })" --pattern "concolicState('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Real)" --symbCond "var1 < 5/1" --solN 1
+python3 semantics-analysis-ext.py --program "start(rv('var2) := val(1/1) ; if rv('var1) < rv('var2) then{rv('var3) := val(0/1) ; })" --pattern "concolicState('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Real)" --symbCond "var1 < 5/1" --solN 0
+python3 semantics-analysis-ext.py --program "start(rv('var2) := val(1/1) ; if rv('var1) < rv('var2) then{rv('var3) := val(0/1) ; })" --pattern "concolicState('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Real)" --symbCond "var1 < 5/1" --solN 1
 
 - Concurrent while
-python3 semantics-analysis-ext.py --program "start(var('var2) := val(1/1) ; if var('var1) < var('var2) then{var('var3) := val(0/1) ;} || var('var2) := val(0/1) ;)" --pattern "concolicState('State)" --file "language-semantics/while-semantics-concurrent.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Real)" --symbCond "var1 < 5/1" --solN 0
+python3 semantics-analysis-ext.py --program "start(rv('var2) := val(1/1) ; if rv('var1) < rv('var2) then{rv('var3) := val(0/1) ;} || rv('var2) := val(0/1) ;)" --pattern "concolicState('State)" --file "language-semantics/while-semantics-concurrent.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Real)" --symbCond "var1 < 5/1" --solN 0
 
-python3 semantics-analysis-ext.py --program "start(var('var2) := val(10000) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val(0) ; })" --pattern "concolicState('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer)" --symbCond "var1 < 5" --solN 0
+python3 semantics-analysis-ext.py --program "start(iv('var2) := val(10000) ; if iv('var1) < iv('var2) then{iv('var3) := iv('var2) / val(0) ; })" --pattern "concolicState('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer)" --symbCond "var1 < 5" --solN 0
 
 - Multiple symbolic variables 
-python3 semantics-analysis-ext.py --program "start(var('var2) := val(3) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val(0) ; })" --pattern "concolicState('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer) ; (var4, Real)" --symbCond "var1 < 5 and var4 > 1/1" --solN 0
+python3 semantics-analysis-ext.py --program "start(iv('var2) := val(3) ; if iv('var1) < iv('var2) then{iv('var3) := iv('var2) / val(0) ; })" --pattern "concolicState('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer) ; (var4, Real)" --symbCond "var1 < 5 and var4 > 1/1" --solN 0
 
 ***- Division by 0 error capture
-***python3 semantics-analysis-ext.py --program "[< var('var2) := val((1).Integer) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val((0).Integer) ;} | \$apply-SMTassignment(var('var1) |-> val(p:Integer), get-SMTassignment(p:Integer < (5).Integer))>][< var('var2) := val((1).Integer) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val((0).Integer) ;} | var('var1) |-> val(p:Integer) >{p:Integer < (5).Integer}<{nil}][1][var('var1) |-> val(p:Integer)]" --pattern "concolicState('State, 'errState['P:Program, 'S:Map\`{Var\`,Value\`}])" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --solN 0
+***python3 semantics-analysis-ext.py --program "[< var('var2) := val((1).Integer) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val((0).Integer) ;} | \$apply-SMTassignment(var('var1) |-> val(p:Integer), get-SMTassignment(p:Integer < (5).Integer))>][< var('var2) := val((1).Integer) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val((0).Integer) ;} | var('var1) |-> val(p:Integer) >{p:Integer < (5).Integer}<{nil}][1][var('var1) |-> val(p:Integer)]" --pattern "concolicState('State, 'errState['P:Program, 'S:Stores])" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --solN 0
 
 -------------
 *** Incorporated MaudeSE (need to load smt-check.maude)
 *** - MaudeSE metaSmtSearch does not allow '! (does not reduce) (remember --sType "'*")
 - It needs to be executed from python
 
-python3 semantics-analysis-ext.py --program "start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; })" --pattern "'<_|_>['nil.Program, 'STR:Map\`{Var\`,Value\`}]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Real)" --solN 0
-python3 semantics-analysis-ext.py --program "start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; })" --pattern "'<_|_>['nil.Program, 'STR:Map\`{Var\`,Value\`}]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Real)" --solN 1
+python3 semantics-analysis-ext.py --program "start(rv('var2) := val(1/1) ; if (rv('var1) < rv('var2)) then { rv('var3) := val(0/1) ; })" --pattern "'<_|_>['nil.Program, 'STR:Stores]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Real)" --solN 0
+python3 semantics-analysis-ext.py --program "start(rv('var2) := val(1/1) ; if (rv('var1) < rv('var2)) then { rv('var3) := val(0/1) ; })" --pattern "'<_|_>['nil.Program, 'STR:Stores]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Real)" --solN 1
 
 *** With explicit initial state (without start)
-python3 semantics-analysis-ext.py --program "< var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; } | empty >" --pattern "'<_|_>['nil.Program, 'STR:Map\`{Var\`,Value\`}]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Real)" --solN 0
+python3 semantics-analysis-ext.py --program "< rv('var2) := val(1/1) ; if (rv('var1) < rv('var2)) then { rv('var3) := val(0/1) ; } | ((empty).IStore | (empty).RStore | (empty).BStore) >" --pattern "'<_|_>['nil.Program, 'STR:Stores]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Real)" --solN 0
 
 *** Directly over a file
 maude-se test/test-tr-maude-se -no-meta
 
-python3 semantics-analysis-ext.py --program "start(var('var2) := val(1000000) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val(0) ; })" --pattern "'<_|_>['nil.Program, 'STR:Map\`{Var\`,Value\`}]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer)" --solN 0
+python3 semantics-analysis-ext.py --program "start(iv('var2) := val(1000000) ; if iv('var1) < iv('var2) then{iv('var3) := iv('var2) / val(0) ; })" --pattern "'<_|_>['nil.Program, 'STR:Stores]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer)" --solN 0
 - Multiple symbolic variables
-python3 semantics-analysis-ext.py --program "start(var('var2) := val(1000000) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val(0) ; })" --pattern "'<_|_>['nil.Program, 'STR:Map\`{Var\`,Value\`}]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer) ; (var4, Real)" --solN 0 --symbCond "var1 < 5 and var4 > 1/1"
+python3 semantics-analysis-ext.py --program "start(iv('var2) := val(1000000) ; if iv('var1) < iv('var2) then{iv('var3) := iv('var2) / val(0) ; })" --pattern "'<_|_>['nil.Program, 'STR:Stores]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer) ; (var4, Real)" --solN 0 --symbCond "var1 < 5 and var4 > 1/1"
 
 *** Concurrent while
 - 7 solutions:
-python3 semantics-analysis-ext.py --program "< var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; } || var('var2) := val(0/1) ; | empty >" --pattern "'<_|_>['_||_['nil.Program, 'nil.Program], 'STR:Map\`{Var\`,Value\`}]" --file "language-semantics/while-semantics-concurrent.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Real)" --solN 0 --symbCond "var1 < 5/1"
+python3 semantics-analysis-ext.py --program "< rv('var2) := val(1/1) ; if (rv('var1) < rv('var2)) then { rv('var3) := val(0/1) ; } || rv('var2) := val(0/1) ; | ((empty).IStore | (empty).RStore | (empty).BStore) >" --pattern "'<_|_>['_||_['nil.Program, 'nil.Program], 'STR:Stores]" --file "language-semantics/while-semantics-concurrent.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Real)" --solN 0 --symbCond "var1 < 5/1"
 
 ***NOT WORKING:
 ***- Division by 0 error capture
-***python3 semantics-analysis-ext.py --program "< var('var2) := val((1).Integer) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val((0).Integer) ;} | var('var1) |-> val(p:Integer) >" --pattern "'errState['P:Program, 'S:Map\`{Var\`,Value\`}]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --solN 0 --sType "'*"
+***python3 semantics-analysis-ext.py --program "< var('var2) := val((1).Integer) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val((0).Integer) ;} | var('var1) |-> val(p:Integer) >" --pattern "'errState['P:Program, 'S:Stores]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --solN 0 --sType "'*"
 
 
 *** Does not reduce because it need MaudeSE
@@ -93,6 +93,46 @@ smt-search [2] in WHILE-MAUDE : start(var('var2) := val(1/1) ; if (var('var1) < 
     0/1) ; if var('var1) < val(0/1) then{var('var3) := val(2/1) ; if var('var1) < val(
     -1/1) then{var('var3) := val(3/1) ;}else{nil}}else{nil}}else{nil} | var('var1) |->
     val(p:Real) >{p:Real < 5/1}<{nil}][1][var('var1) |-> val(p:Real)][0 / unbounded]
+
+
+
+-----------------
+red eval(var('x) < val(2) /\ val(2/3) > var('y), insert(var('x), val(1), empty) | insert(var('y), val(1/2), empty) | insert(var('z), val(true), empty)) .
+
+red eval(var('z) /\ var('x) < val(2) /\ val(2/3) > var('y), insert(var('x), val(1), empty) | insert(var('y), val(1/2), empty) | insert(var('z), val(true), empty)) .
+
+- Retrieves several results: technically this is correct, as 0/1 (and any other Rat with denominator 1) can be parsed as Int or Rat...
+search start(var('var1) := val(0/1) ; var('var2) := val(1/1) ; if var('var1) < var('var2) then{var('var3) := val(0/1) ; }) =>! < nil | S:Stores > .
+
+red in VERIFICATION-COMMANDS : transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc) .
+red in VERIFICATION-COMMANDS : metaParse(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc), tokenize("start(skip ;)"), 'State) .
+red in VERIFICATION-COMMANDS : metaParse(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc), tokenize("skip ;"), 'Program) .
+red in VERIFICATION-COMMANDS : metaParse(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc), tokenize("1"), 'Integer) .
+red in VERIFICATION-COMMANDS : metaParse(upModule('REAL-INTEGER, true), tokenize("1"), 'Integer) .
+
+red in VERIFICATION-COMMANDS : downTerm(upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc)), err:Module) .
+red in VERIFICATION-COMMANDS : metaPrettyPrint(['VERIFICATION-COMMANDS], upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc)), with-parens) .
+red in VERIFICATION-COMMANDS : metaParse(['VERIFICATION-COMMANDS], metaPrettyPrint(['VERIFICATION-COMMANDS], upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc)), with-parens), 'Module) .
+red in VERIFICATION-COMMANDS : getTerm(metaParse(['VERIFICATION-COMMANDS], metaPrettyPrint(['VERIFICATION-COMMANDS], upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc)), with-parens), 'Module)) .
+
+***red in VERIFICATION-COMMANDS : metaParse(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc), 'start['_where_['<_|_>['__['_:=_;['var[''var2.Sort], 'val['1.Integer]], 'if_then`{_`}['_<_['var[''var1.Sort], 'var[''var2.Sort]], '_:=_;['var[''var3.Sort], 'val['0.Integer]]]], '_|_|_['empty.IStore, 'empty.RStore, 'empty.BStore]], '_<_['var10:Integer, '5.Integer]], '_`,_[''var1.Sort, 'var10:Integer]], 'ConcolicState) .
+***red in VERIFICATION-COMMANDS : metaParse(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc), '<_|_>['__['_:=_;['var[''var2.Sort], 'val['1.Integer]], 'if_then`{_`}['_<_['var[''var1.Sort], 'var[''var2.Sort]], '_:=_;['var[ ''var3.Sort], 'val['0.Integer]]]], '_|_|_['empty.IStore, 'empty.RStore, 'empty.BStore]], 'State) .
+***red in VERIFICATION-COMMANDS : metaParse(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc), '__['_:=_;['var[''var2.Sort], 'val['1.Integer]], 'if_then`{_`}['_<_['var[''var1.Sort], 'var[''var2.Sort]], '_:=_;['var[ ''var3.Sort], 'val['0.Integer]]]], 'Program) .
+***red in VERIFICATION-COMMANDS : metaParse(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc), '_:=_;['var[''var2.Sort], 'val['1.Integer]], 'Inst) .
+***red in VERIFICATION-COMMANDS : metaParse(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc), 'var[''var2.Sort], 'Var) .
+red in VERIFICATION-COMMANDS : metaPrettyPrint(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc), 'val['1.Integer]) .
+red in VERIFICATION-COMMANDS : metaPrettyPrint(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc), '1.Integer) .
+red in VERIFICATION-COMMANDS : metaPrettyPrint(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc), 'true.Boolean) .
+red in VERIFICATION-COMMANDS : metaPrettyPrint(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc), '1/1.Real) .
+red in VERIFICATION-COMMANDS : metaPrettyPrint(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc), 'val['1/1.Real]) .
+red in VERIFICATION-COMMANDS : metaPrettyPrint(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc), '1.Nat) .
+
+red in VERIFICATION-COMMANDS : metaParse(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc), 'start['_where_['<_|_>['__['_:=_;['var[''var2.Sort], 'val['1.Integer]], 'if_then`{_`}['_<_['var[''var1.Sort], 'var[''var2.Sort]], '_:=_;['var[''var3.Sort], 'val['0.Integer]]]], '_|_|_['empty.IStore, 'empty.RStore, 'empty.BStore]], '_<_['var10:Integer, '5.Integer]], '_`,_[''var1.Sort, 'var10:Integer]], 'ConcolicState) .
+red in VERIFICATION-COMMANDS : metaParse(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc), '<_|_>['__['_:=_;['var[''var2.Sort], 'val['1.Integer]], 'if_then`{_`}['_<_['var[''var1.Sort], 'var[''var2.Sort]], '_:=_;['var[ ''var3.Sort], 'val['0.Integer]]]], '_|_|_['empty.IStore, 'empty.RStore, 'empty.BStore]], 'State) .
+red in VERIFICATION-COMMANDS : metaParse(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc), '__['_:=_;['var[''var2.Sort], 'val['1.Integer]], 'if_then`{_`}['_<_['var[''var1.Sort], 'var[''var2.Sort]], '_:=_;['var[ ''var3.Sort], 'val['0.Integer]]]], 'Program) .
+red in VERIFICATION-COMMANDS : metaParse(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc), tokenize("var('var2) := val((1).Integer) ;"), 'Inst) .
+red in VERIFICATION-COMMANDS : metaParse(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc), tokenize("var('var2)"), 'Var) .
+red in VERIFICATION-COMMANDS : metaParse(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc), tokenize("val((1).Integer)"), 'IVal) .
 
 
 *************************

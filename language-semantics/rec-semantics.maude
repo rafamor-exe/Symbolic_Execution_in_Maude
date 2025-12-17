@@ -5,7 +5,7 @@ fmod REC-LANG-TERM-MOD is
     protecting CONCRETE-AEXP-MOD .
 
     sorts Term .
-    subsort AExp < Term .
+    subsort IExp < Term .
 
     op _+_ : Term Term -> Term [gather (E e) prec 33] .
     op _-_ : Term Term -> Term [gather (E e) prec 33] .
@@ -54,7 +54,7 @@ fmod REC-LANG-FUNCDEC-MOD is
 
     sort FDec .
     sorts ParamL NeParamL .
-    subsort Var < NeParamL < ParamL < Args .
+    subsort IVar < NeParamL < ParamL < Args .
     subsort NeParamL < NeArgs .
 
     op _ ',_ : ParamL ParamL -> ParamL [ctor id: nil] .
@@ -64,20 +64,20 @@ fmod REC-LANG-FUNCDEC-MOD is
     op _[_]=_ : String ParamL Term -> FDec [ctor prec 20] .
 
     var F : String .
-    vars X Z : Var .
+    vars X Z : IVar .
     var ParamL : ParamL .
     var NeParamL : NeParamL .
     vars T T1 T2 Y : Term .
     var Args : Args .
     var NeArgs : NeArgs .
-    var V : Value .
+    var V : IVal .
 
     op _[_] : FDec Args -> Term [prec 10] .
     eq (F [nil] = T)[nil] = T .
     eq (F [X] = T)[Y] = (F [nil] = T[X / Y])[nil] .
     eq (F [X ', NeParamL] = T)[Y ', NeArgs] = (F [NeParamL] = T[X / Y])[NeArgs] .
 
-    op _[_/_] : Term Var Term -> Term [prec 10] .
+    op _[_/_] : Term IVar Term -> Term [prec 10] .
     eq V[X / Y] = V .
     eq X[X / Y] = Y .
     eq X[Z / Y] = X [owise] .
@@ -108,15 +108,18 @@ mod REC-MAUDE is
 
     sort State .
     
-    op < _ | _ | _ > : Program Map{String, FDec} Map{Var, Value} -> State [ctor] . 
-    op errState : Program Map{String, FDec} Map{Var, Value} -> State [ctor] . 
+    op < _ | _ | _ > : Program Map{String, FDec} Stores -> State [ctor] . 
+    op errState : Program Map{String, FDec} Stores -> State [ctor] . 
 
-    vars Var Var1 Var2 : Var .
+    vars IVar Var1 Var2 : IVar .
     var BExp BExp2 : BExp .
     vars IL IL1 IL2 P : Program .
-    vars STR STR2 : Map{Var, Value} .
-    var AExp : AExp .
-    var V : Value .
+    vars STR STR2 : Stores .
+    var ISTR : IStore .
+    var RSTR : RStore .
+    var BSTR : BStore .
+    var IExp : IExp .
+    var V : IVal .
     vars T T1 T2 : Term .
     var FDec : FDec .
     var FDecL : FDecL .
@@ -126,8 +129,8 @@ mod REC-MAUDE is
     var Args : Args .
 
     op start : Program FDecL -> State .
-    eq start(P, FDecL) = start(P, FDecL, empty, empty) .
-    op start : Program FDecL Map{String, FDec} Map{Var, Value} -> State .
+    eq start(P, FDecL) = start(P, FDecL, empty, (empty | empty | empty)) .
+    op start : Program FDecL Map{String, FDec} Stores -> State .
     eq start(P, nil, FSTR, STR) = < P | FSTR | STR > .
     eq start(P, (F [ParamL] = T) FDecL, FSTR, STR) = start(P, FDecL, insert(F, (F [ParamL] = T), FSTR), STR) .
 
@@ -137,17 +140,17 @@ mod REC-MAUDE is
         < FDec[Args] | FSTR | STR > .
 
     crl [if..then] : 
-        < if T then { T1 } else { T2 } | FSTR | STR >
+        < if T then { T1 } else { T2 } | FSTR | (ISTR | RSTR | BSTR) >
         =>
-        < T1 | FSTR | STR >
-        if eval(T, STR) == val(0) .
+        < T1 | FSTR | (ISTR | RSTR | BSTR) >
+        if evalI(T, ISTR) == 0 .
         ***if T => val(0) .
 
     crl [if..else] : 
-        < if T then { T1 } else { T2 } | FSTR | STR >
+        < if T then { T1 } else { T2 } | FSTR | (ISTR | RSTR | BSTR) >
         =>
-        < T2 | FSTR | STR >
-        if eval(T, STR) =/= val(0) .
+        < T2 | FSTR | (ISTR | RSTR | BSTR) >
+        if not evalI(T, ISTR) == 0 .
         ***if T => val(N:NzInt) .
 
     *** Auxiliary
@@ -155,13 +158,13 @@ mod REC-MAUDE is
     op getProgram : State -> Program .
     eq getProgram(< P | FSTR | STR >) = P .
 
-    op getStore : State -> Map{Var, Value} .
+    op getStore : State -> Stores .
     eq getStore(< P | FSTR | STR >) = STR .
 
     op updateProgram : State Program -> State .
     eq updateProgram(< P | FSTR | STR >, IL) = < IL | FSTR | STR > .
 
-    op updateStore : State Map{Var, Value} -> State .
+    op updateStore : State Stores -> State .
     eq updateStore(< P | FSTR | STR >, STR2) = < P | FSTR | STR2 > .
     
     *** Ignore

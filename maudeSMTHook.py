@@ -19,7 +19,7 @@ class SMTAssignmentHook (maude.Hook):
         for constraint in maude_constraints:
             if constraint == '(false).Boolean':
                 return module.parseTerm("failed")
-            elif constraint == '(true).Boolean':
+            elif constraint == 'true.Boolean':
                 z3_constraint = True
             else:
                 lhs, op, rhs = self.parse_constraint(constraint)
@@ -34,7 +34,7 @@ class SMTAssignmentHook (maude.Hook):
 
         model = self.solver.model()
         if len(model) == 0:
-            return module.parseTerm("(true).Boolean")
+            return module.parseTerm("(true).Boolean <-- (true).Boolean")
         #print(model)
         assignments = ""
         for svar in model:

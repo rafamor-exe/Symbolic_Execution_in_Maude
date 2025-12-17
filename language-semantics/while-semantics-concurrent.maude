@@ -7,7 +7,9 @@ fmod WHILE-LANG-INSTS-MOD is
     sort Inst .
 
     op skip ; : -> Inst [ctor prec 20] .
-    op _ := _ ; : Var AExp -> Inst [ctor prec 20] .
+    op _ := _ ; : Var IExp -> Inst [ctor prec 20] .
+    op _ := _ ; : Var RExp -> Inst [ctor prec 20] .
+    op _ := _ ; : Var BExp -> Inst [ctor prec 20] .
 
 endfm
 
@@ -49,29 +51,46 @@ mod WHILE-MAUDE is
     op _ || _ : MTExec MTExec -> MTExec [ctor assoc comm id: noProgram] .
 
     
-    op < _ | _ > : MTExec Map{Var, Value} -> State [ctor] . 
+    op < _ | _ > : MTExec Stores -> State [ctor] . 
     op errState : -> State [ctor] . 
 
     vars Var Var1 Var2 : Var .
+    var IVar : IVar .
+    var RVar : RVar .
+    var BVar : BVar .
     var BExp BExp2 : BExp .
     vars IL IL1 IL2 : Program .
-    vars STR STR2 : Map{Var, Value} .
-    var AExp : AExp .
-    var V : Value .
+    vars STR STR2 : Stores .
+    var ISTR : IStore .
+    var RSTR : RStore .
+    var BSTR : BStore .
+    var IExp : IExp .
+    var RExp : RExp .
     vars P PRest P2 : MTExec .
 
     op start : Program -> State .
-    eq start(P) = < P | empty > .
+    eq start(P) = < P | (empty | empty | empty) > .
 
     rl [skip] : 
         < skip ; IL || PRest | STR >
         =>
         < IL || PRest | STR > .
 
-    rl [assign] : 
-        < Var := AExp ; IL || PRest | STR >
+    rl [assign-I] : 
+        < IVar := IExp ; IL || PRest | (ISTR | RSTR | BSTR) >
         =>
-        < IL || PRest | insert(Var, eval(AExp, STR), STR) > .
+        < IL || PRest | insert(IVar, val(eval(IExp, ISTR)), ISTR) | RSTR | BSTR > .
+    
+    rl [assign-R] : 
+        < RVar := RExp ; IL || PRest | (ISTR | RSTR | BSTR) >
+        =>
+        < IL || PRest | ISTR | insert(RVar, val(eval(RExp, RSTR)), RSTR) | BSTR > .
+
+    rl [assign-B] : 
+        < BVar := BExp ; IL || PRest | (ISTR | RSTR | BSTR) >
+        =>
+        < IL || PRest | ISTR | RSTR | insert(BVar, val(eval(BExp, BSTR)), BSTR) > .
+
 
     crl [if..then] : 
         < if BExp then { IL1 } else { IL2 } IL || PRest | STR >
@@ -103,13 +122,13 @@ mod WHILE-MAUDE is
     op getProgram : State -> MTExec .
     eq getProgram(< P | STR >) = P .
 
-    op getStore : State -> Map{Var, Value} .
+    op getStore : State -> Stores .
     eq getStore(< P | STR >) = STR .
 
     op updateProgram : State MTExec -> State .
     eq updateProgram(< P | STR >, P2) = < P2 | STR > .
 
-    op updateStore : State Map{Var, Value} -> State .
+    op updateStore : State Stores -> State .
     eq updateStore(< P | STR >, STR2) = < P | STR2 > .
     
     *** Ignore
