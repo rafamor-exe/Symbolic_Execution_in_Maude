@@ -70,37 +70,37 @@ if __name__ == '__main__':
 
         svPairs, symbCond = getSymbVarCond(args)
 
-        t = "searchMaudeSE(" \
-                        +args.modL+"," \
-                        +args.stSort+"," \
-                        +args.valOp+"," \
-                        +'\"'+args.program+'\"'+"," \
-                        +args.pattern+"," \
-                        +"upTerm("+ symbCond + ") = 'true.Boolean /\\ " +args.sCond+"," \
-                        +str(args.sType)+"," \
-                        +str(args.bound)+"," \
-                        +str(args.solN)+"," \
-                        +str(args.logic)+"," \
-                        +str(args.fold)+"," \
-                        +svPairs+")"
+        t = f"""searchMaudeSE(
+                       {args.modL},
+                       {args.stSort},
+                       {args.valOp},
+                       "{args.program}",
+                       {args.pattern},
+                       upTerm({symbCond}) = 'true.Boolean /\\ {args.sCond},
+                       {args.sType},
+                       {args.bound},
+                       {args.solN},
+                       {args.logic},
+                       {args.fold},
+                       {svPairs})"""
         t = mod.parseTerm(t)
         t.reduce()
         print(t)
         print("---------")
         print("With path:")
-        path = "searchPathMaudeSE(" \
-                                  +args.modL+"," \
-                                  +args.stSort+"," \
-                                  +args.valOp+"," \
-                                  +'\"'+args.program+'\"'+"," \
-                                  +args.pattern+"," \
-                                  +"upTerm("+ symbCond + ") = 'true.Boolean /\\ " +args.sCond+"," \
-                                  +str(args.sType)+"," \
-                                  +str(args.bound)+"," \
-                                  +str(args.solN)+"," \
-                                  +str(args.logic)+"," \
-                                  +str(args.fold)+"," \
-                                  +svPairs+")"
+        path = f"""searchPathMaudeSE(" \
+                                 {args.modL},
+                                 {args.stSort},
+                                 {args.valOp},
+                                 "{args.program}",
+                                 {args.pattern},
+                                 upTerm({symbCond}) = 'true.Boolean /\\ {args.sCond},
+                                 {args.sType},
+                                 {args.bound},
+                                 {args.solN},
+                                 {args.logic},
+                                 {args.fold},
+                                 {svPairs})"""
         path = mod.parseTerm(path)
         path.reduce()
         print(path)
@@ -133,45 +133,45 @@ if __name__ == '__main__':
             mod = maude.getModule('VERIFICATION-COMMANDS')
             if args.analysis == "concolic":
                 svPairs, symbCond = getSymbVarCond(args)
-                t = "searchConcolic(" \
-                                    +args.modL+"," \
-                                    +args.stSort+"," \
-                                    +args.valOp+"," \
-                                    +'\"'+args.program+'\"'+"," \
-                                    +args.pattern+"," \
-                                    +args.sCond+"," \
-                                    +str(args.sType)+"," \
-                                    +str(args.bound)+"," \
-                                    +str(args.solN)+"," \
-                                    +svPairs+"," \
-                                    +symbCond+")"
+                t = f"""searchConcolic(
+                                   {args.modL},
+                                   {args.stSort},
+                                   {args.valOp},
+                                   "{args.program}",
+                                   {args.pattern},
+                                   {args.sCond},
+                                   {args.sType},
+                                   {args.bound},
+                                   {args.solN},
+                                   {svPairs},
+                                   {symbCond})"""
                 t = mod.parseTerm(t)
                 t.reduce()                
                 print(t)
                 if args.path:
                     print("---------")
                     print("With path:")
-                    path = "searchPathConcolic(" \
-                                            +args.modL+"," \
-                                            +args.stSort+"," \
-                                            +args.valOp+"," \
-                                            +'\"'+args.program+'\"'+"," \
-                                            +args.pattern+"," \
-                                            +args.sCond+"," \
-                                            +str(args.sType)+"," \
-                                            +str(args.bound)+"," \
-                                            +str(args.solN)+"," \
-                                            +svPairs+"," \
-                                            +symbCond+")"
+                    path = f"""searchPathConcolic(
+                                           {args.modL},
+                                           {args.stSort},
+                                           {args.valOp},
+                                           "{args.program}",
+                                           {args.pattern},
+                                           {args.sCond},
+                                           {args.sType},
+                                           {args.bound},
+                                           {args.solN},
+                                           {svPairs},
+                                           {symbCond})"""
                     path = mod.parseTerm(path)
                     path.reduce()
                     print(path)
             else:
-                t = "transformModSymb(" \
-                                    +args.modL+"," \
-                                    +args.stSort+"," \
-                                    +args.valOp+"," \
-                                    +"conc)"
+                t = f"""transformModSymb(
+                                   {args.modL},
+                                   {args.stSort},
+                                   {args.valOp},
+                                   conc)"""
                 t = mod.parseTerm(t)
                 t.reduce()
                 print(t)
