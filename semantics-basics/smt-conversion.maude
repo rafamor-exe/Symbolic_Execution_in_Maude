@@ -10,11 +10,36 @@ fmod SMT-CONVERSION is
     op toReal : Rat -> Real .
     op toReal : Float -> Real .
 
+    op toInt : Integer -> Int .
+    op toRat : Real -> Rat .
+    op toBool : Boolean -> Bool .
+
     op errInteger : -> Integer [ctor] .
     op errReal : -> Real [ctor] .
+    op errInt : -> Int [ctor] .
+    op errRat : -> Rat [ctor] .
+    op errBool : -> Bool [ctor] .
+
+    var T : Term .
+    var TL : TypeList .
+    var MConst : Constant .
+
+    op toMaudeSorts : TypeList -> TypeList .
+    eq toMaudeSorts(nil) = nil .
+    eq toMaudeSorts('Boolean TL) = 'Bool toMaudeSorts(TL) .
+    eq toMaudeSorts('Integer TL) = 'Int toMaudeSorts(TL) .
+    eq toMaudeSorts('Real TL) = 'Rat toMaudeSorts(TL) .
+    eq toMaudeSorts(T TL) = T toMaudeSorts(TL) [owise] .
+
+    op subMConstSorts : Constant -> Constant .
+    eq subMConstSorts(MConst) = qid(string(getName(MConst)) + "." + string(toMaudeSorts(getType(MConst)))) .
+
 
     var I : Int .
+    var Ismt : Integer .
     var R : Rat .
+    var Rsmt : Real .
+    var Bsmt : Boolean .
     var F : Float .
     
     eq toInteger(I) = downTerm(getTerm(metaParse(['INTEGER], tokenize(string(I, 10)), 'Integer)), errInteger) .
@@ -23,4 +48,9 @@ fmod SMT-CONVERSION is
     ceq toReal(F) = toReal(I)
         if I := rat(F) .
     eq toReal(F) = downTerm(getTerm(metaParse(['REAL], tokenize(string(rat(F), 10)), 'Real)), errReal) .
+
+    eq toInt(Ismt) = downTerm(getTerm(metaParse(['INT], getName(upTerm(Ismt)), 'Int)), errInt) .
+    eq toRat(Rsmt) = downTerm(getTerm(metaParse(['RAT], getName(upTerm(Rsmt)), 'Rat)), errRat) .
+    eq toBool(Bsmt) = downTerm(getTerm(metaParse(['BOOL], getName(upTerm(Bsmt)), 'Bool)), errBool) .
+
 endfm
