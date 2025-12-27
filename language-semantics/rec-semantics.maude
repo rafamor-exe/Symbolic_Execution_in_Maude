@@ -4,13 +4,19 @@ fmod REC-LANG-TERM-MOD is
 
     protecting CONCRETE-AEXP-MOD .
 
-    sorts RECTerm .
-    subsort IExp < RECTerm .
+    sorts RECTerm RECIVal .
+    subsort RECIVal < IVal .
+    subsort IExp RECIVal < RECTerm .
+
+    op recVal : Int -> RECIVal [ctor] .
 
     op _+_ : RECTerm RECTerm -> RECTerm [gather (E e) prec 33] .
     op _-_ : RECTerm RECTerm -> RECTerm [gather (E e) prec 33] .
     op _*_ : RECTerm RECTerm -> RECTerm [gather (E e) prec 31] .
 
+    var I : Int .
+    var ISTR : IStore .
+    eq evalI(recVal(I), ISTR) = I .
     
 endfm
 
@@ -137,22 +143,22 @@ mod REC-MAUDE is
     rl [term-sum] :
         < T1 + T2 | FSTR | (ISTR | RSTR | BSTR) >
         =>
-        < val(evalI(T1, ISTR)) + val(evalI(T2, ISTR)) | FSTR | (ISTR | RSTR | BSTR) > .
+        < recVal(evalI(T1, ISTR) + evalI(T2, ISTR)) | FSTR | (ISTR | RSTR | BSTR) > .
 
     rl [term-subtract] :
         < T1 - T2 | FSTR | (ISTR | RSTR | BSTR) >
         =>
-        < val(evalI(T1, ISTR)) - val(evalI(T2, ISTR)) | FSTR | (ISTR | RSTR | BSTR) > .
+        < recVal(evalI(T1, ISTR) - evalI(T2, ISTR)) | FSTR | (ISTR | RSTR | BSTR) > .
 
     rl [term-mult] :
         < T1 * T2 | FSTR | (ISTR | RSTR | BSTR) >
         =>
-        < val(evalI(T1, ISTR)) * val(evalI(T2, ISTR)) | FSTR | (ISTR | RSTR | BSTR) > .
+        < recVal(evalI(T1, ISTR) * evalI(T2, ISTR)) | FSTR | (ISTR | RSTR | BSTR) > .
 
     rl [apply-func] :
         < F [Args] | (F |-> FDec, FSTR) | STR >
         =>
-        < FDec[Args] | FSTR | STR > .
+        < FDec[Args] | (F |-> FDec, FSTR) | STR > .
 
     crl [if..then] : 
         < if T then { T1 } else { T2 } | FSTR | (ISTR | RSTR | BSTR) >

@@ -9,6 +9,7 @@ fmod SMT-CONVERSION is
     op toReal : Int -> Real .
     op toReal : Rat -> Real .
     op toReal : Float -> Real .
+    op toBoolean : Bool -> Boolean .
 
     op toInt : Integer -> Int .
     op toRat : Real -> Rat .
@@ -16,6 +17,7 @@ fmod SMT-CONVERSION is
 
     op errInteger : -> Integer [ctor] .
     op errReal : -> Real [ctor] .
+    op errBoolean : -> Boolean [ctor] .
     op errInt : -> Int [ctor] .
     op errRat : -> Rat [ctor] .
     op errBool : -> Bool [ctor] .
@@ -39,6 +41,7 @@ fmod SMT-CONVERSION is
     var Ismt : Integer .
     var R : Rat .
     var Rsmt : Real .
+    var B : Bool .
     var Bsmt : Boolean .
     var F : Float .
     
@@ -48,6 +51,7 @@ fmod SMT-CONVERSION is
     ceq toReal(F) = toReal(I)
         if I := rat(F) .
     eq toReal(F) = downTerm(getTerm(metaParse(['REAL], tokenize(string(rat(F), 10)), 'Real)), errReal) .
+    eq toBoolean(B) = downTerm(getTerm(metaParse(['BOOLEAN], getName(upTerm(B)), 'Boolean)), errBoolean) .
 
     eq toInt(Ismt) = downTerm(getTerm(metaParse(['INT], getName(upTerm(Ismt)), 'Int)), errInt) .
     eq toRat(Rsmt) = downTerm(getTerm(metaParse(['RAT], getName(upTerm(Rsmt)), 'Rat)), errRat) .

@@ -14,7 +14,7 @@ class SMTAssignmentHook (maude.Hook):
         #print(term)
         module = term.symbol().getModule()
         argument , = term.arguments()
-        maude_constraints = re.sub(r"(val)?[\(\)]", '', str(argument)).split(' and ')
+        maude_constraints = re.sub(r"(toBoolean)?(toInteger)?(toReal)?(val)?[\(\)]", '', str(argument)).split(' and ')
         #print(maude_constraints)
         for constraint in maude_constraints:
             if constraint == '(false).Boolean':

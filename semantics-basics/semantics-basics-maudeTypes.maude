@@ -160,9 +160,9 @@ endfm
 fmod CONCRETE-AEXP-MOD is
 
     protecting CONCRETE-VAR-MOD .
-    protecting MAP{Var, IVal} * (sort Map{Var, IVal} to IStore) * (op _|->_ to _|->I_ ) .
-    protecting MAP{Var, RVal} * (sort Map{Var, RVal} to RStore) * (op _|->_ to _|->R_ ) .
-    protecting MAP{Var, BVal} * (sort Map{Var, BVal} to BStore) * (op _|->_ to _|->B_ ) .
+    protecting MAP{Var, Int} * (sort Map{Var, Int} to IStore) * (op _|->_ to _|->I_ ) .
+    protecting MAP{Var, Rat} * (sort Map{Var, Rat} to RStore) * (op _|->_ to _|->R_ ) .
+    protecting MAP{Var, Bool} * (sort Map{Var, Bool} to BStore) * (op _|->_ to _|->B_ ) .
     ***protecting MAYBE{Bool} .
     ***protecting MAYBE{Int} .
     ***protecting MAYBE{Rat} .
@@ -313,7 +313,7 @@ fmod CONCRETE-AEXP-MOD is
       if B1 := evalB(BVar, BSTR)
       /\ B2 := evalB(BVar', BSTR) .
     eq eval(val(B), (ISTR | RSTR | BSTR)) = evalB(val(B), BSTR) .
-    eq eval(BVar, (ISTR | RSTR | BSTR)) = evalB(BVar, BSTR) .
+    ***eq eval(BVar, (ISTR | RSTR | BSTR)) = evalB(BVar, BSTR) .
     ***eq eval(Var, (((Var |->I val(I)), ISTR) | RSTR | BSTR)) = I .
     ***eq eval(Var, (ISTR | ((Var |->R val(R)), RSTR) | BSTR)) = R .
     ***eq eval(Var, (ISTR | RSTR | ((Var |->B val(B)), BSTR))) = B .
@@ -330,9 +330,9 @@ fmod CONCRETE-AEXP-MOD is
 
     eq evalB(BExp1 /\ BExp2, BSTR) = evalB(BExp1, BSTR) and evalB(BExp2, BSTR) .
 
-    eq evalI(Var, ((Var |->I val(I)), ISTR)) = I .
-    eq evalR(Var, ((Var |->R val(R)), RSTR)) = R .
-    eq evalB(Var, ((Var |->B val(B)), BSTR)) = B .
+    eq evalI(IVar, ((IVar |->I I), ISTR)) = I .
+    eq evalR(RVar, ((RVar |->R R), RSTR)) = R .
+    eq evalB(BVar, ((BVar |->B B), BSTR)) = B .
     eq evalI(val(I), ISTR) = I .
     eq evalR(val(R), RSTR) = R .
     eq evalB(val(B), BSTR) = B .
