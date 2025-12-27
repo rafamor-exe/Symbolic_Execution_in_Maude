@@ -27,7 +27,6 @@ endv
 fmod SMT-CONNECTION is
     pr SMT-CONVERSION .
     pr SE-LOCS-MOD .
-    pr LIST{Location} * (sort List{Location} to Path) .
 
     protecting MAP{Var, Integer} * (sort Map{Var, Integer} to IStoreS) * (op _|->_ to _|->Is_ ) .
     protecting MAP{Var, Real} * (sort Map{Var, Real} to RStoreS) * (op _|->_ to _|->Rs_ ) .
@@ -65,7 +64,7 @@ fmod MODULE-TRANSFORMER is
     
     ops symb conc maudeSE clconc : -> TrType [ctor] .
 
-    vars Trm T1 T2 Tcond Tmod Constraints Path TSTR TIL : Term .
+    vars Trm T1 T2 Tcond Tmod Constraints TSTR TIL : Term .
     var AttrSet : AttrSet .
     var RlSet : RuleSet .
     var Rule : Rule .
@@ -148,13 +147,13 @@ fmod MODULE-TRANSFORMER is
 
     op rlToSymbolic : RuleSet -> RuleSet .
     eq rlToSymbolic(none) = none .
-    eq rlToSymbolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet) = rl '_`{_`}<`{_`}[T1, 'Constraints:Boolean, 'Path:Path]
-                                                                   => '_`{_`}<`{_`}[T2, 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]]
+    eq rlToSymbolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet) = rl '_`{_`}[T1, 'Constraints:Boolean]
+                                                                   => '_`{_`}[T2, 'Constraints:Boolean]
                                                                    [label(qid(string(InstId) + "-S")) nonexec AttrSet] .
                                                                    rlToSymbolic(RlSet) .
     *** TODO: parametrize language-specific sorts (Map, BExp)
-    ceq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet) = crl '_`{_`}<`{_`}[T1, 'Constraints:Boolean, 'Path:Path]
-                                                                             => '_`{_`}<`{_`}[T2, 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]]
+    ceq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet) = crl '_`{_`}[T1, 'Constraints:Boolean]
+                                                                             => '_`{_`}[T2, 'Constraints:Boolean]
                                                                              if 'Constraints':Boolean := '_and_['Constraints:Boolean, Tcond]
                                                                              ***/\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints':Boolean]] = 'true.Bool
                                                                              [label(qid(string(InstId) + "-S")) nonexec AttrSet] .
@@ -168,9 +167,9 @@ fmod MODULE-TRANSFORMER is
     eq stateVar(StateOp, N) = qid(string('State) + string(N, 10) + ":" + string(StateOp)) .
 
     op symbState : Qid -> Term .
-    eq symbState(StateOp) = '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path] .
+    eq symbState(StateOp) = '_`{_`}[stateVar(StateOp), 'Constraints:Boolean] .
     op symbState : Qid Nat -> Term .
-    eq symbState(StateOp, N) = '_`{_`}<`{_`}[stateVar(StateOp, N), 'Constraints:Boolean, 'Path:Path] .
+    eq symbState(StateOp, N) = '_`{_`}[stateVar(StateOp, N), 'Constraints:Boolean] .
 
     op concolicState : Qid -> Term .
     eq concolicState(StateOp) = '`[_`]`[_`]`[_`]`[_`][stateVar(StateOp, 0), symbState(StateOp, 1), 'N:Nat, 'STRInit:Stores] .
@@ -198,42 +197,42 @@ fmod MODULE-TRANSFORMER is
     eq rlToConcolic(none, StateOp) = none .
     *** Symbolic rules must not be applied to internal symbolic state during concolic exec
     *** These rules cannot be merged into one with 'if_then_else_fi because that distinction should be done at this level (transformation), not delayed
-    eq rlToConcolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet, StateOp) = ***(crl '`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Stores]
+    eq rlToConcolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet, StateOp) = ***(crl '`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}[stateVar(StateOp), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores]
                                                                                ***=>
-                                                                               ***'`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Stores]
+                                                                               ***'`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}[stateVar(StateOp), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores]
                                                                                ***if '_==_['getStore[T1], 'getStore[T2]] = 'true.Bool
                                                                                ***[label(InstId) AttrSet] .)
                                                                                *** if the store is not the same update it in the symb state using the same mechanism as in the original rl but over the symb store
-                                                                               ***(rl '_`{_`}<`{_`}[T1, 'Constraints:Boolean, 'Path:Path]
+                                                                               ***(rl '_`{_`}[T1, 'Constraints:Boolean]
                                                                                ***=>
-                                                                               ***'_`{_`}<`{_`}[T2, 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]]
+                                                                               ***'_`{_`}[T2, 'Constraints:Boolean]
                                                                                ***[label(qid(string(InstId) + "-S")) nonexec AttrSet] .)
-                                                                               (rl '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}<`{_`}[symbMirror(T1), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
+                                                                               (rl '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
                                                                                =>
-                                                                               '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}<`{_`}[symbMirror(T2), 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
+                                                                               '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}[symbMirror(T2), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
                                                                                ***if '_=/=_['getStore[T1], 'getStore[T2]] = 'true.Bool
                                                                                ***if 'insert['Var:Var, 'Val:Value, 'STR:Stores] := 'getStore[T2]
                                                                                ***[label(qid(string(InstId) + "-bis")) AttrSet] .)
                                                                                [label(InstId) AttrSet] .)
                                                                                rlToConcolic(RlSet, StateOp) .
-    ***eq rlToConcolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet, StateOp, M) = crl '`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Stores]
+    ***eq rlToConcolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet, StateOp, M) = crl '`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}[stateVar(StateOp), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores]
     ***                                                                           =>
-    ***                                                                           '`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}<`{_`}['insertToSt[stateVar(StateOp), 'Var:Var, 'Val:Value], 'Constraints:Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Stores]
+    ***                                                                           '`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}['insertToSt[stateVar(StateOp), 'Var:Var, 'Val:Value], 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores]
     ***                                                                           if 'insert['Var:Var, 'Val:Value, 'STR:Stores] := 'getStore[T2]
     ***                                                                           [label(InstId) AttrSet] .
     ***                                                                           rlToConcolic(RlSet, StateOp, M) .
     
     *** TODO: Generalize hardcoded STR variable indicating the concrete store
-    ceq rlToConcolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, StateOp) = (crl '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}<`{_`}[symbMirror(T1), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
+    ceq rlToConcolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, StateOp) = (crl '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
                                                                                           =>
-                                                                                          '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}<`{_`}[symbMirror(T2), 'Constraints':Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
+                                                                                          '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}[symbMirror(T2), 'Constraints':Boolean], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
                                                                                           if Tcond = 'true.Bool
                                                                                           /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, subSTR(searchSubVarConst(Tcond), 'STRS:Stores)]
                                                                                           [label(InstId) AttrSet] .)
-                                                                                      (crl '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}<`{_`}[symbMirror(T1), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
+                                                                                      (crl '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
                                                                                           =>
                                                                                           '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`]['updateStore['updateProgram[T2, 'PC:Program], 'init-CStore['_|_|_['empty.IStore, 'empty.RStore, 'empty.BStore], 'STRInit:Stores, 'Constraints':Boolean]],
-                                                                                                                      '_`{_`}<`{_`}['updateStore['updateProgram[symbMirror(T2), 'PS:Program], 'STRInit:Stores], 'Constraints':Boolean, 'nil.Path], '_+_['N:Nat, 's_['0.Nat]], 'STRInit:Stores], 'PC:Program, 'PS:Program]
+                                                                                                                      '_`{_`}['updateStore['updateProgram[symbMirror(T2), 'PS:Program], 'STRInit:Stores], 'Constraints':Boolean], '_+_['N:Nat, 's_['0.Nat]], 'STRInit:Stores], 'PC:Program, 'PS:Program]
                                                                                           if Tcond = 'true.Bool
                                                                                           /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, 'not_[subSTR(searchSubVarConst(Tcond), 'STRS:Stores)]]
                                                                                           /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints':Boolean]] = 'true.Bool
@@ -245,9 +244,9 @@ fmod MODULE-TRANSFORMER is
     ***eq rlToClConcolic(none, StateOp) = none .
     ***eq rlToClConcolic(rl T1 => T2 [AttrSet] . RlSet, StateOp) = rlToConcolic(rl T1 => T2 [AttrSet] . RlSet, StateOp)
     ***                                                               rlToClConcolic(RlSet, StateOp) .
-    ***ceq rlToClConcolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, StateOp) = (crl '`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Stores]
+    ***ceq rlToClConcolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, StateOp) = (crl '`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}[stateVar(StateOp), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores]
     ***                                                                                      =>
-    ***                                                                                      '`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints':Boolean, '__['Path:Path, 'loc[upTerm(InstId)]]], 'N:Nat, 'STRInit:Stores]
+    ***                                                                                      '`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}[stateVar(StateOp), 'Constraints':Boolean], 'N:Nat, 'STRInit:Stores]
     ***                                                                                      if 'Constraints':Boolean := '_and_['Constraints:Boolean, subT(Tcond, 'STR:Stores, 'getStore[stateVar(StateOp)])]
     ***                                                                                      /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm[Tcond]] = 'true.Bool
     ***                                                                                      [label(InstId) AttrSet] .)
@@ -255,10 +254,10 @@ fmod MODULE-TRANSFORMER is
     ***    if (Tcond = 'true.Boolean) := Cond .
     
     op inclClConcCrl : Qid -> RuleSet .
-    ***eq inclClConcCrl(StateOp) = (crl '`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}<`{_`}[stateVar(StateOp), 'Constraints:Boolean, 'Path:Path], 'N:Nat, 'STRInit:Stores]
+    ***eq inclClConcCrl(StateOp) = (crl '`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}[stateVar(StateOp), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores]
     ***                                =>
     ***                                '`[_`]`[_`]`[_`]`[_`][subT('updateProgram[T2, 'getProgram[stateVar(StateOp)]], 'STR:Stores, 'init-CStore['STRInit:Stores, 'Constraints':Boolean]),
-    ***                                                            '_`{_`}<`{_`}['updateStore[stateVar(StateOp), 'STRInit:Stores], 'Constraints':Boolean, 'nil.Path], '_+_['N:Nat, 's_['0.Nat]], 'STRInit:Stores]
+    ***                                                            '_`{_`}['updateStore[stateVar(StateOp), 'STRInit:Stores], 'Constraints':Boolean], '_+_['N:Nat, 's_['0.Nat]], 'STRInit:Stores]
     ***                                if 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints:Boolean]] = 'true.Bool
     ***                                [label(qid("re-exec")) AttrSet] .)
     
@@ -355,7 +354,7 @@ fmod MODULE-TRANSFORMER is
                                                                        modOpSigConc(OpDeclSet, ValOp) [owise] .
 
     op inclSEOps : Qid -> OpDeclSet .
-    eq inclSEOps(StateOp) = (op '_`{_`}<`{_`} : StateOp 'Boolean 'Path -> 'SEState [ctor] .)
+    eq inclSEOps(StateOp) = (op '_`{_`} : StateOp 'Boolean -> 'SEState [ctor] .)
                             (op '_where_ : StateOp 'Boolean -> 'ConstrainedStart [ctor] .)
                             (op '__where_ : StateOp StateOp 'Boolean -> 'ConstrainedStart [ctor] .)
                             ***(op 'evalB : 'BExp -> 'Boolean [none] .)
@@ -539,14 +538,14 @@ fmod MODULE-TRANSFORMER is
                             
                             ***(eq 'start[stateVar(StateOp), 'SVDeclL:PairSVarL] = '$start[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_|_['empty.IStore, 'empty.RStore, 'empty.BStore], 'true.Boolean] [none] .)
                             ***(eq 'start['_where_[stateVar(StateOp), 'B:Boolean], 'SVDeclL:PairSVarL] = '$start[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_|_['empty.IStore, 'empty.RStore, 'empty.BStore], 'B:Boolean] [none] .)
-                            ***(eq '$start[stateVar(StateOp), 'nil.PairSVarL, 'STR:Stores, 'B:Boolean] = '`[_`]`[_`]`[_`]`[_`]['updateStore[stateVar(StateOp), 'init-CStore['STR:Stores, 'B:Boolean]], '_`{_`}<`{_`}['updateStore[searchSubVarConst(stateVar(StateOp)), 'STR:Stores], 'B:Boolean, 'nil.Path], '0.Nat, 'STR:Stores] [none] .)
+                            ***(eq '$start[stateVar(StateOp), 'nil.PairSVarL, 'STR:Stores, 'B:Boolean] = '`[_`]`[_`]`[_`]`[_`]['updateStore[stateVar(StateOp), 'init-CStore['STR:Stores, 'B:Boolean]], '_`{_`}['updateStore[searchSubVarConst(stateVar(StateOp)), 'STR:Stores], 'B:Boolean], '0.Nat, 'STR:Stores] [none] .)
                             ***(eq '$start[stateVar(StateOp), '__['_`,_['Var:Qid, 'I1:Integer], 'SVDeclL:PairSVarL], '_|_|_['ISTR:IStore, 'RSTR:RStore, 'BSTR:BStore], 'B:Boolean] = '$start[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_|_['insert['iv['Var:Qid], 'I1:Integer, 'ISTR:IStore], 'RSTR:RStore, 'BSTR:BStore], 'B:Boolean] [none] .)
                             ***(eq '$start[stateVar(StateOp), '__['_`,_['Var:Qid, 'R1:Real], 'SVDeclL:PairSVarL], '_|_|_['ISTR:IStore, 'RSTR:RStore, 'BSTR:BStore], 'B:Boolean] = '$start[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_|_['ISTR:IStore, 'insert['rv['Var:Qid], 'R1:Real, 'RSTR:RStore], 'BSTR:BStore], 'B:Boolean] [none] .)
                             ***(eq '$start[stateVar(StateOp), '__['_`,_['Var:Qid, 'B1:Boolean], 'SVDeclL:PairSVarL], '_|_|_['ISTR:IStore, 'RSTR:RStore, 'BSTR:BStore], 'B:Boolean] = '$start[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_|_['ISTR:IStore, 'RSTR:RStore, 'insert['bv['Var:Qid], 'B1:Boolean, 'BSTR:BStore]], 'B:Boolean] [none] .)
                             
                             (eq 'startC[stateVar(StateOp, 0), stateVar(StateOp, 1), 'SVDeclL:PairSVarL] = '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), 'SVDeclL:PairSVarL, '_|_|_['empty.IStoreS, 'empty.RStoreS, 'empty.BStoreS], 'true.Boolean] [none] .)
                             (eq 'startC['__where_[stateVar(StateOp, 0), stateVar(StateOp, 1), 'B:Boolean], 'SVDeclL:PairSVarL] = '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), 'SVDeclL:PairSVarL, '_|_|_['empty.IStoreS, 'empty.RStoreS, 'empty.BStoreS], 'B:Boolean] [none] .)
-                            (eq '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), 'nil.PairSVarL, 'STR:Stores, 'B:Boolean] = '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`]['updateStore[stateVar(StateOp, 0), 'init-CStore['_|_|_['empty.IStore, 'empty.RStore, 'empty.BStore], 'STR:Stores, 'B:Boolean]], '_`{_`}<`{_`}['updateStore[stateVar(StateOp, 1), 'STR:Stores], 'B:Boolean, 'nil.Path], '0.Nat, 'STR:Stores], 'getProgram[stateVar(StateOp, 0)], 'getProgram[stateVar(StateOp, 1)]] [none] .)
+                            (eq '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), 'nil.PairSVarL, 'STR:Stores, 'B:Boolean] = '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`]['updateStore[stateVar(StateOp, 0), 'init-CStore['_|_|_['empty.IStore, 'empty.RStore, 'empty.BStore], 'STR:Stores, 'B:Boolean]], '_`{_`}['updateStore[stateVar(StateOp, 1), 'STR:Stores], 'B:Boolean], '0.Nat, 'STR:Stores], 'getProgram[stateVar(StateOp, 0)], 'getProgram[stateVar(StateOp, 1)]] [none] .)
                             (eq '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), '__['_`,_['Var:Qid, 'I1:Integer], 'SVDeclL:PairSVarL], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'B:Boolean] = '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), 'SVDeclL:PairSVarL, '_|_|_['insert['iv['Var:Qid], 'I1:Integer, 'ISTRS:IStoreS], 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'B:Boolean] [none] .)
                             (eq '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), '__['_`,_['Var:Qid, 'R1:Real], 'SVDeclL:PairSVarL], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'B:Boolean] = '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), 'SVDeclL:PairSVarL, '_|_|_['ISTRS:IStoreS, 'insert['rv['Var:Qid], 'R1:Real, 'RSTRS:RStoreS], 'BSTRS:BStoreS], 'B:Boolean] [none] .)
                             (eq '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), '__['_`,_['Var:Qid, 'B1:Boolean], 'SVDeclL:PairSVarL], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'B:Boolean] = '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), 'SVDeclL:PairSVarL, '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'insert['bv['Var:Qid], 'B1:Boolean, 'BSTRS:BStoreS]], 'B:Boolean] [none] .)
