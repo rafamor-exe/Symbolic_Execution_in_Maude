@@ -18,19 +18,19 @@ red in VERIFICATION-COMMANDS : transformModSymb(upModule('WHILE-MAUDE, true), 'S
 
 -------------
 *** Concolic
-python3 semantics-analysis-ext.py --program "start(rv('var2) := val(1/1) ; if rv('var1) < rv('var2) then{rv('var3) := val(0/1) ; })" --pattern "concolicState('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Real)" --symbCond "var1 < 5/1" --solN 0
-python3 semantics-analysis-ext.py --program "start(rv('var2) := val(1/1) ; if rv('var1) < rv('var2) then{rv('var3) := val(0/1) ; })" --pattern "concolicState('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Real)" --symbCond "var1 < 5/1" --solN 1
+python3 semantics-analysis-ext.py --program "start(rv('var2) := val(1/1) ; if rv('var1) < rv('var2) then{rv('var3) := val(0/1) ; })" --pattern "concolicStateExt('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Real)" --symbCond "var1 < 5/1" --solN 0
+python3 semantics-analysis-ext.py --program "start(rv('var2) := val(1/1) ; if rv('var1) < rv('var2) then{rv('var3) := val(0/1) ; })" --pattern "concolicStateExt('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Real)" --symbCond "var1 < 5/1" --solN 1
 
 - Concurrent while
-python3 semantics-analysis-ext.py --program "start(rv('var2) := val(1/1) ; if rv('var1) < rv('var2) then{rv('var3) := val(0/1) ;} || rv('var2) := val(0/1) ;)" --pattern "concolicState('State)" --file "language-semantics/while-semantics-concurrent.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Real)" --symbCond "var1 < 5/1" --solN 0
+python3 semantics-analysis-ext.py --program "start(rv('var2) := val(1/1) ; if rv('var1) < rv('var2) then{rv('var3) := val(0/1) ;} || rv('var2) := val(0/1) ;)" --pattern "concolicStateExt('State)" --file "language-semantics/while-semantics-concurrent.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Real)" --symbCond "var1 < 5/1" --solN 0
 
-python3 semantics-analysis-ext.py --program "start(iv('var2) := val(10000) ; if iv('var1) < iv('var2) then{iv('var3) := iv('var2) / val(0) ; })" --pattern "concolicState('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer)" --symbCond "var1 < 5" --solN 0
+python3 semantics-analysis-ext.py --program "start(iv('var2) := val(10000) ; if iv('var1) < iv('var2) then{iv('var3) := iv('var2) / val(0) ; })" --pattern "concolicStateExt('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer)" --symbCond "var1 < 5" --solN 0
 
 - Multiple symbolic variables 
-python3 semantics-analysis-ext.py --program "start(iv('var2) := val(3) ; if iv('var1) < iv('var2) then{iv('var3) := iv('var2) / val(0) ; })" --pattern "concolicState('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer) ; (var4, Real)" --symbCond "var1 < 5 and var4 > 1/1" --solN 0
+python3 semantics-analysis-ext.py --program "start(iv('var2) := val(3) ; if iv('var1) < iv('var2) then{iv('var3) := val(0) ; })" --pattern "concolicStateExt('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer) ; (var4, Real)" --symbCond "var1 < 5 and var4 > 1/1" --solN 0
 
 ***- Division by 0 error capture
-python3 semantics-analysis-ext.py --program "start(iv('var2) := val(3) ; if iv('var1) < iv('var2) then{iv('var3) := iv('var2) / val(0) ; })" --pattern "concolicState('State, '<_|_>['__['_:=_;['IV:IVar, '_/_['IE:IExp, 'val['0.Integer]]], 'P:Program], 'STR:Stores])" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer)" --symbCond "var1 < 5" --sType "'*" --solN 0
+python3 semantics-analysis-ext.py --program "start(iv('var2) := val(3) ; if iv('var1) < iv('var2) then{iv('var3) := iv('var2) / val(0) ; })" --pattern "concolicStateExt('State, '<_|_>['__['_:=_;['Var:Var, '_/_['IExp1:IExp, 'IExp2:IExp]], 'Prest:Program], 'STRend:Stores])" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer)" --symbCond "var1 < 5" --sType "'*" --solN 0
 -------------
 *** Incorporated MaudeSE (need to load smt-check.maude)
 *** - MaudeSE metaSmtSearch does not allow '! (does not reduce) (remember --sType "'*")
@@ -60,6 +60,20 @@ python3 semantics-analysis-ext.py --program "< rv('var2) := val(1/1) ; if (rv('v
 
 *** Does not reduce because it need MaudeSE
 *** red searchMaudeSE('WHILE-MAUDE 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD, 'State, "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) >", 'FinalState:State, nil, '!, unbounded, 0, 'QF_LRA, false) .
+
+
+*************************
+Concrete semantics REC
+*************************
+rew < "f" [val(2)', val(3)] | "f" |-> "f" [iv('x)', iv('y)] = (iv('x) + iv('y)) | empty > .
+rew start("f" [val(0) ', val(3)], "f" [iv('x)', iv('y)] = if iv('x) then {iv('y)} else {val(0) - iv('y)}) .
+rew start("f" [val(2) ', val(3)], "f" [iv('x)', iv('y)] = if iv('x) then {iv('y)} else {val(0) - iv('y)}) .
+rew start("f" [("f" [val(1) ', val(0)]) ', val(3)], "f" [iv('x)', iv('y)] = if iv('x) then {iv('y)} else {val(0) - iv('y)}) .
+
+*** Concolic
+python3 semantics-analysis-ext.py --program "start('f [iv('var1) ', val(3)], ('f [iv('x) ', iv('y)] = (iv('x) * iv('y))))" --pattern "concolicStateExt('State)" --file "language-semantics/rec-semantics.maude" --analysis "concolic" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(var1, Integer)" --symbCond "var1 < 5" --solN 0
+python3 semantics-analysis-ext.py --program "start('f [iv('var1) ', val(3)], ('f [iv('x) ', iv('y)] = if iv('x) then {iv('y)} else {val(0) - iv('y)}))" --pattern "concolicStateExt('State)" --file "language-semantics/rec-semantics.maude" --analysis "concolic" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(var1, Integer)" --symbCond "var1 < 5" --solN 0
+python3 semantics-analysis-ext.py --program "start('f [iv('var1) ', val(3)], ('f [iv('x) ', iv('y)] = if iv('x) then {iv('y)} else {val(0) - iv('y)}))" --pattern "concolicStateExt('State)" --file "language-semantics/rec-semantics.maude" --analysis "concolic" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(var1, Integer)" --symbCond "var1 < 5" --solN 1
 
 **********************
 
@@ -132,19 +146,3 @@ red in VERIFICATION-COMMANDS : metaParse(transformModSymb(upModule('WHILE-MAUDE,
 red in VERIFICATION-COMMANDS : metaParse(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc), tokenize("var('var2) := val((1).Integer) ;"), 'Inst) .
 red in VERIFICATION-COMMANDS : metaParse(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc), tokenize("var('var2)"), 'Var) .
 red in VERIFICATION-COMMANDS : metaParse(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc), tokenize("val((1).Integer)"), 'IVal) .
-
-
-*************************
-Concrete semantics REC
-*************************
-rew < "f" [val(2)', val(3)] | "f" |-> "f" [iv('x)', iv('y)] = (iv('x) + iv('y)) | empty > .
-rew start("f" [val(0) ', val(3)], "f" [iv('x)', iv('y)] = if iv('x) then {iv('y)} else {val(0) - iv('y)}) .
-rew start("f" [val(2) ', val(3)], "f" [iv('x)', iv('y)] = if iv('x) then {iv('y)} else {val(0) - iv('y)}) .
-rew start("f" [("f" [val(1) ', val(0)]) ', val(3)], "f" [iv('x)', iv('y)] = if iv('x) then {iv('y)} else {val(0) - iv('y)}) .
-
-
-python3 semantics-analysis-ext.py --program "start('f [iv('var1) ', val(3)], ('f [iv('x) ', iv('y)] = (iv('x) + iv('y))))" --pattern "concolicState('State)" --file "language-semantics/rec-semantics.maude" --analysis "concolic" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer)" --symbCond "var1 < 5" --solN 0
-python3 semantics-analysis-ext.py --program "start('f [iv('var1) ', val(3)], ('f [iv('x) ', iv('y)] = (iv('x) - iv('y))))" --pattern "concolicState('State)" --file "language-semantics/rec-semantics.maude" --analysis "concolic" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer)" --symbCond "var1 < 5" --solN 0
-python3 semantics-analysis-ext.py --program "start('f [iv('var1) ', val(3)], ('f [iv('x) ', iv('y)] = (iv('x) * iv('y))))" --pattern "concolicState('State)" --file "language-semantics/rec-semantics.maude" --analysis "concolic" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer)" --symbCond "var1 < 5" --solN 0
-python3 semantics-analysis-ext.py --program "start(iv('var2) := val(1) ; if iv('var1) < iv('var2) then{iv('var3) := val(0) ; })" --pattern "concolicStateExt('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(var1, Integer)" --symbCond "var1 < 5" --solN 0
-python3 semantics-analysis-ext.py --program "start(iv('var2) := val(1) ; if iv('var1) < iv('var2) then{iv('var3) := val(0) ; })" --pattern "concolicStateExt('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(var1, Integer)" --symbCond "var1 < 5" --solN 1
