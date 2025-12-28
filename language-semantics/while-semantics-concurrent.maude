@@ -69,7 +69,7 @@ mod WHILE-MAUDE is
     vars P PRest P2 : MTExec .
 
     op start : Program -> State .
-    eq start(P) = < P | (empty | empty | empty) > .
+    eq start(P) = < P | ((empty).IStore | (empty).RStore | (empty).BStore) > .
 
     rl [skip] : 
         < skip ; IL || PRest | STR >
@@ -79,17 +79,17 @@ mod WHILE-MAUDE is
     rl [assign-I] : 
         < IVar := IExp ; IL || PRest | (ISTR | RSTR | BSTR) >
         =>
-        < IL || PRest | insert(IVar, val(eval(IExp, ISTR)), ISTR) | RSTR | BSTR > .
+        < IL || PRest | insert(IVar, eval(IExp, ISTR), ISTR) | RSTR | BSTR > .
     
     rl [assign-R] : 
         < RVar := RExp ; IL || PRest | (ISTR | RSTR | BSTR) >
         =>
-        < IL || PRest | ISTR | insert(RVar, val(eval(RExp, RSTR)), RSTR) | BSTR > .
+        < IL || PRest | ISTR | insert(RVar, eval(RExp, RSTR), RSTR) | BSTR > .
 
     rl [assign-B] : 
         < BVar := BExp ; IL || PRest | (ISTR | RSTR | BSTR) >
         =>
-        < IL || PRest | ISTR | RSTR | insert(BVar, val(eval(BExp, BSTR)), BSTR) > .
+        < IL || PRest | ISTR | RSTR | insert(BVar, eval(BExp, BSTR), BSTR) > .
 
 
     crl [if..then] : 
