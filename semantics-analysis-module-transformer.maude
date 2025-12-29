@@ -74,13 +74,12 @@ fmod MODULE-TRANSFORMER is
     var  SortSet            : SortSet .
     var  SubsortDeclSet     : SubsortDeclSet .
     var  OpDeclSet          : OpDeclSet .
-    var OpDecl              : OpDecl .
+    var  OpDecl              : OpDecl .
     var  MembAxSet          : MembAxSet .
     var  EquationSet        : EquationSet .
     var  TrId               : TrType .
-    var Eq                  : Equation .
+    var  Eq                  : Equation .
     vars M M1 M2 AccM SymbM : Module .
-    vars M M1 M2 AccM       : Module .
     var  FM                 : FModule .
     var  TL                 : TypeList .
     var  T                  : Type .
@@ -89,7 +88,7 @@ fmod MODULE-TRANSFORMER is
     vars ModIdList QL       : QidList .
     var  TermL              : TermList .
     var  NeTL               : NeTermList .
-    var Smain S S' C C2     : String .
+    var  Smain S S' C C2     : String .
     var  N?                 : FindResult .
     var  MVar               : Variable .
     var  MConst             : Constant .
@@ -114,7 +113,7 @@ fmod MODULE-TRANSFORMER is
     *** FIXME: what if T1 is OpId[Trm] (sutT only replaces constants and variables, which may be enough)
     *** FIXME: why the next two cases cannot be handled by a single equation with subTL?
     eq subT(OpId[Trm], T1, T2) = OpId[subT(Trm, T1, T2)] .
-    eq subT(OpId[Trm, NeTL], T1, T2) = OpId[subT(Trm, T1, T2), subTL(NeTL, T1, T2)] .
+    eq subT(OpId[Trm, NeTL], T1, T2) = OpId[subTL((Trm, NeTL), T1, T2)] .
     eq subT(Trm, T1, T2) = Trm [owise] .
 
     op subTL : TermList Term Term -> Term .
@@ -166,14 +165,6 @@ fmod MODULE-TRANSFORMER is
     op subIL : Term Term -> Term .
     eq subIL(T1, TIL) = subT(subT(subT(subT(subT(subT(T1, 'IL:Program, TIL), 'IL1:Program, 'IL1S:Program), 'IL2:Program, 'IL2S:Program), 'IExp:IExp, 'IExpS:IExp), 'RExp:RExp, 'RExpS:RExp), 'BExp:BExp, 'BExpS:BExp) .
 
-    op concolicStateExt : Qid -> Term .
-    eq concolicStateExt(StateOp) = '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][stateVar(StateOp, 0), symbState(StateOp, 1), 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program] .
-    op concolicStateExt : Qid Term -> Term .
-    eq concolicStateExt(StateOp, T1) = '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T1, symbState(StateOp, 1), 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program] .
-
-    op subIL : Term Term -> Term .
-    eq subIL(T1, TIL) = subT(subT(subT(subT(subT(subT(T1, 'IL:Program, TIL), 'IL1:Program, 'IL1S:Program), 'IL2:Program, 'IL2S:Program), 'IExp:IExp, 'IExpS:IExp), 'RExp:RExp, 'RExpS:RExp), 'BExp:BExp, 'BExpS:BExp) .
-
     *** FIXME: explain the meaning of this operator
     op subSTR : Term Term -> Term .
     eq subSTR(T1, TSTR) = subT(subT(subT(subT(T1, 'ISTR:IStore, 'getIStore[TSTR]), 'RSTR:RStore, 'getRStore[TSTR]), 'BSTR:BStore, 'getBStore[TSTR]), 'STR:Stores, TSTR) .
@@ -182,7 +173,7 @@ fmod MODULE-TRANSFORMER is
     eq subSTR2(T1) = subT(subT(subT(subT(T1, 'ISTR:IStore, 'ISTRS:IStoreS), 'RSTR:RStore, 'RSTRS:RStoreS), 'BSTR:BStore, 'BSTRS:BStoreS), 'STR:Stores, 'STRS:Stores) .
 
     op symbMirror : Term -> Term .
-    eq symbMirror(T1) = subSTR2(subIL(searchSubVarConst(T1), 'ILS:Program)) .
+    eq symbMirror(T1) = subSTR2(subIL(searchSubVarConst(T1), 'ILS:Program))  . ***searchSubVar(T1) *** subSTR2(subIL(searchSubVarConst(T1), 'ILS:Program)) 
 
     op rlToConcolic : RuleSet Qid -> RuleSet .
     eq rlToConcolic(none, StateOp) = none .
@@ -206,7 +197,7 @@ fmod MODULE-TRANSFORMER is
           (crl '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
             =>
             '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`]['updateStore['updateProgram[T2, 'PC:Program], 'init-CStore['_|_|_['empty.IStore, 'empty.RStore, 'empty.BStore], 'STRInit:Stores, 'Constraints':Boolean]],
-                                             '_`{_`}['updateStore['updateProgram[symbMirror(T2), 'PS:Program], 'STRInit:Stores], 'Constraints':Boolean], '_+_['N:Nat, 's_['0.Nat]], 'STRInit:Stores], 'PC:Program, 'PS:Program]
+                                             '_`{_`}['updateStore['updateProgram[symbMirror(T2), 'PS:Program], 'STRInit:Stores], 'Constraints':Boolean], 's_['N:Nat], 'STRInit:Stores], 'PC:Program, 'PS:Program]
             if Cond
             /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, 'not_[subSTR2(searchSubVarConst(Tcond))]]
             /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints':Boolean]] = 'true.Bool
@@ -364,10 +355,18 @@ fmod MODULE-TRANSFORMER is
     eq modSEOpIds(Q) = Q [owise] .
 
     op subSEVarSorts : Variable -> Variable .
-    eq subSEVarSorts(MVar) = qid(string(getName(MVar)) + ":" + string(toSMTSorts(getType(MVar)))) .
+    eq subSEVarSorts(MVar) = qid(string(toSymb(getName(MVar))) + ":" + string(toSMTSorts(getType(MVar)))) .
 
     op subSEConstSorts : Constant -> Constant .
     eq subSEConstSorts(MConst) = qid(string(getName(MConst)) + "." + string(toSMTSorts(getType(MConst)))) .
+
+    op searchSubVar : TermList -> TermList .
+    eq searchSubVar(empty) = empty .
+    eq searchSubVar(MConst) = MConst .
+    eq searchSubVar(MVar) = subSEVarSorts(MVar) .
+    eq searchSubVar(OpId[T1]) = modSEOpIds(OpId)[searchSubVar(T1)] .
+    eq searchSubVar(OpId[T1, NeTL]) = modSEOpIds(OpId)[searchSubVar(T1), searchSubVar(NeTL)] .
+    eq searchSubVar((T1, NeTL)) = searchSubVar(T1), searchSubVar(NeTL) .
 
     *** Substitute all Vars and Consts in TermList with SMT correspondence
     op searchSubVarConst : TermList -> TermList .
@@ -500,8 +499,9 @@ fmod MODULE-TRANSFORMER is
     eq modRlConds(crl T1 => T2 if Cond [AttrSet] . RlSet) = (crl T1 => T2 if modCond(Cond) [AttrSet] .) modRlConds(RlSet) .
     eq modRlConds(Rule RlSet) = Rule modRlConds(RlSet) [owise] .
 
+    *** NOTE: MaudeSE does not work with smod
     op trMod : Module Qid Qid TrType -> Module .
-    eq trMod(M, StateOp, ValOp, TrId) = smod 'PARTIAL-SYMBOLIC-MOD is
+    eq trMod(M, StateOp, ValOp, TrId) = mod 'PARTIAL-SYMBOLIC-MOD is
                                           inclSEImports(getImports(M))
                                           sorts inclSESorts(getSorts(M)) .
                                           getSubsorts(M)
@@ -509,12 +509,12 @@ fmod MODULE-TRANSFORMER is
                                           getMbs(M)
                                           modEqs(getEqs(M), ValOp, TrId) inclSEEqs(StateOp)
                                           modRl(getRls(M), StateOp, TrId)
-                                          getStrats(M)
-                                          getSds(M)
-                                        endsm .
+                                          ***getStrats(M)
+                                          ***getSds(M)
+                                        endm .
 
     op fuseMods : Module FModule -> Module .
-    eq fuseMods(M, FM) = smod getName(M) is
+    eq fuseMods(M, FM) = mod getName(M) is
                             getImports(M) getImports(FM)
                             sorts getSorts(M) ; getSorts(FM) .
                             getSubsorts(M) getSubsorts(FM)
@@ -522,9 +522,9 @@ fmod MODULE-TRANSFORMER is
                             getMbs(M) getMbs(FM)
                             getEqs(M) getEqs(FM)
                             getRls(M)
-                            getStrats(M) getStrats(FM)
-                            getSds(M) getSds(FM)
-                          endsm .
+                            ***getStrats(M) getStrats(FM)
+                            ***getSds(M) getSds(FM)
+                          endm .
 
     op transformModSymb : Qid Qid Qid TrType -> Module .
     op transformModSymb : Module Qid Qid TrType -> Module .

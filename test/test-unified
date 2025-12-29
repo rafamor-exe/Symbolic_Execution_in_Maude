@@ -22,7 +22,7 @@ python3 semantics-analysis-ext.py --program "start(rv('var2) := val(1/1) ; if rv
 python3 semantics-analysis-ext.py --program "start(rv('var2) := val(1/1) ; if rv('var1) < rv('var2) then{rv('var3) := val(0/1) ; })" --pattern "concolicStateExt('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Real)" --symbCond "var1 < 5/1" --solN 1
 
 - Concurrent while
-python3 semantics-analysis-ext.py --program "start(rv('var2) := val(1/1) ; if rv('var1) < rv('var2) then{rv('var3) := val(0/1) ;} || rv('var2) := val(0/1) ;)" --pattern "concolicStateExt('State)" --file "language-semantics/while-semantics-concurrent.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Real)" --symbCond "var1 < 5/1" --solN 0
+python3 semantics-analysis-ext.py --program "start(rv('var2) := val(1/1) ; if rv('var1) < rv('var2) then{rv('var3) := val(0/1) ;} || rv('var2) := val(0/1) ;)" --pattern "concolicStateExt('State, '<_|_>['_||_['nil.Program, 'nil.Program], 'STR:Stores])" --file "language-semantics/while-semantics-concurrent.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Real)" --symbCond "var1 < 5/1" --solN 0
 
 python3 semantics-analysis-ext.py --program "start(iv('var2) := val(10000) ; if iv('var1) < iv('var2) then{iv('var3) := iv('var2) / val(0) ; })" --pattern "concolicStateExt('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --valOp "'val" --svars "(var1, Integer)" --symbCond "var1 < 5" --solN 0
 
