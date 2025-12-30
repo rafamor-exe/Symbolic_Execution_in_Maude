@@ -22,18 +22,20 @@ fmod SMT-CONNECTION is
     protecting MAP{IVar, Integer} * (sort Map{IVar, Integer} to IStoreS) * (op _|->_ to _|->Is_ ) .
     protecting MAP{RVar, Real} * (sort Map{RVar, Real} to RStoreS) * (op _|->_ to _|->Rs_ ) .
     protecting MAP{BVar, Boolean} * (sort Map{BVar, Boolean} to BStoreS) * (op _|->_ to _|->Bs_ ) .
-    
 
     sort AssignmentSMT .
     sorts PairSVar PairSVarL NePairSVarL .
     subsort PairSVar < NePairSVarL < PairSVarL .
 
+    *** Define an satisfying assignment returned by the SMT hook
     op _<--_ : Real Real -> AssignmentSMT [ctor] .
     op _<--_ : Integer Integer -> AssignmentSMT [ctor] .
     op _<--_ : Boolean Boolean -> AssignmentSMT [ctor] .
     op _,_ : AssignmentSMT AssignmentSMT -> AssignmentSMT .
     op failed : -> AssignmentSMT [ctor] .
 
+    *** Operator defined in Python using a hook
+    *** Given a Boolean constraint returns a satisfying assignment to the symbolic variables it may contain
     op get-SMTassignment : Boolean -> AssignmentSMT [special (id-hook SpecialHubSymbol)] .
 
     *** Symbolic variable initialization pair
@@ -41,6 +43,7 @@ fmod SMT-CONNECTION is
     op _,_ : Qid Real -> PairSVar [ctor] .
     op _,_ : Qid Boolean -> PairSVar [ctor] .
 
+    *** Definition of a list of symbolic variable-value pairs
     op nil : -> PairSVarL [ctor] .
     op __ : PairSVarL PairSVarL -> PairSVarL [ctor assoc id: nil prec 25] .
 endfm
@@ -51,6 +54,7 @@ fmod MODULE-TRANSFORMER is
 
     sort TrType .
     
+    *** Define the transformation types
     ops symb conc maudeSE : -> TrType [ctor] . ***clconc
 
     vars InstId StateOp OpId ModId Q ValOp X Y EvalQ : Qid .
@@ -87,35 +91,39 @@ fmod MODULE-TRANSFORMER is
           rlToSymbolic(RlSet) .
     ceq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet) = 
           crl '_`{_`}[symbMirror(T1), 'Constraints:Boolean]
-            => '_`{_`}[symbMirror(T2), 'Constraints:Boolean]
-            if 'Constraints':Boolean := '_and_['Constraints:Boolean, searchSubVarConst(Tcond)]
+            => '_`{_`}[symbMirror(T2), 'Constraints':Boolean]
+            if 'Constraints':Boolean := '_and_['Constraints:Boolean, Tcond]
             /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints':Boolean]] = 'true.Bool 
             [label(toSymb(InstId)) AttrSet] .
           rlToSymbolic(RlSet)
       if (Tcond = 'true.Boolean) := Cond .
     
-    *** State var general definition
+    *** State variable generic definition
     op stateVar : Qid -> Variable .
     eq stateVar(StateOp) = qid("State:" + string(StateOp)) .
     op stateVar : Qid Nat -> Variable .
     eq stateVar(StateOp, N) = qid("State" + string(N, 10) + ":" + string(StateOp)) .
 
+    *** Symbolic state generic definition
     op symbState : Qid -> Term .
     eq symbState(StateOp) = '_`{_`}[stateVar(StateOp), 'Constraints:Boolean] .
     op symbState : Qid Nat -> Term .
     eq symbState(StateOp, N) = '_`{_`}[stateVar(StateOp, N), 'Constraints:Boolean] .
 
     *** FIXME: a comment in the code explaining the meaning of each slot would be valuable?
+    *** Concolic state generic definition
     op concolicState : Qid -> Term .
     eq concolicState(StateOp) = '`[_`]`[_`]`[_`]`[_`][stateVar(StateOp, 0), symbState(StateOp, 1), 'N:Nat, 'STRInit:Stores] .
     op concolicState : Qid Term -> Term .
     eq concolicState(StateOp, T1) = '`[_`]`[_`]`[_`]`[_`][T1, symbState(StateOp, 1), 'N:Nat, 'STRInit:Stores] .
 
+    *** Concolic state extension generic definition
     op concolicStateExt : Qid -> Term .
     eq concolicStateExt(StateOp) = '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][stateVar(StateOp, 0), symbState(StateOp, 1), 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program] .
     op concolicStateExt : Qid Term -> Term .
     eq concolicStateExt(StateOp, T1) = '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T1, symbState(StateOp, 1), 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program] .
 
+    *** Construct a symbolic mirror of a given a term. Transform all its Maude variables to use SMT types and stores, and change their name
     op symbMirror : Term -> Term .
     eq symbMirror(T1) = searchSubVar(T1) .
 
@@ -182,8 +190,8 @@ fmod MODULE-TRANSFORMER is
                                                                             rlToMaudeSE(RlSet) .
     eq rlToMaudeSE(Rule RlSet) = Rule rlToMaudeSE(RlSet) [owise] .
 
-    op modSEImports : ImportList -> ImportList .
-    eq modSEImports(ImportList) = ImportList .
+    ***op modSEImports : ImportList -> ImportList .
+    ***eq modSEImports(ImportList) = ImportList .
     ***eq modSEImports(nil) = nil .
     ***eq modSEImports((protecting 'MAP{X, Y} .) ImportList) = (protecting 'MAP{X, Y} .) 
     ***                                                        (protecting 'MAP{X, toSMTSorts(Y)} .) 
@@ -203,10 +211,12 @@ fmod MODULE-TRANSFORMER is
                                    ***(protecting 'LIST{'PairVarValue} .)
                                    ***(protecting 'LIST{'Inst} * (sort 'List`{Inst`} to 'Program) .)
 
+    *** Include new sorts for symbolic/concolic execution states
     op inclSESorts : SortSet -> SortSet .
     eq inclSESorts(SortSet) = SortSet ; 'SEState ; 'ConstrainedStart ;
-                              'ConcolicState ; 'ConcolicStateCore ; 'ConcolicStateExt .    
+                              'ConcolicState ; 'ConcolicStateExt .    
 
+    *** Transform a list of Maude types to their symbolic representation
     op toSMTSorts : TypeList -> TypeList .
     eq toSMTSorts(nil) = nil .
     eq toSMTSorts('Bool TL) = 'Boolean toSMTSorts(TL) .
@@ -218,12 +228,15 @@ fmod MODULE-TRANSFORMER is
     eq toSMTSorts('BStore TL) = 'BStoreS toSMTSorts(TL) .
     eq toSMTSorts(T TL) = T toSMTSorts(TL) [owise] .
 
+    *** Append an "S" to an input Qid to represent its symbolic representation
     op toSymb : Qid -> Qid .
     eq toSymb(OpId) = qid(string(OpId) + "S") .
 
+    *** Transform an operator signature to use SMT types
     op useSMTsorts : OpDecl -> OpDecl .
     eq useSMTsorts((op Q : TL -> T [AttrSet] .)) = (op Q : toSMTSorts(TL) -> toSMTSorts(T) [AttrSet] .) .
 
+    *** The transformation for symbolic execution transforms teh eval functions and the semantic value wrapper to use SMT types and changes the function names
     op modOpSigSE : OpDeclSet Qid -> OpDeclSet .
     eq modOpSigSE(none, ValOp) = none .
     *** NOTE: ValOp represents a wrapper for a semantically-relevant value, not syntax 'val
@@ -239,6 +252,8 @@ fmod MODULE-TRANSFORMER is
                                                                         modOpSigSE(OpDeclSet, ValOp) .
     eq modOpSigSE(OpDecl OpDeclSet, ValOp) = OpDecl modOpSigSE(OpDeclSet, ValOp) [owise] .
 
+    *** The transformation for concolic execution duplicates the operator declarations and 
+    *** transforms one of the copies to use symbolic evaluation functions and symbolic semantic value wrapper (using the symbolic execution transformation)
     op modOpSigConc : OpDeclSet Qid -> OpDeclSet .
     eq modOpSigConc(OpDeclSet, ValOp) = OpDeclSet modOpSigSE(OpDeclSet, ValOp) .
 
