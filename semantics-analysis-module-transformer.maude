@@ -60,7 +60,6 @@ fmod MODULE-TRANSFORMER is
     var  Rule                                        : Rule .
     var  ImportList                                  : ImportList .
     var  SortSet                                     : SortSet .
-    var  SubsortDeclSet                              : SubsortDeclSet .
     var  OpDeclSet                                   : OpDeclSet .
     var  OpDecl                                      : OpDecl .
     var  EquationSet                                 : EquationSet .
@@ -216,10 +215,6 @@ fmod MODULE-TRANSFORMER is
     eq toSMTSorts('RStore TL) = 'RStoreS toSMTSorts(TL) .
     eq toSMTSorts('BStore TL) = 'BStoreS toSMTSorts(TL) .
     eq toSMTSorts(T TL) = T toSMTSorts(TL) [owise] .
-
-    ***op modSESubsorts : SubsortDeclSet -> SubsortDeclSet .
-    ***eq modSESubsorts(none) = none .
-    ***eq modSESubsorts((subsort S1 < S2 .) SubsortDeclSet) = (subsort toSMTSorts(S1) < toSMTSorts(S2) .) modSESubsorts(SubsortDeclSet) .
 
     op toSymb : Qid -> Qid .
     eq toSymb(OpId) = qid(string(OpId) + "S") .
