@@ -144,24 +144,24 @@ fmod CONCRETE-VAR-MOD is
     op _>=_ : RVal RVar -> BVal [prec 37] .
     op _>=_ : Var Var -> BVal [prec 37] .
 
-    op -_ : IVar -> IVal .
-    op -_ : RVar -> RVal .
-    op _+_ : IVar IVal -> IVal [gather (E e) prec 33] .
-    op _+_ : RVar RVal -> RVal [gather (E e) prec 33] .
-    op _+_ : IVal IVar -> IVal [gather (E e) prec 33] .
-    op _+_ : RVal RVar -> RVal [gather (E e) prec 33] .
-    op _-_ : IVar IVal -> IVal [gather (E e) prec 33] .
-    op _-_ : RVar RVal -> RVal [gather (E e) prec 33] .
-    op _-_ : IVal IVar -> IVal [gather (E e) prec 33] .
-    op _-_ : RVal RVar -> RVal [gather (E e) prec 33] .
-    op _*_ : IVar IVal -> IVal [gather (E e) prec 31] .
-    op _*_ : RVar RVal -> RVal [gather (E e) prec 31] .
-    op _*_ : IVal IVar -> IVal [gather (E e) prec 31] .
-    op _*_ : RVal RVar -> RVal [gather (E e) prec 31] .
-    op _/_ : IVar IVal -> IVal [gather (E e) prec 31] .
-    op _/_ : RVar RVal -> RVal [gather (E e) prec 31] .
-    op _/_ : IVal IVar -> IVal [gather (E e) prec 31] .
-    op _/_ : RVal RVar -> RVal [gather (E e) prec 31] .
+    op -_ : IVar -> IExp [prec 30] .
+    op -_ : RVar -> RExp [prec 30] .
+    op _+_ : IVar IVal -> IExp [gather (E e) prec 33] .
+    op _+_ : RVar RVal -> RExp [gather (E e) prec 33] .
+    op _+_ : IVal IVar -> IExp [gather (E e) prec 33] .
+    op _+_ : RVal RVar -> RExp [gather (E e) prec 33] .
+    op _-_ : IVar IVal -> IExp [gather (E e) prec 33] .
+    op _-_ : RVar RVal -> RExp [gather (E e) prec 33] .
+    op _-_ : IVal IVar -> IExp [gather (E e) prec 33] .
+    op _-_ : RVal RVar -> RExp [gather (E e) prec 33] .
+    op _*_ : IVar IVal -> IExp [gather (E e) prec 31] .
+    op _*_ : RVar RVal -> RExp [gather (E e) prec 31] .
+    op _*_ : IVal IVar -> IExp [gather (E e) prec 31] .
+    op _*_ : RVal RVar -> RExp [gather (E e) prec 31] .
+    op _/_ : IVar IVal -> IExp [gather (E e) prec 31] .
+    op _/_ : RVar RVal -> RExp [gather (E e) prec 31] .
+    op _/_ : IVal IVar -> IExp [gather (E e) prec 31] .
+    op _/_ : RVal RVar -> RExp [gather (E e) prec 31] .
 
 endfm
 

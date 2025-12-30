@@ -51,41 +51,31 @@ fmod MODULE-TRANSFORMER is
     
     ops symb conc maudeSE clconc : -> TrType [ctor] .
 
-    vars InstId StateOp OpId ModId Q ValOp Q' Q'' X Y : Qid .
-    vars Trm T1 T2 Tcond Tmod Constraints TSTR TIL    : Term .
-    var  AttrSet            : AttrSet .
-    var  RlSet              : RuleSet .
-    var  Rule               : Rule .
-    var  Cond               : Condition .
-    var  Header             : Header .
-    var  ImportList         : ImportList .
-    var  SortSet            : SortSet .
-    var  SubsortDeclSet     : SubsortDeclSet .
-    var  OpDeclSet          : OpDeclSet .
-    var  OpDecl              : OpDecl .
-    var  MembAxSet          : MembAxSet .
-    var  EquationSet        : EquationSet .
-    var  TrId               : TrType .
-    var  Eq                  : Equation .
-    vars M M1 M2 AccM SymbM : Module .
-    var  FM                 : FModule .
-    var  TL                 : TypeList .
-    var  T                  : Type .
-    var  S1 S2              : Sort .
-    var  Import             : Import .
-    vars ModIdList QL       : QidList .
-    var  TermL              : TermList .
-    var  NeTL               : NeTermList .
-    var  Smain S S' C C2     : String .
-    var  N?                 : FindResult .
-    var  MVar               : Variable .
-    var  MConst             : Constant .
-    var  B                  : Bool .
-    var  N                  : Nat .
-    var  I                  : Integer .
-    vars EqC EqC2           : EqCondition .
-    vars Cond1 Cond2 CondS  : Condition .
-    var  SbSort             : SubsortDecl .
+    vars InstId StateOp OpId ModId Q ValOp X Y : Qid .
+    vars Trm T1 T2 Tcond Tmod TSTR TIL    : Term .
+    vars Cond Cond1 Cond2 CondS : Condition .
+    vars EqC EqC2               : EqCondition .
+    var  AttrSet                : AttrSet .
+    var  RlSet                  : RuleSet .
+    var  Rule                   : Rule .
+    var  ImportList             : ImportList .
+    var  SortSet                : SortSet .
+    var  SubsortDeclSet         : SubsortDeclSet .
+    var  OpDeclSet              : OpDeclSet .
+    var  OpDecl                 : OpDecl .
+    var  EquationSet            : EquationSet .
+    var  TrId                   : TrType .
+    var  Eq                     : Equation .
+    var  M                      : Module .
+    var  FM                     : FModule .
+    var  TL                     : TypeList .
+    var  T                      : Type .
+    var  Import                 : Import .
+    var  TermL                  : TermList .
+    var  NeTL                   : NeTermList .
+    var  MVar                   : Variable .
+    var  MConst                 : Constant .
+    var  N                      : Nat .
 
     op modRl : RuleSet Qid TrType -> RuleSet .
     op modRl : RuleSet TrType -> RuleSet .
@@ -110,29 +100,27 @@ fmod MODULE-TRANSFORMER is
     eq subTL((Trm, NeTL), T1, T2) = subT(Trm, T1, T2), subTL(NeTL, T1, T2) .
 
     *** FIXME: this is a partial function, declare it with ~>
-    op rlToSymbolic : RuleSet -> RuleSet .
+    op rlToSymbolic : RuleSet ~> RuleSet .
     eq rlToSymbolic(none) = none .
     eq rlToSymbolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet) = 
           rl '_`{_`}[symbMirror(T1), 'Constraints:Boolean]
             => '_`{_`}[symbMirror(T2), 'Constraints:Boolean] 
-            [label(qid(string(InstId) + "-S")) AttrSet] .
+            [label(toSymb(InstId)) AttrSet] .
           rlToSymbolic(RlSet) .
-    *** TODO: parametrize language-specific sorts (Map, BExp)
     ceq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet) = 
           crl '_`{_`}[symbMirror(T1), 'Constraints:Boolean]
             => '_`{_`}[symbMirror(T2), 'Constraints:Boolean]
-            if 'Constraints':Boolean := '_and_['Constraints:Boolean, subSTR2(searchSubVarConst(Tcond))]
+            if 'Constraints':Boolean := '_and_['Constraints:Boolean, searchSubVarConst(Tcond)]
             /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints':Boolean]] = 'true.Bool 
-            [label(qid(string(InstId) + "-S")) AttrSet] .
+            [label(toSymb(InstId)) AttrSet] .
           rlToSymbolic(RlSet)
       if (Tcond = 'true.Boolean) := Cond .
     
     *** State var general definition
     op stateVar : Qid -> Variable .
-    *** FIXME: why not "State:" + string(...)?
-    eq stateVar(StateOp) = qid(string('State) + ":" + string(StateOp)) .
+    eq stateVar(StateOp) = qid("State:" + string(StateOp)) .
     op stateVar : Qid Nat -> Variable .
-    eq stateVar(StateOp, N) = qid(string('State) + string(N, 10) + ":" + string(StateOp)) .
+    eq stateVar(StateOp, N) = qid("State" + string(N, 10) + ":" + string(StateOp)) .
 
     op symbState : Qid -> Term .
     eq symbState(StateOp) = '_`{_`}[stateVar(StateOp), 'Constraints:Boolean] .
@@ -150,20 +138,10 @@ fmod MODULE-TRANSFORMER is
     op concolicStateExt : Qid Term -> Term .
     eq concolicStateExt(StateOp, T1) = '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T1, symbState(StateOp, 1), 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program] .
 
-    op subIL : Term Term -> Term .
-    eq subIL(T1, TIL) = subT(subT(subT(subT(subT(subT(T1, 'IL:Program, TIL), 'IL1:Program, 'IL1S:Program), 'IL2:Program, 'IL2S:Program), 'IExp:IExp, 'IExpS:IExp), 'RExp:RExp, 'RExpS:RExp), 'BExp:BExp, 'BExpS:BExp) .
-
-    *** FIXME: explain the meaning of this operator
-    op subSTR : Term Term -> Term .
-    eq subSTR(T1, TSTR) = subT(subT(subT(subT(T1, 'ISTR:IStore, 'getIStore[TSTR]), 'RSTR:RStore, 'getRStore[TSTR]), 'BSTR:BStore, 'getBStore[TSTR]), 'STR:Stores, TSTR) .
-
-    op subSTR2 : Term -> Term .
-    eq subSTR2(T1) = subT(subT(subT(subT(T1, 'ISTR:IStore, 'ISTRS:IStoreS), 'RSTR:RStore, 'RSTRS:RStoreS), 'BSTR:BStore, 'BSTRS:BStoreS), 'STR:Stores, 'STRS:Stores) .
-
     op symbMirror : Term -> Term .
-    eq symbMirror(T1) = subSTR2(subIL(searchSubVarConst(T1), 'ILS:Program))  . ***searchSubVar(T1) *** subSTR2(subIL(searchSubVarConst(T1), 'ILS:Program)) 
+    eq symbMirror(T1) = searchSubVar(T1) .
 
-    op rlToConcolic : RuleSet Qid -> RuleSet .
+    op rlToConcolic : RuleSet Qid ~> RuleSet .
     eq rlToConcolic(none, StateOp) = none .
     *** Symbolic rules must not be applied to internal symbolic state during concolic exec
     *** These rules cannot be merged into one with 'if_then_else_fi because that distinction should be done at this level (transformation), not delayed
@@ -181,14 +159,14 @@ fmod MODULE-TRANSFORMER is
             =>
             '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}[symbMirror(T2), 'Constraints':Boolean], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
             if Cond
-            /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, subSTR2(searchSubVarConst(Tcond))] *** searchSubVar(Tcond)
+            /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, searchSubVarConst(Tcond)]
             [label(InstId) AttrSet] .)
           (crl '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
             =>
             '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`]['updateStore['updateProgram[T2, 'PC:Program], 'init-CStore['_|_|_['empty.IStore, 'empty.RStore, 'empty.BStore], 'STRInit:Stores, 'Constraints':Boolean]],
                                              '_`{_`}['updateStore['updateProgram[symbMirror(T2), 'PS:Program], 'STRInit:Stores], 'Constraints':Boolean], 's_['N:Nat], 'STRInit:Stores], 'PC:Program, 'PS:Program]
             if Cond
-            /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, 'not_[subSTR2(searchSubVarConst(Tcond))]] *** searchSubVar(Tcond)
+            /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, 'not_[searchSubVarConst(Tcond)]]
             /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints':Boolean]] = 'true.Bool
             [label(qid(string(InstId) + "-bis")) AttrSet] .)
           rlToConcolic(RlSet, StateOp)
@@ -260,7 +238,6 @@ fmod MODULE-TRANSFORMER is
     eq toSMTSorts('IStore TL) = 'IStoreS toSMTSorts(TL) .
     eq toSMTSorts('RStore TL) = 'RStoreS toSMTSorts(TL) .
     eq toSMTSorts('BStore TL) = 'BStoreS toSMTSorts(TL) .
-
     eq toSMTSorts(T TL) = T toSMTSorts(TL) [owise] .
 
     ***op modSESubsorts : SubsortDeclSet -> SubsortDeclSet .
@@ -270,47 +247,34 @@ fmod MODULE-TRANSFORMER is
     op toSymb : Qid -> Qid .
     eq toSymb(OpId) = qid(string(OpId) + "S") .
 
-    op useSMTsorts : OpDeclSet Qid -> OpDeclSet .
-    eq useSMTsorts(none, ValOp) = none .
-    eq useSMTsorts((op 'eval : TL -> T [AttrSet] .) OpDeclSet, ValOp) = (op toSymb('eval) : toSMTSorts(TL) -> toSMTSorts(T) [AttrSet] .)
-                                                                        useSMTsorts(OpDeclSet, ValOp) . 
-    eq useSMTsorts((op 'evalI : TL -> T [AttrSet] .) OpDeclSet, ValOp) = (op toSymb('evalI) : toSMTSorts(TL) -> toSMTSorts(T) [AttrSet] .)
-                                                                        useSMTsorts(OpDeclSet, ValOp) . 
-    eq useSMTsorts((op 'evalR : TL -> T [AttrSet] .) OpDeclSet, ValOp) = (op toSymb('evalR) : toSMTSorts(TL) -> toSMTSorts(T) [AttrSet] .)
-                                                                        useSMTsorts(OpDeclSet, ValOp) . 
-    eq useSMTsorts((op 'evalB : TL -> T [AttrSet] .) OpDeclSet, ValOp) = (op toSymb('evalB) : toSMTSorts(TL) -> toSMTSorts(T) [AttrSet] .)
-                                                                        useSMTsorts(OpDeclSet, ValOp) .
-    eq useSMTsorts(OpDecl OpDeclSet, ValOp) = OpDecl useSMTsorts(OpDeclSet, ValOp) [owise] .
+    op useSMTsorts : OpDecl -> OpDecl .
+    eq useSMTsorts((op Q : TL -> T [AttrSet] .)) = (op Q : toSMTSorts(TL) -> toSMTSorts(T) [AttrSet] .) .
+
+    op modOpSigSE : OpDeclSet Qid -> OpDeclSet .
+    eq modOpSigSE(none, ValOp) = none .
+    *** NOTE: ValOp represents a wrapper for a semantically-relevant value, not syntax 'val
+    eq modOpSigSE((op ValOp : TL -> T [AttrSet] .) OpDeclSet, ValOp) = useSMTsorts(op ValOp : TL -> T [AttrSet] .)
+                                                                       modOpSigSE(OpDeclSet, ValOp) . 
+    eq modOpSigSE((op 'eval : TL -> T [AttrSet] .) OpDeclSet, ValOp) = useSMTsorts(op toSymb('eval) : TL -> T [AttrSet] .)
+                                                                       modOpSigSE(OpDeclSet, ValOp) . 
+    eq modOpSigSE((op 'evalI : TL -> T [AttrSet] .) OpDeclSet, ValOp) = useSMTsorts(op toSymb('evalI) : TL -> T [AttrSet] .)
+                                                                        modOpSigSE(OpDeclSet, ValOp) . 
+    eq modOpSigSE((op 'evalR : TL -> T [AttrSet] .) OpDeclSet, ValOp) = useSMTsorts(op toSymb('evalR) : TL -> T [AttrSet] .)
+                                                                        modOpSigSE(OpDeclSet, ValOp) . 
+    eq modOpSigSE((op 'evalB : TL -> T [AttrSet] .) OpDeclSet, ValOp) = useSMTsorts(op toSymb('evalB) : TL -> T [AttrSet] .)
+                                                                        modOpSigSE(OpDeclSet, ValOp) .
+    eq modOpSigSE(OpDecl OpDeclSet, ValOp) = OpDecl modOpSigSE(OpDeclSet, ValOp) [owise] .
 
     op modOpSigConc : OpDeclSet Qid -> OpDeclSet .
-    eq modOpSigConc(none, ValOp) = none .
-    *** On concolic analysis ValOp refers to semantically-relevant value operator, not syntax 'val
-    eq modOpSigConc((op ValOp : TL -> T [AttrSet] .) OpDeclSet, ValOp) = (op ValOp : TL -> T [AttrSet] .)
-                                                                         (op ValOp : toSMTSorts(TL) -> T [AttrSet] .)
-                                                                         modOpSigConc(OpDeclSet, ValOp) . 
-    eq modOpSigConc((op 'eval : TL -> T [AttrSet] .) OpDeclSet, ValOp) = (op 'eval : TL -> T [AttrSet] .)
-                                                                         (op toSymb('eval) : toSMTSorts(TL) -> toSMTSorts(T) [AttrSet] .)
-                                                                         modOpSigConc(OpDeclSet, ValOp) . 
-    eq modOpSigConc((op 'evalI : TL -> T [AttrSet] .) OpDeclSet, ValOp) = (op 'evalI : TL -> T [AttrSet] .)
-                                                                          (op toSymb('evalI) : toSMTSorts(TL) -> toSMTSorts(T) [AttrSet] .)
-                                                                          modOpSigConc(OpDeclSet, ValOp) . 
-    eq modOpSigConc((op 'evalR : TL -> T [AttrSet] .) OpDeclSet, ValOp) = (op 'evalR : TL -> T [AttrSet] .)
-                                                                          (op toSymb('evalR) : toSMTSorts(TL) -> toSMTSorts(T) [AttrSet] .)
-                                                                          modOpSigConc(OpDeclSet, ValOp) . 
-    eq modOpSigConc((op 'evalB : TL -> T [AttrSet] .) OpDeclSet, ValOp) = (op 'evalB : TL -> T [AttrSet] .)
-                                                                          (op toSymb('evalB) : toSMTSorts(TL) -> toSMTSorts(T) [AttrSet] .)
-                                                                          modOpSigConc(OpDeclSet, ValOp) . 
-    eq modOpSigConc(OpDecl OpDeclSet, ValOp) = OpDecl modOpSigConc(OpDeclSet, ValOp) [owise] .
+    eq modOpSigConc(OpDeclSet, ValOp) = OpDeclSet modOpSigSE(OpDeclSet, ValOp) .
 
     *** TODO: Abstract 'Program sort as a variable for flexibility (see concurrent language)
     op inclSEOps : Qid -> OpDeclSet .
     eq inclSEOps(StateOp) = (op '_`{_`} : StateOp 'Boolean -> 'SEState [ctor] .)
                             (op '_where_ : StateOp 'Boolean -> 'ConstrainedStart [ctor] .)
                             (op '__where_ : StateOp StateOp 'Boolean -> 'ConstrainedStart [ctor] .)
-                            ***(op 'evalB : 'BExp -> 'Boolean [none] .)
                             (op '`[_`]`[_`]`[_`]`[_`] : StateOp 'SEState 'Int 'Stores -> 'ConcolicState [ctor] .)
                             (op '_`[_$$_`] : 'ConcolicState 'Program 'Program -> 'ConcolicStateExt [ctor] .)
-                            ***(op '_`[_`] : 'ConcolicStateCore 'Stores -> 'ConcolicState [ctor] .)
                             (op '_|_|_ : 'IStoreS 'RStoreS 'BStoreS -> 'Stores [ctor] .)
                             (op 'init-CStore : 'Stores 'Stores 'Boolean -> 'Stores [none] .)
                             (op '$apply-SMTassignment : 'Stores 'Stores 'AssignmentSMT -> 'Stores [none] .)
@@ -328,9 +292,9 @@ fmod MODULE-TRANSFORMER is
 
     *** Define the Symbolic State on top of the casual (concrete) state
     op modSEOps : OpDeclSet Qid Qid TrType -> OpDeclSet .
-    eq modSEOps(OpDeclSet, StateOp, ValOp, conc) = modOpSigConc(OpDeclSet, ValOp) ***OpDeclSet
+    eq modSEOps(OpDeclSet, StateOp, ValOp, conc) = modOpSigConc(OpDeclSet, ValOp)
                                                    inclSEOps(StateOp) .
-    eq modSEOps(OpDeclSet, StateOp, ValOp, TrId) = useSMTsorts(OpDeclSet, ValOp) ***OpDeclSet
+    eq modSEOps(OpDeclSet, StateOp, ValOp, TrId) = modOpSigSE(OpDeclSet, ValOp)
                                                    inclSEOps(StateOp) [owise] .
 
     op modSEOpIds : Qid -> Qid .
@@ -529,17 +493,16 @@ mod VERIFICATION-COMMANDS is
     pr LEXICAL .
 
     vars ModId StateOp SearchType ValOp TargetSt : Qid .
-    var TrId : TrType .
+    var TrId           : TrType .
     var PatternSEState : Term .
-    var InitSEState : String . 
-    var SearchCond : Condition .
-    var Bound : Bound .
-    var SolN : Nat .
-    var ModIdList : QidList .
-    var NeModIdList : NeQidList .
-    var M : Module .
-    var SVDeclL : PairSVarL .
-    var SymbCond : Boolean .
+    var InitSEState    : String . 
+    var SearchCond     : Condition .
+    var Bound          : Bound .
+    var SolN           : Nat .
+    var NeModIdList    : NeQidList .
+    var M              : Module .
+    var SVDeclL        : PairSVarL .
+    var SymbCond       : Boolean .
 
     op searchTr : Module Qid Qid TrType Qid String Term Condition Qid Bound Nat PairSVarL Boolean -> ResultTriple .
     eq searchTr(M, StateOp, ValOp, TrId, TargetSt,
@@ -662,14 +625,14 @@ mod MAUDE-SE-EXT is
 
     vars StateOp ValOp TrId SearchType Logic : Qid .
     var PatternSEState : Term .
-    var InitSEState : String . 
-    var SearchCond : Condition .
-    var Bound : Bound .
-    var SolN : Nat .
-    var NeModIdList : NeQidList .
-    var Fold : Bool .
-    var M : Module .
-    var SVDeclL : PairSVarL .
+    var InitSEState    : String . 
+    var SearchCond     : Condition .
+    var Bound          : Bound .
+    var SolN           : Nat .
+    var NeModIdList    : NeQidList .
+    var Fold           : Bool .
+    var M              : Module .
+    var SVDeclL        : PairSVarL .
 
     op searchMaudeSE : Module Qid Qid String Term Condition Qid Bound Nat Qid Bool PairSVarL -> SmtResult2? .
     eq searchMaudeSE(M, StateOp, ValOp,
