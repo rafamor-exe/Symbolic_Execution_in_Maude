@@ -411,7 +411,8 @@ fmod MODULE-TRANSFORMER is
 
     *** Include equational definitions for injected operators 
     op inclSEEqs : Qid -> EquationSet .
-    eq inclSEEqs(StateOp) = (eq 'init-CStore['STR:Stores, 'STRS:Stores, 'Constraints:Boolean] = '$apply-SMTassignment['STR:Stores, 'STRS:Stores, 'get-SMTassignment['Constraints:Boolean]] [none] .)
+    eq inclSEEqs(StateOp) = *** Initialize symbolic variables in a concrete store with concrete values satisfying the accumulated Constraints 
+                            (eq 'init-CStore['STR:Stores, 'STRS:Stores, 'Constraints:Boolean] = '$apply-SMTassignment['STR:Stores, 'STRS:Stores, 'get-SMTassignment['Constraints:Boolean]] [none] .)
                             (eq '$apply-SMTassignment['_|_|_['ISTR:IStore, 'RSTR:RStore, 'BSTR:BStore], '_|_|_['ISTRS:IStoreS, '_`,_['_|->Rs_['Var:Var, 'R:Real], 'RSTRS:RStoreS], 'BSTRS:BStoreS], '_<--_['R:Real, 'Rconc:Real]]          = '_|_|_['ISTR:IStore, '_`,_['_|->R_['Var:Var, 'toRat['Rconc:Real]], 'RSTR:RStore], 'BSTR:BStore] [none] .)
                             (eq '$apply-SMTassignment['_|_|_['ISTR:IStore, 'RSTR:RStore, 'BSTR:BStore], '_|_|_['_`,_['_|->Is_['Var:Var, 'I:Integer], 'ISTRS:IStoreS], 'RSTRS:RStoreS, 'BSTRS:BStoreS], '_<--_['I:Integer, 'Iconc:Integer]] = '_|_|_['_`,_['_|->I_['Var:Var, 'toInt['Iconc:Integer]], 'ISTR:IStore], 'RSTR:RStore, 'BSTR:BStore] [none] .)
                             (eq '$apply-SMTassignment['_|_|_['ISTR:IStore, 'RSTR:RStore, 'BSTR:BStore], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, '_`,_['_|->Bs_['Var:Var, 'B:Boolean], 'BSTRS:BStoreS]], '_<--_['B:Boolean, 'Bconc:Boolean]] = '_|_|_['ISTR:IStore, 'RSTR:RStore, '_`,_['_|->B_['Var:Var, 'toBool['Bconc:Boolean]], 'BSTR:BStore]] [none] .)
@@ -421,6 +422,7 @@ fmod MODULE-TRANSFORMER is
                             (eq '$apply-SMTassignment['STR:Stores, 'STRS:Stores, 'failed.AssignmentSMT] = 'STR:Stores [none] .)
                             (eq '$apply-SMTassignment['STR:Stores, '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS], '_<--_['true.Boolean, 'true.Boolean]] = '_|_|_['initialize-def['ISTRS:IStoreS], 'initialize-def['RSTRS:RStoreS], 'initialize-def['BSTRS:BStoreS]] [none] .)
                             
+                            *** Recursively initialize symbolic variables with default values in concrete store 
                             (eq 'initialize-def['empty.IStoreS] = 'empty.IStore [none] .)
                             (eq 'initialize-def['empty.RStoreS] = 'empty.RStore [none] .)
                             (eq 'initialize-def['empty.BStoreS] = 'empty.BStore [none] .)
@@ -428,6 +430,7 @@ fmod MODULE-TRANSFORMER is
                             (eq 'initialize-def['_`,_['_|->Rs_['Var:Var, 'R:Real],    'RSTRS:RStoreS]] = '_`,_['_|->R_['Var:Var, '0.Rat], 'initialize-def['RSTRS:RStoreS]] [none] .)
                             (eq 'initialize-def['_`,_['_|->Bs_['Var:Var, 'B:Boolean], 'BSTRS:BStoreS]] = '_`,_['_|->B_['Var:Var, 'true.Bool], 'initialize-def['BSTRS:BStoreS]] [none] .)
                            
+                            *** Boolean simplification
                             (eq 'not_['not_['B:Boolean]] = 'B:Boolean [none] .)
                             
                             ***(eq 'size['C1:Boolean] = ''s_['0.Nat] [none] .)
