@@ -337,9 +337,9 @@ fmod CONCRETE-AEXP-MOD is
 
     eq evalB(BExp1 /\ BExp2, BSTR) = evalB(BExp1, BSTR) and evalB(BExp2, BSTR) .
 
-    eq evalI(IVar, ((IVar |->I I), ISTR)) = I .
-    eq evalR(RVar, ((RVar |->R R), RSTR)) = R .
-    eq evalB(BVar, ((BVar |->B B), BSTR)) = B .
+    eq evalI(IVar, ISTR) = ISTR[IVar] .
+    eq evalR(RVar, RSTR) = RSTR[RVar] .
+    eq evalB(BVar, BSTR) = BSTR[BVar] .
     eq evalI(val(I), ISTR) = I .
     eq evalR(val(R), RSTR) = R .
     eq evalB(val(B), BSTR) = B .

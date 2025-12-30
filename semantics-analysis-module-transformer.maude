@@ -359,12 +359,9 @@ fmod MODULE-TRANSFORMER is
 
     *** Recursively transform terms to use symbolic stores and convert constants to SMT values
     op subSETermSTR : Term -> Term .
-    eq subSETermSTR(MConst)                              = convert(MConst, getType(MConst)) .
-    eq subSETermSTR(MVar)                                = subSEVarSorts(MVar) .
-    eq subSETermSTR('val[T1])                            = 'val[T1] .
-    eq subSETermSTR('_`,_['ISTR:IStore, '_|->I_[TermL]]) = '_`,_['ISTR:IStoreS, '_|->Is_[searchSubVarConst(TermL)]] .
-    eq subSETermSTR('_`,_['RSTR:RStore, '_|->R_[TermL]]) = '_`,_['RSTR:RStoreS, '_|->Rs_[searchSubVarConst(TermL)]] .
-    eq subSETermSTR('_`,_['BSTR:BStore, '_|->B_[TermL]]) = '_`,_['BSTR:BStoreS, '_|->Bs_[searchSubVarConst(TermL)]] .
+    eq subSETermSTR(MConst)          = convert(MConst, getType(MConst)) .
+    eq subSETermSTR(MVar)            = subSEVarSorts(MVar) .
+    eq subSETermSTR('val[T1])        = 'val[T1] .
     eq subSETermSTR(OpId[T1, TermL]) = modSEOpIds(OpId)[subSETermSTR(T1), modOpStoreRec(TermL)] [owise] .
 
     *** Transform terms in a list to use symbolic stores
