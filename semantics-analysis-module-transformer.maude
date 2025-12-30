@@ -53,29 +53,29 @@ fmod MODULE-TRANSFORMER is
 
     vars InstId StateOp OpId ModId Q ValOp X Y EvalQ : Qid .
     vars Trm T1 T2 Tcond Tmod TSTR TIL               : Term .
-    vars Cond Cond1 Cond2 CondS : Condition .
-    vars EqC EqC2               : EqCondition .
-    var  AttrSet                : AttrSet .
-    var  RlSet                  : RuleSet .
-    var  Rule                   : Rule .
-    var  ImportList             : ImportList .
-    var  SortSet                : SortSet .
-    var  SubsortDeclSet         : SubsortDeclSet .
-    var  OpDeclSet              : OpDeclSet .
-    var  OpDecl                 : OpDecl .
-    var  EquationSet            : EquationSet .
-    var  TrId                   : TrType .
-    var  Eq                     : Equation .
-    var  M                      : Module .
-    var  FM                     : FModule .
-    var  TL                     : TypeList .
-    var  T                      : Type .
-    var  Import                 : Import .
-    var  TermL                  : TermList .
-    var  NeTL                   : NeTermList .
-    var  MVar                   : Variable .
-    var  MConst                 : Constant .
-    var  N                      : Nat .
+    vars Cond Cond1 Cond2 CondS                      : Condition .
+    vars EqC EqC2                                    : EqCondition .
+    var  AttrSet                                     : AttrSet .
+    var  RlSet                                       : RuleSet .
+    var  Rule                                        : Rule .
+    var  ImportList                                  : ImportList .
+    var  SortSet                                     : SortSet .
+    var  SubsortDeclSet                              : SubsortDeclSet .
+    var  OpDeclSet                                   : OpDeclSet .
+    var  OpDecl                                      : OpDecl .
+    var  EquationSet                                 : EquationSet .
+    var  TrId                                        : TrType .
+    var  Eq                                          : Equation .
+    var  M                                           : Module .
+    var  FM                                          : FModule .
+    var  TL                                          : TypeList .
+    var  T                                           : Type .
+    var  Import                                      : Import .
+    var  TermL                                       : TermList .
+    var  NeTL                                        : NeTermList .
+    var  MVar                                        : Variable .
+    var  MConst                                      : Constant .
+    var  N                                           : Nat .
 
     op rlToSymbolic : RuleSet ~> RuleSet .
     eq rlToSymbolic(none) = none .
@@ -448,16 +448,16 @@ mod VERIFICATION-COMMANDS is
     pr LEXICAL .
 
     vars ModId StateOp SearchType ValOp TargetSt : Qid .
-    var TrId           : TrType .
-    var PatternSEState : Term .
-    var InitSEState    : String . 
-    var SearchCond     : Condition .
-    var Bound          : Bound .
-    var SolN           : Nat .
-    var NeModIdList    : NeQidList .
-    var M              : Module .
-    var SVDeclL        : PairSVarL .
-    var SymbCond       : Boolean .
+    var TrId                                     : TrType .
+    var PatternSEState                           : Term .
+    var InitSEState                              : String . 
+    var SearchCond                               : Condition .
+    var Bound                                    : Bound .
+    var SolN                                     : Nat .
+    var NeModIdList                              : NeQidList .
+    var M                                        : Module .
+    var SVDeclL                                  : PairSVarL .
+    var SymbCond                                 : Boolean .
 
     op searchTr : Module Qid Qid TrType Qid String Term Condition Qid Bound Nat PairSVarL Boolean -> ResultTriple .
     eq searchTr(M, StateOp, ValOp, TrId, TargetSt,
@@ -579,15 +579,15 @@ mod MAUDE-SE-EXT is
     pr META-SMT-SEARCH . 
 
     vars StateOp ValOp TrId SearchType Logic : Qid .
-    var PatternSEState : Term .
-    var InitSEState    : String . 
-    var SearchCond     : Condition .
-    var Bound          : Bound .
-    var SolN           : Nat .
-    var NeModIdList    : NeQidList .
-    var Fold           : Bool .
-    var M              : Module .
-    var SVDeclL        : PairSVarL .
+    var PatternSEState                       : Term .
+    var InitSEState                          : String . 
+    var SearchCond                           : Condition .
+    var Bound                                : Bound .
+    var SolN                                 : Nat .
+    var NeModIdList                          : NeQidList .
+    var Fold                                 : Bool .
+    var M                                    : Module .
+    var SVDeclL                              : PairSVarL .
 
     op searchMaudeSE : Module Qid Qid String Term Condition Qid Bound Nat Qid Bool PairSVarL -> SmtResult2? .
     eq searchMaudeSE(M, StateOp, ValOp,
