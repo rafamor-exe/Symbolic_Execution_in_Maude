@@ -262,8 +262,8 @@ fmod MODULE-TRANSFORMER is
     op inclSEOps : Qid -> OpDeclSet .
     eq inclSEOps(StateOp) = *** Constructor for symbolic state, appends the accumulated constraints to the original state 
                             (op '_`{_`} : StateOp 'Boolean -> 'SEState [ctor] .)
-                            *** Define a dual state with initial constraints
-                            (op '__where_ : StateOp StateOp 'Boolean -> 'ConstrainedStart [ctor] .)
+                            *** Define state with initial constraints
+                            (op '_where_ : StateOp 'Boolean -> 'ConstrainedStart [ctor] .)
                             *** Define the concolic dual state core constructor and its extension to keep track of initial programs
                             (op '`[_`]`[_`]`[_`]`[_`] : StateOp 'SEState 'Int 'Stores -> 'ConcolicState [ctor] .)
                             (op '_`[_$$_`] : 'ConcolicState 'Program 'Program -> 'ConcolicStateExt [ctor] .)
@@ -422,7 +422,7 @@ fmod MODULE-TRANSFORMER is
                             ***(eq 'size['C1:Boolean] = ''s_['0.Nat] [none] .)
                             ***(eq 'size['_and_['C1:Boolean, 'Constraints:Boolean]] = ''s_['0.Nat] + 'size['Constraints:Boolean] [none] .)
                             (eq 'startC[stateVar(StateOp, 0), stateVar(StateOp, 1), 'SVDeclL:PairSVarL] = '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), 'SVDeclL:PairSVarL, '_|_|_['empty.IStoreS, 'empty.RStoreS, 'empty.BStoreS], 'true.Boolean] [none] .)
-                            (eq 'startC['__where_[stateVar(StateOp, 0), stateVar(StateOp, 1), 'B:Boolean], 'SVDeclL:PairSVarL] = '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), 'SVDeclL:PairSVarL, '_|_|_['empty.IStoreS, 'empty.RStoreS, 'empty.BStoreS], 'B:Boolean] [none] .)
+                            (eq 'startC['_where_[stateVar(StateOp), 'B:Boolean], 'SVDeclL:PairSVarL] = '$startC[stateVar(StateOp), stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_|_['empty.IStoreS, 'empty.RStoreS, 'empty.BStoreS], 'B:Boolean] [none] .)
                             (eq '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), 'nil.PairSVarL, 'STR:Stores, 'B:Boolean] = '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`]['updateStore[stateVar(StateOp, 0), 'init-CStore['_|_|_['empty.IStore, 'empty.RStore, 'empty.BStore], 'STR:Stores, 'B:Boolean]], '_`{_`}['updateStore[stateVar(StateOp, 1), 'STR:Stores], 'B:Boolean], '0.Nat, 'STR:Stores], 'getProgram[stateVar(StateOp, 0)], 'getProgram[stateVar(StateOp, 1)]] [none] .)
                             (eq '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), '__['_`,_['Var:Qid, 'I1:Integer], 'SVDeclL:PairSVarL], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'B:Boolean] = '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), 'SVDeclL:PairSVarL, '_|_|_['insert['iv['Var:Qid], 'I1:Integer, 'ISTRS:IStoreS], 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'B:Boolean] [none] .)
                             (eq '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), '__['_`,_['Var:Qid, 'R1:Real], 'SVDeclL:PairSVarL], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'B:Boolean] = '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), 'SVDeclL:PairSVarL, '_|_|_['ISTRS:IStoreS, 'insert['rv['Var:Qid], 'R1:Real, 'RSTRS:RStoreS], 'BSTRS:BStoreS], 'B:Boolean] [none] .)
@@ -508,13 +508,10 @@ mod VERIFICATION-COMMANDS is
                   SymbCond)
                   =
                   metaSearch(transformModSymb(M, StateOp, ValOp, TrId),
-                             'startC['__where_[getTerm(metaParse(M,
+                             'startC['_where_[getTerm(metaParse(M,
                                                                  tokenize(InitSEState),
                                                                  StateOp)),
-                                               getTerm(metaParse(M,
-                                                                 tokenize(InitSEState),
-                                                                 StateOp)),
-                                               searchSubVarConst(upTerm(SymbCond))],
+                                              searchSubVarConst(upTerm(SymbCond))],
                                      searchSubVarConst(upTerm(SVDeclL))],
                              PatternSEState,
                              SearchCond,
@@ -534,13 +531,10 @@ mod VERIFICATION-COMMANDS is
                     SymbCond)
                     =
                     metaSearchPath(transformModSymb(M, StateOp, ValOp, TrId),
-                                   'startC['__where_[getTerm(metaParse(M,
+                                   'startC['_where_[getTerm(metaParse(M,
                                                                        tokenize(InitSEState),
                                                                        StateOp)),
-                                                     getTerm(metaParse(M,
-                                                                       tokenize(InitSEState),
-                                                                       StateOp)),
-                                                     searchSubVarConst(upTerm(SymbCond))],
+                                                    searchSubVarConst(upTerm(SymbCond))],
                                            searchSubVarConst(upTerm(SVDeclL))],
                                    PatternSEState,
                                    SearchCond,
