@@ -4,6 +4,7 @@ load semantics-basics/smt-conversion.maude
 ***load language-semantics/while-semantics-concrete.maude
 ***set trace on .
 
+*** Create views for SMT types
 view Integer from TRIV to REAL-INTEGER is
   sort Elt to Integer .
 endv
@@ -17,9 +18,10 @@ endv
 fmod SMT-CONNECTION is
     pr SMT-CONVERSION .
 
-    protecting MAP{Var, Integer} * (sort Map{Var, Integer} to IStoreS) * (op _|->_ to _|->Is_ ) .
-    protecting MAP{Var, Real} * (sort Map{Var, Real} to RStoreS) * (op _|->_ to _|->Rs_ ) .
-    protecting MAP{Var, Boolean} * (sort Map{Var, Boolean} to BStoreS) * (op _|->_ to _|->Bs_ ) .
+    *** Import stores as map structures that map variables to SMT types
+    protecting MAP{IVar, Integer} * (sort Map{IVar, Integer} to IStoreS) * (op _|->_ to _|->Is_ ) .
+    protecting MAP{RVar, Real} * (sort Map{RVar, Real} to RStoreS) * (op _|->_ to _|->Rs_ ) .
+    protecting MAP{BVar, Boolean} * (sort Map{BVar, Boolean} to BStoreS) * (op _|->_ to _|->Bs_ ) .
     
 
     sort AssignmentSMT .
@@ -189,10 +191,10 @@ fmod MODULE-TRANSFORMER is
     ***eq modSEImports(Import ImportList) = Import modSEImports(ImportList) [owise] .
 
     ***op inclSEImports : ImportList -> ImportList .
-    ***eq inclSEImports(ImportList) = ImportList ***modSEImports(ImportList)
+    ***eq inclSEImports(ImportList) = ImportList . ***modSEImports(ImportList)
                                    ***(protecting 'MAP{'Var, 'Integer} * (sort 'Map`{'Var`,'Integer`} to 'IStoreS) * (op '_|->_ to '_|->Is_ [ctor]) .)
                                    ***(protecting 'MAP{'Var, 'Real} * (sort 'Map`{'Var`,'Real`} to 'RStoreS) * (op '_|->_ to '_|->Rs_ [ctor]) .)
-                                   ***(protecting 'MAP{'Var, 'Boolean} * (sort 'Map`{'Var`,'Boolean`} to 'BStoreS) * (op '_|->_ to '_|->Bs_ [ctor]) .) .
+                                   ***(protecting 'MAP{'Var, 'Boolean} * (sort 'Map`{'Var`,'Boolean`} to 'BStoreS) * (op '_|->_ to '_|->Bs_ [ctor]) .)
                                    ***(protecting 'REAL-INTEGER .)
                                    ***(protecting 'META-LEVEL .)
                                    ***(protecting 'SMT-CONNECTION .)
@@ -241,34 +243,45 @@ fmod MODULE-TRANSFORMER is
     eq modOpSigConc(OpDeclSet, ValOp) = OpDeclSet modOpSigSE(OpDeclSet, ValOp) .
 
     *** TODO: Abstract 'Program sort as a variable for flexibility (see concurrent language)
+    *** Include constructors symbolic/concolic state constructors depending on original state and functional operators
     op inclSEOps : Qid -> OpDeclSet .
-    eq inclSEOps(StateOp) = (op '_`{_`} : StateOp 'Boolean -> 'SEState [ctor] .)
-                            (op '_where_ : StateOp 'Boolean -> 'ConstrainedStart [ctor] .)
+    eq inclSEOps(StateOp) = *** Constructor for symbolic state, appends the accumulated constraints to the original state 
+                            (op '_`{_`} : StateOp 'Boolean -> 'SEState [ctor] .)
+                            *** Define a dual state with initial constraints
                             (op '__where_ : StateOp StateOp 'Boolean -> 'ConstrainedStart [ctor] .)
+                            *** Define the concolic dual state core constructor and its extension to keep track of initial programs
                             (op '`[_`]`[_`]`[_`]`[_`] : StateOp 'SEState 'Int 'Stores -> 'ConcolicState [ctor] .)
                             (op '_`[_$$_`] : 'ConcolicState 'Program 'Program -> 'ConcolicStateExt [ctor] .)
+                            *** Construct the symbolic Stores structure with the three symbolic stores
                             (op '_|_|_ : 'IStoreS 'RStoreS 'BStoreS -> 'Stores [ctor] .)
+                            *** Initialize the input concrete stores with the symbolic stores and
+                            *** values satisfying Boolean constrains retrieved from the SMT hook 
                             (op 'init-CStore : 'Stores 'Stores 'Boolean -> 'Stores [none] .)
+                            *** Apply a symbolic assignment retrieved from the SMT hook to a concrete store.
+                            *** The symbolic store is used to match the assigned variable. 
                             (op '$apply-SMTassignment : 'Stores 'Stores 'AssignmentSMT -> 'Stores [none] .)
+                            *** Initialize a concrete store with default values from a symbolic store
                             (op 'initialize-def : 'IStoreS -> 'IStore [none] .)
                             (op 'initialize-def : 'RStoreS -> 'RStore [none] .)
                             (op 'initialize-def : 'BStoreS -> 'BStore [none] .)
                             ***(op 'size : 'Boolean -> 'Nat [none] .)
-                            (op 'start : StateOp 'PairSVarL -> 'ConcolicState [none] .)
-                            (op 'start : 'ConstrainedStart 'PairSVarL -> 'ConcolicState [none] .)
-                            (op '$start : StateOp 'PairSVarL 'Stores 'Boolean -> 'ConcolicState [none] .)
+                            *** Create a concolic dual state with the concrete and symbolic state objects, and the symbolic variable-value pairs
                             (op 'startC : StateOp StateOp 'PairSVarL -> 'ConcolicStateExt [none] .)
+                            *** Create a concolic dual state with initial constraints
                             (op 'startC : 'ConstrainedStart 'PairSVarL -> 'ConcolicStateExt [none] .)
+                            *** Initialize the concolic state
                             (op '$startC : StateOp StateOp 'PairSVarL 'Stores 'Boolean -> 'ConcolicStateExt [none] .)
+                            *** Create a symbolic state for MaudeSE execution
                             (op 'startSE : StateOp 'PairSVarL 'Stores -> StateOp [none] .) .
 
-    *** Define the Symbolic State on top of the casual (concrete) state
+    *** Transform operator declarations depending on the transformation type
     op modSEOps : OpDeclSet Qid Qid TrType -> OpDeclSet .
     eq modSEOps(OpDeclSet, StateOp, ValOp, conc) = modOpSigConc(OpDeclSet, ValOp)
                                                    inclSEOps(StateOp) .
     eq modSEOps(OpDeclSet, StateOp, ValOp, TrId) = modOpSigSE(OpDeclSet, ValOp)
                                                    inclSEOps(StateOp) [owise] .
 
+    *** Transform operator ids to their symbolic representation
     op modSEOpIds : Qid -> Qid .
     eq modSEOpIds('_==_) = '_===_ .
     eq modSEOpIds('_=/=_) = '_=/==_ . 
@@ -280,9 +293,11 @@ fmod MODULE-TRANSFORMER is
     eq modSEOpIds('evalB) = toSymb('evalB) .
     eq modSEOpIds(Q) = Q [owise] .
 
+    *** Transform a variable to use SMT type and use a new symbolic name
     op subSEVarSorts : Variable -> Variable .
     eq subSEVarSorts(MVar) = qid(string(toSymb(getName(MVar))) + ":" + string(toSMTSorts(getType(MVar)))) .
 
+    *** Transform a constant's type to SMT
     op subSEConstSorts : Constant -> Constant .
     eq subSEConstSorts(MConst) = qid(string(getName(MConst)) + "." + string(toSMTSorts(getType(MConst)))) .
 
@@ -348,7 +363,7 @@ fmod MODULE-TRANSFORMER is
     eq patchEvalSESTR(ceq 'eval[NeTL] = T2 if EqC [AttrSet] .) = (ceq toSymb('eval)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) if modCond(EqC) [AttrSet] .) .
     eq patchEvalSESTR(ceq 'evalI[NeTL] = T2 if EqC [AttrSet] .) = (ceq toSymb('evalI)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) if modCond(EqC) [AttrSet] .) .
     eq patchEvalSESTR(ceq 'evalR[NeTL] = T2 if EqC [AttrSet] .) = (ceq toSymb('evalR)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) if modCond(EqC) [AttrSet] .) .
-    eq patchEvalSESTR(ceq 'evalB[NeTL] = T2 if EqC [AttrSet] .) = (ceq evalB('eval)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) if modCond(EqC) [AttrSet] .) .
+    eq patchEvalSESTR(ceq 'evalB[NeTL] = T2 if EqC [AttrSet] .) = (ceq toSymb('evalB)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) if modCond(EqC) [AttrSet] .) .
     eq patchEvalSESTR(Eq) = Eq [owise] .
   
     *** Transform the eval functions definition to convert values to SMT types and patch the stores to the symbolic definition

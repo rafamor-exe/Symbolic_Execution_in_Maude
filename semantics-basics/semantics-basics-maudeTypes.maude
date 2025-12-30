@@ -168,38 +168,24 @@ endfm
 view Var from TRIV to CONCRETE-VAR-MOD is
   sort Elt to Var .
 endv
-
-fmod MAYBE{X :: TRIV} is
-  sort Maybe{X} .
-  subsort X$Elt < Maybe{X} .
-
-  op und{X} : -> Maybe{X} [ctor] .
-endfm
+view IVar from TRIV to CONCRETE-VAR-MOD is
+  sort Elt to IVar .
+endv
+view RVar from TRIV to CONCRETE-VAR-MOD is
+  sort Elt to RVar .
+endv
+view BVar from TRIV to CONCRETE-VAR-MOD is
+  sort Elt to BVar .
+endv
 
 fmod CONCRETE-AEXP-MOD is
 
     protecting CONCRETE-VAR-MOD .
-    protecting MAP{Var, Int} * (sort Map{Var, Int} to IStore) * (op _|->_ to _|->I_ ) .
-    protecting MAP{Var, Rat} * (sort Map{Var, Rat} to RStore) * (op _|->_ to _|->R_ ) .
-    protecting MAP{Var, Bool} * (sort Map{Var, Bool} to BStore) * (op _|->_ to _|->B_ ) .
-    ***protecting MAYBE{Bool} .
-    ***protecting MAYBE{Int} .
-    ***protecting MAYBE{Rat} .
+    protecting MAP{IVar, Int} * (sort Map{IVar, Int} to IStore) * (op _|->_ to _|->I_ ) .
+    protecting MAP{RVar, Rat} * (sort Map{RVar, Rat} to RStore) * (op _|->_ to _|->R_ ) .
+    protecting MAP{BVar, Bool} * (sort Map{BVar, Bool} to BStore) * (op _|->_ to _|->B_ ) .
 
-    sorts Stores . ***Int? Rat? Bool? .
-
-    ***subsort Maybe{Int} < Int? .
-    ***subsort Maybe{Rat} < Rat? .
-    ***subsort Maybe{Bool} < Bool? .
-    ***subsort FindResult < Int .
-    ***subsort Int < Int? .
-    ***subsort Rat < Rat? .
-    ***subsort Bool < Bool? .
-    ***subsort Int? < Rat? .
-
-    ***op undI : -> Int? [ctor] .
-    ***op undR : -> Rat? [ctor] .
-    ***op undB : -> Bool? [ctor] .
+    sorts Stores .
 
     op _|_|_ : IStore RStore BStore -> Stores [ctor] .
 
@@ -252,37 +238,37 @@ fmod CONCRETE-AEXP-MOD is
     eq eval(IV1 === IVar, (ISTR | RSTR | BSTR)) = evalI(IV1, ISTR) == evalI(IVar, ISTR) .
     ceq eval(IVar === IVar', (ISTR | RSTR | BSTR)) = I1 == I2
       if I1 := evalI(IVar, ISTR)
-      /\ I2 := evalI(IVar', ISTR) . ***/\ I1 =/= undI /\ I2 =/= undI /\ I1 =/= undI /\ I2 =/= undI .
+      /\ I2 := evalI(IVar', ISTR) .
     eq eval(IV1 =/== IV2, (ISTR | RSTR | BSTR)) = evalI(IV1, ISTR) =/= evalI(IV2, ISTR) .
     eq eval(IVar =/== IV2, (ISTR | RSTR | BSTR)) = evalI(IVar, ISTR) =/= evalI(IV2, ISTR) .
     eq eval(IV1 =/== IVar, (ISTR | RSTR | BSTR)) = evalI(IV1, ISTR) =/= evalI(IVar, ISTR) .
     ceq eval(IVar =/== IVar', (ISTR | RSTR | BSTR)) = I1 =/= I2
       if I1 := evalI(IVar, ISTR)
-      /\ I2 := evalI(IVar', ISTR) . ***/\ I1 =/= undI /\ I2 =/= undI .
+      /\ I2 := evalI(IVar', ISTR) . 
     eq eval(IV1 < IV2, (ISTR | RSTR | BSTR)) = evalI(IV1, ISTR) < evalI(IV2, ISTR) .
     eq eval(IVar < IV2, (ISTR | RSTR | BSTR)) = evalI(IVar, ISTR) < evalI(IV2, ISTR) .
     eq eval(IV1 < IVar, (ISTR | RSTR | BSTR)) = evalI(IV1, ISTR) < evalI(IVar, ISTR) .
     ceq eval(IVar < IVar', (ISTR | RSTR | BSTR)) = I1 < I2
       if I1 := evalI(IVar, ISTR)
-      /\ I2 := evalI(IVar', ISTR) . ***/\ I1 =/= undI /\ I2 =/= undI .
+      /\ I2 := evalI(IVar', ISTR) . 
     eq eval(IV1 <= IV2, (ISTR | RSTR | BSTR)) = evalI(IV1, ISTR) <= evalI(IV2, ISTR) .
     eq eval(IVar <= IV2, (ISTR | RSTR | BSTR)) = evalI(IVar, ISTR) <= evalI(IV2, ISTR) .
     eq eval(IV1 <= IVar, (ISTR | RSTR | BSTR)) = evalI(IV1, ISTR) <= evalI(IVar, ISTR) .
     ceq eval(IVar <= IVar', (ISTR | RSTR | BSTR)) = I1 <= I2
       if I1 := evalI(IVar, ISTR)
-      /\ I2 := evalI(IVar', ISTR) . ***/\ I1 =/= undI /\ I2 =/= undI .
+      /\ I2 := evalI(IVar', ISTR) . 
     eq eval(IV1 > IV2, (ISTR | RSTR | BSTR)) = evalI(IV1, ISTR) > evalI(IV2, ISTR) .
     eq eval(IVar > IV2, (ISTR | RSTR | BSTR)) = evalI(IVar, ISTR) > evalI(IV2, ISTR) .
     eq eval(IV1 > IVar, (ISTR | RSTR | BSTR)) = evalI(IV1, ISTR) > evalI(IVar, ISTR) .
     ceq eval(IVar > IVar', (ISTR | RSTR | BSTR)) = I1 > I2
       if I1 := evalI(IVar, ISTR)
-      /\ I2 := evalI(IVar', ISTR) . ***/\ I1 =/= undI /\ I2 =/= undI .
+      /\ I2 := evalI(IVar', ISTR) . 
     eq eval(IV1 >= IV2, (ISTR | RSTR | BSTR)) = evalI(IV1, ISTR) >= evalI(IV2, ISTR) .
     eq eval(IVar >= IV2, (ISTR | RSTR | BSTR)) = evalI(IVar, ISTR) >= evalI(IV2, ISTR) .
     eq eval(IV1 >= IVar, (ISTR | RSTR | BSTR)) = evalI(IV1, ISTR) >= evalI(IVar, ISTR) .
     ceq eval(IVar >= IVar', (ISTR | RSTR | BSTR)) = I1 >= I2
       if I1 := evalI(IVar, ISTR)
-      /\ I2 := evalI(IVar', ISTR) . ***/\ I1 =/= undI /\ I2 =/= undI .
+      /\ I2 := evalI(IVar', ISTR) . 
     eq eval(RV1 === RV2, (ISTR | RSTR | BSTR)) = evalR(RV1, RSTR) == evalR(RV2, RSTR) .
     eq eval(RVar === RV2, (ISTR | RSTR | BSTR)) = evalR(RVar, RSTR) == evalR(RV2, RSTR) .
     eq eval(RV1 === RVar, (ISTR | RSTR | BSTR)) = evalR(RV1, RSTR) == evalR(RVar, RSTR) .
@@ -357,10 +343,6 @@ fmod CONCRETE-AEXP-MOD is
     eq evalI(val(I), ISTR) = I .
     eq evalR(val(R), RSTR) = R .
     eq evalB(val(B), BSTR) = B .
-    ***eq evalI(IExp, ISTR) = undI [owise] .
-    ***eq evalR(RExp, RSTR) = undR [owise] .
-    ***eq evalB(BExp, BSTR) = undB [owise] .
-    ***eq evalB(val(B)) = B .
 
     eq not not BExp = BExp .
 
