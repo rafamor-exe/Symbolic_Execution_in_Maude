@@ -53,7 +53,7 @@ fmod MODULE-TRANSFORMER is
 
     vars InstId StateOp OpId ModId Q ValOp X Y EvalQ : Qid .
     vars Trm T1 T2 Tcond Tmod TSTR TIL               : Term .
-    vars Cond Cond1 Cond2 CondS                      : Condition .
+    vars Cond Cond1 Cond2                            : Condition .
     vars EqC EqC2                                    : EqCondition .
     var  AttrSet                                     : AttrSet .
     var  RlSet                                       : RuleSet .
@@ -174,9 +174,9 @@ fmod MODULE-TRANSFORMER is
     eq rlToMaudeSE(rl T1 => T2 [label(InstId) AttrSet] . RlSet) = (rl modOpStoreRec(T1) => modOpStoreRec(T2) 
                                                                    [label(InstId) AttrSet] .)
                                                                   rlToMaudeSE(RlSet) .
-    eq rlToMaudeSE(crl T1 => T2 if CondS [label(InstId) AttrSet] . RlSet) = (crl modOpStoreRec(T1) => modOpStoreRec(T2) 
-                                                                             if CondS 
-                                                                             [label(InstId) AttrSet] .)
+    eq rlToMaudeSE(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet) = (crl modOpStoreRec(T1) => modOpStoreRec(T2) 
+                                                                            if modCond(Cond) 
+                                                                            [label(InstId) AttrSet] .)
                                                                             rlToMaudeSE(RlSet) .
     eq rlToMaudeSE(Rule RlSet) = Rule rlToMaudeSE(RlSet) [owise] .
 
@@ -188,8 +188,8 @@ fmod MODULE-TRANSFORMER is
     ***                                                        modSEImports(ImportList) .
     ***eq modSEImports(Import ImportList) = Import modSEImports(ImportList) [owise] .
 
-    op inclSEImports : ImportList -> ImportList .
-    eq inclSEImports(ImportList) = ImportList ***modSEImports(ImportList)
+    ***op inclSEImports : ImportList -> ImportList .
+    ***eq inclSEImports(ImportList) = ImportList ***modSEImports(ImportList)
                                    ***(protecting 'MAP{'Var, 'Integer} * (sort 'Map`{'Var`,'Integer`} to 'IStoreS) * (op '_|->_ to '_|->Is_ [ctor]) .)
                                    ***(protecting 'MAP{'Var, 'Real} * (sort 'Map`{'Var`,'Real`} to 'RStoreS) * (op '_|->_ to '_|->Rs_ [ctor]) .)
                                    ***(protecting 'MAP{'Var, 'Boolean} * (sort 'Map`{'Var`,'Boolean`} to 'BStoreS) * (op '_|->_ to '_|->Bs_ [ctor]) .) .
@@ -286,6 +286,7 @@ fmod MODULE-TRANSFORMER is
     op subSEConstSorts : Constant -> Constant .
     eq subSEConstSorts(MConst) = qid(string(getName(MConst)) + "." + string(toSMTSorts(getType(MConst)))) .
 
+    *** Substitute all variables in a TermList with the corresponding term with SMT types
     op searchSubVar : TermList -> TermList .
     eq searchSubVar(empty) = empty .
     eq searchSubVar(MConst) = MConst .
@@ -293,7 +294,7 @@ fmod MODULE-TRANSFORMER is
     eq searchSubVar(OpId[T1, TermL]) = modSEOpIds(OpId)[searchSubVar(T1), searchSubVar(TermL)] .
     eq searchSubVar((T1, NeTL)) = searchSubVar(T1), searchSubVar(NeTL) .
 
-    *** Substitute all Vars and Consts in TermList with SMT correspondence
+    *** Substitute all variables and constants in a TermList with the corresponding term with SMT types
     op searchSubVarConst : TermList -> TermList .
     eq searchSubVarConst(empty) = empty .
     eq searchSubVarConst(MConst) = subSEConstSorts(MConst) .
@@ -301,18 +302,21 @@ fmod MODULE-TRANSFORMER is
     eq searchSubVarConst(OpId[T1, TermL]) = modSEOpIds(OpId)[searchSubVarConst(T1), searchSubVarConst(TermL)] .
     eq searchSubVarConst((T1, NeTL)) = searchSubVarConst(T1), searchSubVarConst(NeTL) .
 
+    *** Convert constant with Maude type to the corresponding SMT type
     op convert : Constant Type -> Constant .
     eq convert(MConst, 'Int) = 'toInteger[MConst] .
     eq convert(MConst, 'Rat) = 'toReal[MConst] .
     eq convert(MConst, 'Bool) = 'toBoolean[MConst] .
     eq convert(MConst, T) = MConst [owise] .
+    
+    *** Convert variable with Maude type to the corresponding SMT type
     op convert : Variable Type -> Variable .
     eq convert(MVar, 'Int) = 'toInteger[MVar] .
     eq convert(MVar, 'Rat) = 'toReal[MVar] .
     eq convert(MVar, 'Bool) = 'toBoolean[MVar] .
     eq convert(MVar, T) = MVar [owise] .
 
-    *** Don't change Vars and Consts sorts but keep searching for Vals
+    *** Recursively transform terms to use symbolic stores and convert constants to SMT values
     op subSETermSTR : Term -> Term .
     eq subSETermSTR(MConst) = convert(MConst, getType(MConst)) .
     eq subSETermSTR(MVar) = subSEVarSorts(MVar) .
@@ -322,17 +326,20 @@ fmod MODULE-TRANSFORMER is
     eq subSETermSTR('_`,_['BSTR:BStore, '_|->B_[TermL]]) = '_`,_['BSTR:BStoreS, '_|->Bs_[searchSubVarConst(TermL)]] .
     eq subSETermSTR(OpId[T1, TermL]) = modSEOpIds(OpId)[subSETermSTR(T1), modOpStoreRec(TermL)] [owise] .
 
+    *** Transform terms in a list to use symbolic stores
     op modOpStoreRec : TermList -> TermList .
     eq modOpStoreRec(empty) = empty .
     eq modOpStoreRec((T1, TermL)) = subSETermSTR(T1), modOpStoreRec(TermL) .
 
+    *** Transform variables and constants within conditions to use SMT types
     op modCond : Condition -> Condition .
     eq modCond(T1 = T2) = searchSubVarConst(T1) = searchSubVarConst(T2) .
     eq modCond(T1 := T2) = searchSubVarConst(T1) := searchSubVarConst(T2) .
     eq modCond(EqC /\ EqC2) = modCond(EqC) /\ modCond(EqC2) .
     eq modCond(Cond1 /\ Cond2) = modCond(Cond1) /\ modCond(Cond2) .
-    eq modCond(Cond1) = Cond1 [owise] .
+    eq modCond(Cond) = Cond [owise] .
 
+    *** Patch eval function definition to use symbolic stores and convert values
     op patchEvalSESTR : Equation -> Equation .
     eq patchEvalSESTR(eq 'eval[NeTL] = T2 [AttrSet] .) = (eq toSymb('eval)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) [AttrSet] .) .
     eq patchEvalSESTR(eq 'evalI[NeTL] = T2 [AttrSet] .) = (eq toSymb('evalI)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) [AttrSet] .) .
@@ -344,6 +351,7 @@ fmod MODULE-TRANSFORMER is
     eq patchEvalSESTR(ceq 'evalB[NeTL] = T2 if EqC [AttrSet] .) = (ceq evalB('eval)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) if modCond(EqC) [AttrSet] .) .
     eq patchEvalSESTR(Eq) = Eq [owise] .
   
+    *** Transform the eval functions definition to convert values to SMT types and patch the stores to the symbolic definition
     op modSEEqs : EquationSet -> EquationSet .
     eq modSEEqs(none) = none .
     eq modSEEqs(eq 'evalI['val['I:Int], NeTL] = MVar [AttrSet] . EquationSet) = (eq toSymb('evalI)[modOpStoreRec(('val['I:Int], NeTL))] = convert(MVar, getType(MVar)) [AttrSet] .)
@@ -354,6 +362,16 @@ fmod MODULE-TRANSFORMER is
                                                                                  modSEEqs(EquationSet) .
     eq modSEEqs(Eq EquationSet) = patchEvalSESTR(Eq) modSEEqs(EquationSet) [owise] .
     
+    *** Transformation for concolic execution duplicates the equation set and transforms one of the copies with the symbolic execution transformation
+    op modConcEqs : EquationSet -> EquationSet .
+    eq modConcEqs(EquationSet) = EquationSet modSEEqs(EquationSet) .
+
+    *** Transform equations according to transformation type
+    op modEqs : EquationSet TrType -> EquationSet .
+    eq modEqs(EquationSet, conc) = modConcEqs(EquationSet) .
+    eq modEqs(EquationSet, TrId) = modSEEqs(EquationSet) [owise] .
+
+    *** Include equational definitions for injected operators 
     op inclSEEqs : Qid -> EquationSet .
     eq inclSEEqs(StateOp) = (eq 'init-CStore['STR:Stores, 'STRS:Stores, 'Constraints:Boolean] = '$apply-SMTassignment['STR:Stores, 'STRS:Stores, 'get-SMTassignment['Constraints:Boolean]] [none] .)
                             (eq '$apply-SMTassignment['_|_|_['ISTR:IStore, 'RSTR:RStore, 'BSTR:BStore], '_|_|_['ISTRS:IStoreS, '_`,_['_|->Rs_['Var:Var, 'R:Real], 'RSTRS:RStoreS], 'BSTRS:BStoreS], '_<--_['R:Real, 'Rconc:Real]] = '_|_|_['ISTR:IStore, '_`,_['_|->R_['Var:Var, 'toRat['Rconc:Real]], 'RSTR:RStore], 'BSTR:BStore] [none] .)
@@ -385,28 +403,20 @@ fmod MODULE-TRANSFORMER is
                             (eq 'startSE[stateVar(StateOp), '__['_`,_['Var:Qid, 'R1:Real], 'SVDeclL:PairSVarL], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS]] = 'startSE[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_|_['ISTRS:IStoreS, 'insert['rv['Var:Qid], 'R1:Real, 'RSTRS:RStoreS], 'BSTRS:BStoreS]] [none] .)
                             (eq 'startSE[stateVar(StateOp), '__['_`,_['Var:Qid, 'B1:Boolean], 'SVDeclL:PairSVarL], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS]] = 'startSE[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'insert['bv['Var:Qid], 'B1:Boolean, 'BSTRS:BStoreS]]] [none] .) .
 
-    op modConcEqs : EquationSet -> EquationSet .
-    eq modConcEqs(EquationSet) = EquationSet modSEEqs(EquationSet) .
 
-    op modEqs : EquationSet TrType -> EquationSet .
-    eq modEqs(EquationSet, conc) = modConcEqs(EquationSet) .
-    eq modEqs(EquationSet, TrId) = modSEEqs(EquationSet) [owise] .
-
-    op modRlConds : RuleSet -> RuleSet .
-    eq modRlConds(none) = none .
-    eq modRlConds(crl T1 => T2 if Cond [AttrSet] . RlSet) = (crl T1 => T2 if modCond(Cond) [AttrSet] .) modRlConds(RlSet) .
-    eq modRlConds(Rule RlSet) = Rule modRlConds(RlSet) [owise] .
-
+    *** Transform rules depending on transformation type
     op modRl : RuleSet TrType -> RuleSet .
     eq modRl(RlSet, symb) = rlToSymbolic(RlSet) .
     eq modRl(RlSet, conc) = rlToConcolic(RlSet) .
-    eq modRl(RlSet, maudeSE) = rlToMaudeSE(modRlConds(RlSet)) .
+    eq modRl(RlSet, maudeSE) = rlToMaudeSE(RlSet) .
     ***eq modRl(RlSet, clconc) = rlToClConcolic(RlSet, StateOp) inclClConcCrl(StateOp) .
 
     *** NOTE: MaudeSE does not work with smod
+    *** Transform a module M considering the original State sort, an auxiliary value operator, and the transfotmation id (symb, conc, maudeSE)
+    *** The transformation modifies operators, equations and rewrite rules, and it is specific for the target transformation type
     op trMod : Module Qid Qid TrType -> Module .
-    eq trMod(M, StateOp, ValOp, TrId) = mod 'PARTIAL-SYMBOLIC-MOD is
-                                          inclSEImports(getImports(M))
+    eq trMod(M, StateOp, ValOp, TrId) = mod 'TRANSFORMED-MOD is
+                                          getImports(M)
                                           sorts inclSESorts(getSorts(M)) .
                                           getSubsorts(M)
                                           modSEOps(getOps(M), StateOp, ValOp, TrId)
@@ -417,6 +427,7 @@ fmod MODULE-TRANSFORMER is
                                           ***getSds(M)
                                         endm .
 
+    *** Fuses a module and a functional module into one
     op fuseMods : Module FModule -> Module .
     eq fuseMods(M, FM) = mod getName(M) is
                             getImports(M) getImports(FM)
@@ -430,6 +441,7 @@ fmod MODULE-TRANSFORMER is
                             ***getSds(M) getSds(FM)
                           endm .
 
+    *** Transform a module to include the symbolic/concolic execution requirements. 
     op transformModSymb : Qid Qid Qid TrType -> Module .
     op transformModSymb : Module Qid Qid TrType -> Module .
     eq transformModSymb(ModId, StateOp, ValOp, TrId) = transformModSymb(upModule(ModId, true), StateOp, ValOp, TrId) .
@@ -443,16 +455,16 @@ mod VERIFICATION-COMMANDS is
     pr LEXICAL .
 
     vars ModId StateOp SearchType ValOp TargetSt : Qid .
-    var TrId                                     : TrType .
-    var PatternSEState                           : Term .
-    var InitSEState                              : String . 
-    var SearchCond                               : Condition .
-    var Bound                                    : Bound .
-    var SolN                                     : Nat .
-    var NeModIdList                              : NeQidList .
-    var M                                        : Module .
-    var SVDeclL                                  : PairSVarL .
-    var SymbCond                                 : Boolean .
+    var  TrId                                    : TrType .
+    var  PatternSEState                          : Term .
+    var  InitSEState                             : String . 
+    var  SearchCond                              : Condition .
+    var  Bound                                   : Bound .
+    var  SolN                                    : Nat .
+    var  NeModIdList                             : NeQidList .
+    var  M                                       : Module .
+    var  SVDeclL                                 : PairSVarL .
+    var  SymbCond                                : Boolean .
 
     op searchTr : Module Qid Qid TrType Qid String Term Condition Qid Bound Nat PairSVarL Boolean -> ResultTriple .
     eq searchTr(M, StateOp, ValOp, TrId, TargetSt,
@@ -574,15 +586,15 @@ mod MAUDE-SE-EXT is
     pr META-SMT-SEARCH . 
 
     vars StateOp ValOp TrId SearchType Logic : Qid .
-    var PatternSEState                       : Term .
-    var InitSEState                          : String . 
-    var SearchCond                           : Condition .
-    var Bound                                : Bound .
-    var SolN                                 : Nat .
-    var NeModIdList                          : NeQidList .
-    var Fold                                 : Bool .
-    var M                                    : Module .
-    var SVDeclL                              : PairSVarL .
+    var  PatternSEState                      : Term .
+    var  InitSEState                         : String . 
+    var  SearchCond                          : Condition .
+    var  Bound                               : Bound .
+    var  SolN                                : Nat .
+    var  NeModIdList                         : NeQidList .
+    var  Fold                                : Bool .
+    var  M                                   : Module .
+    var  SVDeclL                             : PairSVarL .
 
     op searchMaudeSE : Module Qid Qid String Term Condition Qid Bound Nat Qid Bool PairSVarL -> SmtResult2? .
     eq searchMaudeSE(M, StateOp, ValOp,
