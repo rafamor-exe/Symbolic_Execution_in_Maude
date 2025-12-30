@@ -4,17 +4,6 @@ load semantics-basics/smt-conversion.maude
 ***load language-semantics/while-semantics-concrete.maude
 ***set trace on .
 
-fmod SE-LOCS-MOD is
-    protecting QID .
-    sort Location .
-    *** FIXME: explain the meaning of this
-    op loc : Qid -> Location [ctor] .
-endfm
-
-view Location from TRIV to SE-LOCS-MOD is
-  sort Elt to Location .
-endv
-
 view Integer from TRIV to REAL-INTEGER is
   sort Elt to Integer .
 endv
@@ -27,7 +16,6 @@ endv
 
 fmod SMT-CONNECTION is
     pr SMT-CONVERSION .
-    pr SE-LOCS-MOD .
 
     protecting MAP{Var, Integer} * (sort Map{Var, Integer} to IStoreS) * (op _|->_ to _|->Is_ ) .
     protecting MAP{Var, Real} * (sort Map{Var, Real} to RStoreS) * (op _|->_ to _|->Rs_ ) .
@@ -187,6 +175,7 @@ fmod MODULE-TRANSFORMER is
           rlToConcolic(RlSet, StateOp) .
 
     *** TODO: Generalize hardcoded STR variable indicating the concrete store
+    *** TODO: Abstract 'Program sort as a variable for flexibility (see concurrent language)
     ceq rlToConcolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, StateOp) = 
           (crl '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
             =>
@@ -313,6 +302,7 @@ fmod MODULE-TRANSFORMER is
                                                                           modOpSigConc(OpDeclSet, ValOp) . 
     eq modOpSigConc(OpDecl OpDeclSet, ValOp) = OpDecl modOpSigConc(OpDeclSet, ValOp) [owise] .
 
+    *** TODO: Abstract 'Program sort as a variable for flexibility (see concurrent language)
     op inclSEOps : Qid -> OpDeclSet .
     eq inclSEOps(StateOp) = (op '_`{_`} : StateOp 'Boolean -> 'SEState [ctor] .)
                             (op '_where_ : StateOp 'Boolean -> 'ConstrainedStart [ctor] .)

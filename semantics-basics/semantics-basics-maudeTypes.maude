@@ -144,6 +144,25 @@ fmod CONCRETE-VAR-MOD is
     op _>=_ : RVal RVar -> BVal [prec 37] .
     op _>=_ : Var Var -> BVal [prec 37] .
 
+    op -_ : IVar -> IVal .
+    op -_ : RVar -> RVal .
+    op _+_ : IVar IVal -> IVal [gather (E e) prec 33] .
+    op _+_ : RVar RVal -> RVal [gather (E e) prec 33] .
+    op _+_ : IVal IVar -> IVal [gather (E e) prec 33] .
+    op _+_ : RVal RVar -> RVal [gather (E e) prec 33] .
+    op _-_ : IVar IVal -> IVal [gather (E e) prec 33] .
+    op _-_ : RVar RVal -> RVal [gather (E e) prec 33] .
+    op _-_ : IVal IVar -> IVal [gather (E e) prec 33] .
+    op _-_ : RVal RVar -> RVal [gather (E e) prec 33] .
+    op _*_ : IVar IVal -> IVal [gather (E e) prec 31] .
+    op _*_ : RVar RVal -> RVal [gather (E e) prec 31] .
+    op _*_ : IVal IVar -> IVal [gather (E e) prec 31] .
+    op _*_ : RVal RVar -> RVal [gather (E e) prec 31] .
+    op _/_ : IVar IVal -> IVal [gather (E e) prec 31] .
+    op _/_ : RVar RVal -> RVal [gather (E e) prec 31] .
+    op _/_ : IVal IVar -> IVal [gather (E e) prec 31] .
+    op _/_ : RVal RVar -> RVal [gather (E e) prec 31] .
+
 endfm
 
 view Var from TRIV to CONCRETE-VAR-MOD is
@@ -318,11 +337,13 @@ fmod CONCRETE-AEXP-MOD is
     ***eq eval(Var, (ISTR | ((Var |->R val(R)), RSTR) | BSTR)) = R .
     ***eq eval(Var, (ISTR | RSTR | ((Var |->B val(B)), BSTR))) = B .
     
+    eq evalI(- IExp1, ISTR) = - evalI(IExp1, ISTR) .
     eq evalI(IExp1 + IExp2, ISTR) = evalI(IExp1, ISTR) + evalI(IExp2, ISTR) .
     eq evalI(IExp1 * IExp2, ISTR) = evalI(IExp1, ISTR) * evalI(IExp2, ISTR) .
     eq evalI(IExp1 - IExp2, ISTR) = evalI(IExp1, ISTR) - evalI(IExp2, ISTR) .
     eq evalI(IExp1 / IExp2, ISTR) = evalI(IExp1, ISTR) quo evalI(IExp2, ISTR) .
 
+    eq evalR(- RExp1, RSTR) = - evalR(RExp1, RSTR) .
     eq evalR(RExp1 + RExp2, RSTR) = evalR(RExp1, RSTR) + evalR(RExp2, RSTR) .
     eq evalR(RExp1 * RExp2, RSTR) = evalR(RExp1, RSTR) * evalR(RExp2, RSTR) .
     eq evalR(RExp1 - RExp2, RSTR) = evalR(RExp1, RSTR) - evalR(RExp2, RSTR) .
