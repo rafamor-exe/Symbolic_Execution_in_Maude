@@ -181,14 +181,14 @@ fmod MODULE-TRANSFORMER is
             =>
             '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}[symbMirror(T2), 'Constraints':Boolean], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
             if Cond
-            /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, subSTR2(searchSubVarConst(Tcond))]
+            /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, subSTR2(searchSubVarConst(Tcond))] *** searchSubVar(Tcond)
             [label(InstId) AttrSet] .)
           (crl '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
             =>
             '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`]['updateStore['updateProgram[T2, 'PC:Program], 'init-CStore['_|_|_['empty.IStore, 'empty.RStore, 'empty.BStore], 'STRInit:Stores, 'Constraints':Boolean]],
                                              '_`{_`}['updateStore['updateProgram[symbMirror(T2), 'PS:Program], 'STRInit:Stores], 'Constraints':Boolean], 's_['N:Nat], 'STRInit:Stores], 'PC:Program, 'PS:Program]
             if Cond
-            /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, 'not_[subSTR2(searchSubVarConst(Tcond))]]
+            /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, 'not_[subSTR2(searchSubVarConst(Tcond))]] *** searchSubVar(Tcond)
             /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints':Boolean]] = 'true.Bool
             [label(qid(string(InstId) + "-bis")) AttrSet] .)
           rlToConcolic(RlSet, StateOp)
