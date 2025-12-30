@@ -81,22 +81,6 @@ fmod MODULE-TRANSFORMER is
     var  MVar                                        : Variable .
     var  MConst                                      : Constant .
     var  N                                           : Nat .
-
-    op rlToSymbolic : RuleSet ~> RuleSet .
-    eq rlToSymbolic(none) = none .
-    eq rlToSymbolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet) = 
-          rl '_`{_`}[symbMirror(T1), 'Constraints:Boolean]
-            => '_`{_`}[symbMirror(T2), 'Constraints:Boolean] 
-            [label(toSymb(InstId)) AttrSet] .
-          rlToSymbolic(RlSet) .
-    ceq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet) = 
-          crl '_`{_`}[symbMirror(T1), 'Constraints:Boolean]
-            => '_`{_`}[symbMirror(T2), 'Constraints':Boolean]
-            if 'Constraints':Boolean := '_and_['Constraints:Boolean, Tcond]
-            /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints':Boolean]] = 'true.Bool 
-            [label(toSymb(InstId)) AttrSet] .
-          rlToSymbolic(RlSet)
-      if (Tcond = 'true.Boolean) := Cond .
     
     *** State variable generic definition
     op stateVar : Qid -> Variable .
@@ -127,19 +111,32 @@ fmod MODULE-TRANSFORMER is
     op symbMirror : Term -> Term .
     eq symbMirror(T1) = searchSubVar(T1) .
 
-    op rlToConcolic : RuleSet ~> RuleSet .
-    eq rlToConcolic(none) = none .
-    *** Symbolic rules must not be applied to internal symbolic state during concolic exec
-    *** These rules cannot be merged into one with 'if_then_else_fi because that distinction should be done at this level (transformation), not delayed
-    eq rlToConcolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet) =
-          (rl '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
-            =>
-            '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}[symbMirror(T2), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
-            [label(InstId) AttrSet] .)
-          rlToConcolic(RlSet) .
+    *** Transform teh rules for a pure symbolic analysis without MaudeSE. For now, rule conditions must be of the form: eval(B, STR) = true
+    *** The function symbMirror creates a symbolic mirror of the concrete state
+    *** Conditional rules accumulate the condition of the rule in the state Constraints
+    *** Every time a conditional rule is to be executed, the satisfiability of the new accumulated Constraints is checked
+    op rlToSymbolic : RuleSet ~> RuleSet .
+    eq rlToSymbolic(none) = none .
+    eq rlToSymbolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet) = 
+          rl '_`{_`}[symbMirror(T1), 'Constraints:Boolean]
+            => '_`{_`}[symbMirror(T2), 'Constraints:Boolean] 
+            [label(toSymb(InstId)) AttrSet] .
+          rlToSymbolic(RlSet) .
+    ceq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet) = 
+          crl '_`{_`}[symbMirror(T1), 'Constraints:Boolean]
+            => '_`{_`}[symbMirror(T2), 'Constraints':Boolean]
+            if 'Constraints':Boolean := '_and_['Constraints:Boolean, Tcond]
+            /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints':Boolean]] = 'true.Bool 
+            [label(toSymb(InstId)) AttrSet] .
+          rlToSymbolic(RlSet)
+      if (Tcond = 'true.Boolean) := Cond .
 
     *** TODO: Generalize hardcoded STR variable indicating the concrete store
     *** TODO: Abstract 'Program sort as a variable for flexibility (see concurrent language)
+    *** Transform conditional rules to two concolic rules
+    *** - Conditional rule 1: Advances the state with the concrete condition Cond and appends Cond to the accumulated Constraints
+    *** - Conditional rule 2: Appends not(Cond) to the accumulated Constraints and, if Constraints is satisfiable, re-starts the execution with the new Constraints
+    ***                       Re-executing requires re-initializing the concrete store with new satisfying values retrieved from the SMT hook, and resetting the symbolic store
     ceq rlToConcolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet) = 
           (crl '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
             =>
@@ -157,6 +154,32 @@ fmod MODULE-TRANSFORMER is
             [label(qid(string(InstId) + "-bis")) AttrSet] .)
           rlToConcolic(RlSet)
         if (Tcond = 'true.Bool) := Cond .
+
+    *** Transform the rules for an analysis with MaudeSE
+    *** - Transform the terms and conditions to use symbolic eval functions and symbolic stores
+    op rlToMaudeSE : RuleSet -> RuleSet .
+    eq rlToMaudeSE(none) = none .
+    eq rlToMaudeSE(rl T1 => T2 [label(InstId) AttrSet] . RlSet) = (rl modOpStoreRec(T1) => modOpStoreRec(T2) 
+                                                                  [label(toSymb(InstId)) AttrSet] .)
+                                                                  rlToMaudeSE(RlSet) .
+    eq rlToMaudeSE(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet) = (crl modOpStoreRec(T1) => modOpStoreRec(T2) 
+                                                                            if modCond(Cond) 
+                                                                            [label(toSymb(InstId)) AttrSet] .)
+                                                                            rlToMaudeSE(RlSet) .
+    eq rlToMaudeSE(Rule RlSet) = Rule rlToMaudeSE(RlSet) [owise] .
+
+    *** Transform the rules for a concolic analysis. For now, rule conditions must be of the form: eval(B, STR) = true
+    *** The symbolic state advances naturally following the concrete state, executing the same instructions.
+    *** The function symbMirror ensures the symbolic state is of the same form as the concrete state at each step, but using symbolic functions and stores
+    op rlToConcolic : RuleSet ~> RuleSet .
+    eq rlToConcolic(none) = none .
+    *** Transform unconditional rules
+    eq rlToConcolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet) =
+          (rl '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
+            =>
+            '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}[symbMirror(T2), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
+            [label(InstId) AttrSet] .)
+          rlToConcolic(RlSet) .
 
     ***op rlToClConcolic : RuleSet Qid -> RuleSet .
     ***eq rlToClConcolic(none, StateOp) = none .
@@ -178,17 +201,6 @@ fmod MODULE-TRANSFORMER is
     ***                                                            '_`{_`}['updateStore[stateVar(StateOp), 'STRInit:Stores], 'Constraints':Boolean], '_+_['N:Nat, 's_['0.Nat]], 'STRInit:Stores]
     ***                                if 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints:Boolean]] = 'true.Bool
     ***                                [label(qid("re-exec")) AttrSet] .)
-    
-    op rlToMaudeSE : RuleSet -> RuleSet .
-    eq rlToMaudeSE(none) = none .
-    eq rlToMaudeSE(rl T1 => T2 [label(InstId) AttrSet] . RlSet) = (rl modOpStoreRec(T1) => modOpStoreRec(T2) 
-                                                                   [label(InstId) AttrSet] .)
-                                                                  rlToMaudeSE(RlSet) .
-    eq rlToMaudeSE(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet) = (crl modOpStoreRec(T1) => modOpStoreRec(T2) 
-                                                                            if modCond(Cond) 
-                                                                            [label(InstId) AttrSet] .)
-                                                                            rlToMaudeSE(RlSet) .
-    eq rlToMaudeSE(Rule RlSet) = Rule rlToMaudeSE(RlSet) [owise] .
 
     ***op modSEImports : ImportList -> ImportList .
     ***eq modSEImports(ImportList) = ImportList .
