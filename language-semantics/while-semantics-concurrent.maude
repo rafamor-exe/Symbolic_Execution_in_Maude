@@ -43,15 +43,15 @@ mod WHILE-MAUDE is
     protecting WHILE-BASICS .
 
     sort State .
-    sorts CThread MTExec .
-    subsort CThread Program < MTExec .
+    ***sorts CThread MTExec .
+    ***subsort CThread Program < MTExec .
 
-    op _ [_] : Program Nat -> CThread [ctor] .
-    op noProgram : -> MTExec [ctor] .
-    op _ || _ : MTExec MTExec -> MTExec [ctor assoc comm id: noProgram] .
+    ***op _ [_] : Program Nat -> CThread [ctor] .
+    op noProgram : -> Program [ctor] .
+    op _ || _ : Program Program -> Program [ctor assoc comm id: noProgram] .
 
     
-    op < _ | _ > : MTExec Stores -> State [ctor] . 
+    op < _ | _ > : Program Stores -> State [ctor] . 
     op errState : -> State [ctor] . 
 
     vars Var Var1 Var2 : Var .
@@ -66,7 +66,7 @@ mod WHILE-MAUDE is
     var BSTR : BStore .
     var IExp : IExp .
     var RExp : RExp .
-    vars P PRest P2 : MTExec .
+    vars P PRest P2 : Program .
 
     op start : Program -> State .
     eq start(P) = < P | ((empty).IStore | (empty).RStore | (empty).BStore) > .
@@ -119,13 +119,13 @@ mod WHILE-MAUDE is
 
     *** Auxiliary
 
-    op getProgram : State -> MTExec .
+    op getProgram : State -> Program .
     eq getProgram(< P | STR >) = P .
 
     op getStore : State -> Stores .
     eq getStore(< P | STR >) = STR .
 
-    op updateProgram : State MTExec -> State .
+    op updateProgram : State Program -> State .
     eq updateProgram(< P | STR >, P2) = < P2 | STR > .
 
     op updateStore : State Stores -> State .

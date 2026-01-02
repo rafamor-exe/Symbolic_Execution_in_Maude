@@ -41,8 +41,8 @@ def getSymbVarCond(args) :
         sv = re.sub(r"[\( \)]", "", sv).split(",")
         svN = sv[0]
         svT = sv[1]
-        svDict[svN] = svN + str(i) + ":" + svT
-        svPairs += "( \'" + svN + " , " + svDict[svN] + " ) "
+        svDict[svN] = f"{svN}{str(i)}:{svT}"
+        svPairs += f"(\'{svN},{svDict[svN]}) "
         i += 1
     symbCond = args.symbCond
     for var, val in svDict.items():

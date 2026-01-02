@@ -324,23 +324,23 @@ fmod MODULE-TRANSFORMER is
     eq subSEVarSorts(MVar) = qid(string(toSymb(getName(MVar))) + ":" + string(toSMTSorts(getType(MVar)))) .
 
     *** Transform a constant's type to SMT
-    op subSEConstSorts : Constant -> Constant .
-    eq subSEConstSorts(MConst) = qid(string(getName(MConst)) + "." + string(toSMTSorts(getType(MConst)))) .
+    op subSEConstSortsT : Constant -> Constant .
+    eq subSEConstSortsT(MConst) = qid(string(getName(MConst)) + "." + string(toSMTSorts(getType(MConst)))) .
 
     *** Substitute all variables in a TermList with the corresponding term with SMT types
     op searchSubVar : TermList -> TermList .
     eq searchSubVar(empty)           = empty .
     eq searchSubVar(MConst)          = MConst .
     eq searchSubVar(MVar)            = subSEVarSorts(MVar) .
-    eq searchSubVar(OpId[T1, TermL]) = modSEOpIds(OpId)[searchSubVar(T1), searchSubVar(TermL)] .
+    eq searchSubVar(OpId[NeTL])      = modSEOpIds(OpId)[searchSubVar(NeTL)] .
     eq searchSubVar((T1, NeTL))      = searchSubVar(T1), searchSubVar(NeTL) .
 
     *** Substitute all variables and constants in a TermList with the corresponding term with SMT types
     op searchSubVarConst : TermList -> TermList .
     eq searchSubVarConst(empty)           = empty .
-    eq searchSubVarConst(MConst)          = subSEConstSorts(MConst) .
+    eq searchSubVarConst(MConst)          = subSEConstSortsT(MConst) .
     eq searchSubVarConst(MVar)            = subSEVarSorts(MVar) .
-    eq searchSubVarConst(OpId[T1, TermL]) = modSEOpIds(OpId)[searchSubVarConst(T1), searchSubVarConst(TermL)] .
+    eq searchSubVarConst(OpId[NeTL])      = modSEOpIds(OpId)[searchSubVarConst(NeTL)] .
     eq searchSubVarConst((T1, NeTL))      = searchSubVarConst(T1), searchSubVarConst(NeTL) .
 
     *** Convert constant with Maude type to the corresponding SMT type
@@ -362,7 +362,7 @@ fmod MODULE-TRANSFORMER is
     eq subSETermSTR(MConst)          = convert(MConst, getType(MConst)) .
     eq subSETermSTR(MVar)            = subSEVarSorts(MVar) .
     eq subSETermSTR('val[T1])        = 'val[T1] .
-    eq subSETermSTR(OpId[T1, TermL]) = modSEOpIds(OpId)[subSETermSTR(T1), modOpStoreRec(TermL)] [owise] .
+    eq subSETermSTR(OpId[NeTL])      = modSEOpIds(OpId)[modOpStoreRec(NeTL)] [owise] .
 
     *** Transform terms in a list to use symbolic stores
     op modOpStoreRec : TermList -> TermList .
@@ -379,11 +379,11 @@ fmod MODULE-TRANSFORMER is
 
     *** Patch eval function definition to use symbolic stores and convert values
     op patchEvalSESTR : Equation -> Equation .
-    eq patchEvalSESTR(eq 'eval[NeTL] = T2 [AttrSet] .)          = (eq toSymb('eval)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) [AttrSet] .) .
-    eq patchEvalSESTR(eq 'evalI[NeTL] = T2 [AttrSet] .)         = (eq toSymb('evalI)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) [AttrSet] .) .
-    eq patchEvalSESTR(eq 'evalR[NeTL] = T2 [AttrSet] .)         = (eq toSymb('evalR)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) [AttrSet] .) .
-    eq patchEvalSESTR(eq 'evalB[NeTL] = T2 [AttrSet] .)         = (eq toSymb('evalB)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) [AttrSet] .) .
-    eq patchEvalSESTR(ceq 'eval[NeTL] = T2 if EqC [AttrSet] .)  = (ceq toSymb('eval)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) if modCond(EqC) [AttrSet] .) .
+    eq patchEvalSESTR(eq 'eval[NeTL]   = T2 [AttrSet] .)        = (eq toSymb('eval)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) [AttrSet] .) .
+    eq patchEvalSESTR(eq 'evalI[NeTL]  = T2 [AttrSet] .)        = (eq toSymb('evalI)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) [AttrSet] .) .
+    eq patchEvalSESTR(eq 'evalR[NeTL]  = T2 [AttrSet] .)        = (eq toSymb('evalR)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) [AttrSet] .) .
+    eq patchEvalSESTR(eq 'evalB[NeTL]  = T2 [AttrSet] .)        = (eq toSymb('evalB)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) [AttrSet] .) .
+    eq patchEvalSESTR(ceq 'eval[NeTL]  = T2 if EqC [AttrSet] .) = (ceq toSymb('eval)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) if modCond(EqC) [AttrSet] .) .
     eq patchEvalSESTR(ceq 'evalI[NeTL] = T2 if EqC [AttrSet] .) = (ceq toSymb('evalI)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) if modCond(EqC) [AttrSet] .) .
     eq patchEvalSESTR(ceq 'evalR[NeTL] = T2 if EqC [AttrSet] .) = (ceq toSymb('evalR)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) if modCond(EqC) [AttrSet] .) .
     eq patchEvalSESTR(ceq 'evalB[NeTL] = T2 if EqC [AttrSet] .) = (ceq toSymb('evalB)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) if modCond(EqC) [AttrSet] .) .
@@ -653,7 +653,7 @@ mod MAUDE-SE-EXT is
                                                                 searchSubVarConst(upTerm(SVDeclL)), 
                                                                 '_|_|_['empty.IStoreS, 'empty.RStoreS, 'empty.BStoreS]],
                                      PatternSEState,
-                                     SearchCond,
+                                     modCond(SearchCond),
                                      SearchType,
                                      Bound,
                                      SolN,
@@ -676,7 +676,7 @@ mod MAUDE-SE-EXT is
                                                                 searchSubVarConst(upTerm(SVDeclL)), 
                                                                 '_|_|_['empty.IStoreS, 'empty.RStoreS, 'empty.BStoreS]],
                                              PatternSEState,
-                                             SearchCond,
+                                             modCond(SearchCond),
                                              SearchType,
                                              Bound,
                                              SolN,
