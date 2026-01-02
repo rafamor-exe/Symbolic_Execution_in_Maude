@@ -97,15 +97,9 @@ fmod MODULE-TRANSFORMER is
     *** FIXME: a comment in the code explaining the meaning of each slot would be valuable?
     *** Concolic state generic definition
     op concolicState : Qid -> Term .
-    eq concolicState(StateOp) = '`[_`]`[_`]`[_`]`[_`][stateVar(StateOp, 0), symbState(StateOp, 1), 'N:Nat, 'STRInit:Stores] .
+    eq concolicState(StateOp) = '`[_`]`[_`]`[_`]`[_|_`][stateVar(StateOp, 0), symbState(StateOp, 1), 'N:Nat, 'STRInit:Stores, 'Pinit:Program] .
     op concolicState : Qid Term -> Term .
-    eq concolicState(StateOp, T1) = '`[_`]`[_`]`[_`]`[_`][T1, symbState(StateOp, 1), 'N:Nat, 'STRInit:Stores] .
-
-    *** Concolic state extension generic definition
-    op concolicStateExt : Qid -> Term .
-    eq concolicStateExt(StateOp) = '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][stateVar(StateOp, 0), symbState(StateOp, 1), 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program] .
-    op concolicStateExt : Qid Term -> Term .
-    eq concolicStateExt(StateOp, T1) = '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T1, symbState(StateOp, 1), 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program] .
+    eq concolicState(StateOp, T1) = '`[_`]`[_`]`[_`]`[_|_`][T1, symbState(StateOp, 1), 'N:Nat, 'STRInit:Stores, 'Pinit:Program] .
 
     *** Construct a symbolic mirror of a given a term. Transform all its Maude variables to use SMT types and stores, and change their name
     op symbMirror : Term -> Term .
@@ -138,16 +132,16 @@ fmod MODULE-TRANSFORMER is
     *** - Conditional rule 2: Appends not(Cond) to the accumulated Constraints and, if Constraints is satisfiable, re-starts the execution with the new Constraints
     ***                       Re-executing requires re-initializing the concrete store with new satisfying values retrieved from the SMT hook, and resetting the symbolic store
     ceq rlToConcolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet) = 
-          (crl '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
+          (crl '`[_`]`[_`]`[_`]`[_|_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores, 'Pinit:Program]
             =>
-            '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}[symbMirror(T2), 'Constraints':Boolean], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
+            '`[_`]`[_`]`[_`]`[_|_`][T2, '_`{_`}[symbMirror(T2), 'Constraints':Boolean], 'N:Nat, 'STRInit:Stores, 'Pinit:Program]
             if Cond
             /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, searchSubVarConst(Tcond)]
             [label(InstId) AttrSet] .)
-          (crl '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
+          (crl '`[_`]`[_`]`[_`]`[_|_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores, 'Pinit:Program]
             =>
-            '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`]['updateStore['updateProgram[T2, 'PC:Program], 'init-CStore['_|_|_['empty.IStore, 'empty.RStore, 'empty.BStore], 'STRInit:Stores, 'Constraints':Boolean]],
-                                             '_`{_`}['updateStore['updateProgram[symbMirror(T2), 'PS:Program], 'STRInit:Stores], 'Constraints':Boolean], 's_['N:Nat], 'STRInit:Stores], 'PC:Program, 'PS:Program]
+            '`[_`]`[_`]`[_`]`[_|_`]['updateStore['updateProgram[T2, 'Pinit:Program], 'init-CStore['_|_|_['empty.IStore, 'empty.RStore, 'empty.BStore], 'STRInit:Stores, 'Constraints':Boolean]],
+                                             '_`{_`}['updateStore['updateProgram[symbMirror(T2), 'Pinit:Program], 'STRInit:Stores], 'Constraints':Boolean], 's_['N:Nat], 'STRInit:Stores, 'Pinit:Program]
             if Cond
             /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, 'not_[searchSubVarConst(Tcond)]]
             /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints':Boolean]] = 'true.Bool
@@ -175,9 +169,9 @@ fmod MODULE-TRANSFORMER is
     eq rlToConcolic(none) = none .
     *** Transform unconditional rules
     eq rlToConcolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet) =
-          (rl '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
+          (rl '`[_`]`[_`]`[_`]`[_|_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores, 'Pinit:Program]
             =>
-            '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}[symbMirror(T2), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores], 'PC:Program, 'PS:Program]
+            '`[_`]`[_`]`[_`]`[_|_`][T2, '_`{_`}[symbMirror(T2), 'Constraints:Boolean], 'N:Nat, 'STRInit:Stores, 'Pinit:Program]
             [label(InstId) AttrSet] .)
           rlToConcolic(RlSet) .
 
@@ -225,7 +219,7 @@ fmod MODULE-TRANSFORMER is
 
     *** Include new sorts for symbolic/concolic execution states
     op inclSESorts : SortSet -> SortSet .
-    eq inclSESorts(SortSet) = SortSet ; 'SEState ; 'ConstrainedStart ; 'ConcolicState ; 'ConcolicStateExt .    
+    eq inclSESorts(SortSet) = SortSet ; 'SEState ; 'ConstrainedStart ; 'ConcolicState .    
 
     *** Transform a list of Maude types to their symbolic representation
     op toSMTSorts : TypeList -> TypeList .
@@ -276,8 +270,7 @@ fmod MODULE-TRANSFORMER is
                             *** Define state with initial constraints
                             (op '_where_ : StateOp 'Boolean -> 'ConstrainedStart [ctor] .)
                             *** Define the concolic dual state core constructor and its extension to keep track of initial programs
-                            (op '`[_`]`[_`]`[_`]`[_`] : StateOp 'SEState 'Int 'Stores -> 'ConcolicState [ctor] .)
-                            (op '_`[_$$_`] : 'ConcolicState 'Program 'Program -> 'ConcolicStateExt [ctor] .)
+                            (op '`[_`]`[_`]`[_`]`[_|_`] : StateOp 'SEState 'Int 'Stores 'Program -> 'ConcolicState [ctor] .)
                             *** Construct the symbolic Stores structure with the three symbolic stores
                             (op '_|_|_ : 'IStoreS 'RStoreS 'BStoreS -> 'Stores [ctor] .)
                             *** Initialize the input concrete stores with the symbolic stores and
@@ -292,11 +285,11 @@ fmod MODULE-TRANSFORMER is
                             (op 'initialize-def : 'BStoreS -> 'BStore [none] .)
                             ***(op 'size : 'Boolean -> 'Nat [none] .)
                             *** Create a concolic dual state with the concrete and symbolic state objects, and the symbolic variable-value pairs
-                            (op 'startC : StateOp StateOp 'PairSVarL -> 'ConcolicStateExt [none] .)
+                            (op 'startC : StateOp 'PairSVarL -> 'ConcolicState [none] .)
                             *** Create a concolic dual state with initial constraints
-                            (op 'startC : 'ConstrainedStart 'PairSVarL -> 'ConcolicStateExt [none] .)
+                            (op 'startC : 'ConstrainedStart 'PairSVarL -> 'ConcolicState [none] .)
                             *** Initialize the concolic state
-                            (op '$startC : StateOp StateOp 'PairSVarL 'Stores 'Boolean -> 'ConcolicStateExt [none] .)
+                            (op '$startC : StateOp 'PairSVarL 'Stores 'Boolean -> 'ConcolicState [none] .)
                             *** Create a symbolic state for MaudeSE execution
                             (op 'startSE : StateOp 'PairSVarL 'Stores -> StateOp [none] .) .
 
@@ -436,13 +429,13 @@ fmod MODULE-TRANSFORMER is
                             ***(eq 'size['C1:Boolean] = ''s_['0.Nat] [none] .)
                             ***(eq 'size['_and_['C1:Boolean, 'Constraints:Boolean]] = ''s_['0.Nat] + 'size['Constraints:Boolean] [none] .)
                             
-                            (eq 'startC[stateVar(StateOp, 0), stateVar(StateOp, 1), 'SVDeclL:PairSVarL] = '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), 'SVDeclL:PairSVarL, '_|_|_['empty.IStoreS, 'empty.RStoreS, 'empty.BStoreS], 'true.Boolean] [none] .)
-                            (eq 'startC['_where_[stateVar(StateOp), 'B:Boolean],    'SVDeclL:PairSVarL] = '$startC[stateVar(StateOp),    stateVar(StateOp),    'SVDeclL:PairSVarL, '_|_|_['empty.IStoreS, 'empty.RStoreS, 'empty.BStoreS], 'B:Boolean] [none] .)
+                            (eq 'startC[stateVar(StateOp), 'SVDeclL:PairSVarL]                       = '$startC[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_|_['empty.IStoreS, 'empty.RStoreS, 'empty.BStoreS], 'true.Boolean] [none] .)
+                            (eq 'startC['_where_[stateVar(StateOp), 'B:Boolean], 'SVDeclL:PairSVarL] = '$startC[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_|_['empty.IStoreS, 'empty.RStoreS, 'empty.BStoreS], 'B:Boolean] [none] .)
                             
-                            (eq '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), 'nil.PairSVarL, 'STR:Stores, 'B:Boolean] = '_`[_$$_`]['`[_`]`[_`]`[_`]`[_`]['updateStore[stateVar(StateOp, 0), 'init-CStore['_|_|_['empty.IStore, 'empty.RStore, 'empty.BStore], 'STR:Stores, 'B:Boolean]], '_`{_`}['updateStore[stateVar(StateOp, 1), 'STR:Stores], 'B:Boolean], '0.Nat, 'STR:Stores], 'getProgram[stateVar(StateOp, 0)], 'getProgram[stateVar(StateOp, 1)]] [none] .)
-                            (eq '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), '__['_`,_['Var:Qid, 'I1:Integer], 'SVDeclL:PairSVarL], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'B:Boolean] = '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), 'SVDeclL:PairSVarL, '_|_|_['insert['iv['Var:Qid], 'I1:Integer, 'ISTRS:IStoreS], 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'B:Boolean] [none] .)
-                            (eq '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), '__['_`,_['Var:Qid, 'R1:Real],    'SVDeclL:PairSVarL], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'B:Boolean] = '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), 'SVDeclL:PairSVarL, '_|_|_['ISTRS:IStoreS, 'insert['rv['Var:Qid], 'R1:Real, 'RSTRS:RStoreS], 'BSTRS:BStoreS], 'B:Boolean] [none] .)
-                            (eq '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), '__['_`,_['Var:Qid, 'B1:Boolean], 'SVDeclL:PairSVarL], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'B:Boolean] = '$startC[stateVar(StateOp, 0), stateVar(StateOp, 1), 'SVDeclL:PairSVarL, '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'insert['bv['Var:Qid], 'B1:Boolean, 'BSTRS:BStoreS]], 'B:Boolean] [none] .)
+                            (eq '$startC[stateVar(StateOp), 'nil.PairSVarL, 'STR:Stores, 'B:Boolean] = '`[_`]`[_`]`[_`]`[_|_`]['updateStore[stateVar(StateOp), 'init-CStore['_|_|_['empty.IStore, 'empty.RStore, 'empty.BStore], 'STR:Stores, 'B:Boolean]], '_`{_`}['updateStore[stateVar(StateOp), 'STR:Stores], 'B:Boolean], '0.Nat, 'STR:Stores, 'getProgram[stateVar(StateOp)]] [none] .)
+                            (eq '$startC[stateVar(StateOp), '__['_`,_['Var:Qid, 'I1:Integer], 'SVDeclL:PairSVarL], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'B:Boolean] = '$startC[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_|_['insert['iv['Var:Qid], 'I1:Integer, 'ISTRS:IStoreS], 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'B:Boolean] [none] .)
+                            (eq '$startC[stateVar(StateOp), '__['_`,_['Var:Qid, 'R1:Real],    'SVDeclL:PairSVarL], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'B:Boolean] = '$startC[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_|_['ISTRS:IStoreS, 'insert['rv['Var:Qid], 'R1:Real, 'RSTRS:RStoreS], 'BSTRS:BStoreS], 'B:Boolean] [none] .)
+                            (eq '$startC[stateVar(StateOp), '__['_`,_['Var:Qid, 'B1:Boolean], 'SVDeclL:PairSVarL], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'B:Boolean] = '$startC[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'insert['bv['Var:Qid], 'B1:Boolean, 'BSTRS:BStoreS]], 'B:Boolean] [none] .)
                             
                             (eq 'startSE[stateVar(StateOp), 'nil.PairSVarL, 'STR:Stores] = 'updateStore[stateVar(StateOp), 'STR:Stores] [none] .)
                             (eq 'startSE[stateVar(StateOp), '__['_`,_['Var:Qid, 'I1:Integer], 'SVDeclL:PairSVarL], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS]] = 'startSE[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_|_['insert['iv['Var:Qid], 'I1:Integer, 'ISTRS:IStoreS], 'RSTRS:RStoreS, 'BSTRS:BStoreS]] [none] .)
