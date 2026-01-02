@@ -127,6 +127,18 @@ fmod MODULE-TRANSFORMER is
 
     *** TODO: Generalize hardcoded STR variable indicating the concrete store
     *** TODO: Abstract 'Program sort as a variable for flexibility (see concurrent language)
+    *** Transform the rules for a concolic analysis. For now, rule conditions must be of the form: eval(B, STR) = true
+    *** The symbolic state advances naturally following the concrete state, executing the same instructions.
+    *** The function symbMirror ensures the symbolic state is of the same form as the concrete state at each step, but using symbolic functions and stores
+    op rlToConcolic : RuleSet ~> RuleSet .
+    eq rlToConcolic(none) = none .
+    *** Transform unconditional rules
+    eq rlToConcolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet) =
+          (rl '`[_`]`[_`]`[_|_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'STRInit:Stores, 'Pinit:Program]
+            =>
+            '`[_`]`[_`]`[_|_`][T2, '_`{_`}[symbMirror(T2), 'Constraints:Boolean], 'STRInit:Stores, 'Pinit:Program]
+            [label(InstId) AttrSet] .)
+          rlToConcolic(RlSet) .
     *** Transform conditional rules to two concolic rules
     *** - Conditional rule 1: Advances the state with the concrete condition Cond and appends Cond to the accumulated Constraints
     *** - Conditional rule 2: Appends not(Cond) to the accumulated Constraints and, if Constraints is satisfiable, re-starts the execution with the new Constraints
@@ -161,19 +173,6 @@ fmod MODULE-TRANSFORMER is
                                                                             [label(toSymb(InstId)) AttrSet] .)
                                                                             rlToMaudeSE(RlSet) .
     eq rlToMaudeSE(Rule RlSet) = Rule rlToMaudeSE(RlSet) [owise] .
-
-    *** Transform the rules for a concolic analysis. For now, rule conditions must be of the form: eval(B, STR) = true
-    *** The symbolic state advances naturally following the concrete state, executing the same instructions.
-    *** The function symbMirror ensures the symbolic state is of the same form as the concrete state at each step, but using symbolic functions and stores
-    op rlToConcolic : RuleSet ~> RuleSet .
-    eq rlToConcolic(none) = none .
-    *** Transform unconditional rules
-    eq rlToConcolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet) =
-          (rl '`[_`]`[_`]`[_|_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'STRInit:Stores, 'Pinit:Program]
-            =>
-            '`[_`]`[_`]`[_|_`][T2, '_`{_`}[symbMirror(T2), 'Constraints:Boolean], 'STRInit:Stores, 'Pinit:Program]
-            [label(InstId) AttrSet] .)
-          rlToConcolic(RlSet) .
 
     ***op rlToClConcolic : RuleSet Qid -> RuleSet .
     ***eq rlToClConcolic(none, StateOp) = none .
