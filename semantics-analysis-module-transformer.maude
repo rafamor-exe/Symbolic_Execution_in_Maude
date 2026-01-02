@@ -57,31 +57,35 @@ fmod MODULE-TRANSFORMER is
     *** Define the transformation types
     ops symb conc maudeSE : -> TrType [ctor] . ***clconc
 
-    vars InstId StateOp OpId ModId Q ValOp X Y EvalQ : Qid .
-    vars Trm T1 T2 Tcond Tmod TSTR TIL               : Term .
-    vars Cond Cond1 Cond2                            : Condition .
-    vars EqC EqC2                                    : EqCondition .
-    var  AttrSet                                     : AttrSet .
-    var  RlSet                                       : RuleSet .
-    var  Rule                                        : Rule .
-    var  ImportList                                  : ImportList .
-    var  SortSet                                     : SortSet .
-    var  OpDeclSet                                   : OpDeclSet .
-    var  OpDecl                                      : OpDecl .
-    var  EquationSet                                 : EquationSet .
-    var  TrId                                        : TrType .
-    var  Eq                                          : Equation .
-    var  M                                           : Module .
-    var  FM                                          : FModule .
-    var  TL                                          : TypeList .
-    var  T                                           : Type .
-    var  Import                                      : Import .
-    var  TermL                                       : TermList .
-    var  NeTL                                        : NeTermList .
-    var  MVar                                        : Variable .
-    var  MConst                                      : Constant .
-    var  N                                           : Nat .
+    vars InstId StateOp PrOp OpId ModId Q ValOp X Y EvalQ : Qid .
+    vars Trm T1 T2 Tcond Tmod TSTR TIL                    : Term .
+    vars Cond Cond1 Cond2                                 : Condition .
+    vars EqC EqC2                                         : EqCondition .
+    var  AttrSet                                          : AttrSet .
+    var  RlSet                                            : RuleSet .
+    var  Rule                                             : Rule .
+    var  ImportList                                       : ImportList .
+    var  SortSet                                          : SortSet .
+    var  OpDeclSet                                        : OpDeclSet .
+    var  OpDecl                                           : OpDecl .
+    var  EquationSet                                      : EquationSet .
+    var  TrId                                             : TrType .
+    var  Eq                                               : Equation .
+    var  M                                                : Module .
+    var  FM                                               : FModule .
+    var  TL                                               : TypeList .
+    var  T                                                : Type .
+    var  Import                                           : Import .
+    var  TermL                                            : TermList .
+    var  NeTL                                             : NeTermList .
+    var  MVar                                             : Variable .
+    var  MConst                                           : Constant .
+    var  N                                                : Nat .
     
+    *** Program variable generic definition
+    op prVar : Qid -> Variable .
+    eq prVar(PrOp) = qid("Pr:" + string(PrOp)) .
+
     *** State variable generic definition
     op stateVar : Qid -> Variable .
     eq stateVar(StateOp) = qid("State:" + string(StateOp)) .
@@ -96,10 +100,10 @@ fmod MODULE-TRANSFORMER is
 
     *** FIXME: a comment in the code explaining the meaning of each slot would be valuable?
     *** Concolic state generic definition
-    op concolicState : Qid -> Term .
-    eq concolicState(StateOp) = '`[_`]`[_`]`[_|_`][stateVar(StateOp, 0), symbState(StateOp, 1), 'STRInit:Stores, 'Pinit:Program] .
-    op concolicState : Qid Term -> Term .
-    eq concolicState(StateOp, T1) = '`[_`]`[_`]`[_|_`][T1, symbState(StateOp, 1), 'STRInit:Stores, 'Pinit:Program] .
+    op concolicState : Qid Qid -> Term .
+    eq concolicState(StateOp, PrOp) = '`[_`]`[_`]`[_|_`][stateVar(StateOp, 0), symbState(StateOp, 1), 'STRInit:Stores, prVar(PrOp)] .
+    op concolicState : Qid Qid Term -> Term .
+    eq concolicState(StateOp, PrOp, T1) = '`[_`]`[_`]`[_|_`][T1, symbState(StateOp, 1), 'STRInit:Stores, prVar(PrOp)] .
 
     *** Construct a symbolic mirror of a given a term. Transform all its Maude variables to use SMT types and stores, and change their name
     op symbMirror : Term -> Term .
@@ -125,40 +129,38 @@ fmod MODULE-TRANSFORMER is
           rlToSymbolic(RlSet)
       if (Tcond = 'true.Boolean) := Cond .
 
-    *** TODO: Generalize hardcoded STR variable indicating the concrete store
-    *** TODO: Abstract 'Program sort as a variable for flexibility (see concurrent language)
     *** Transform the rules for a concolic analysis. For now, rule conditions must be of the form: eval(B, STR) = true
     *** The symbolic state advances naturally following the concrete state, executing the same instructions.
     *** The function symbMirror ensures the symbolic state is of the same form as the concrete state at each step, but using symbolic functions and stores
-    op rlToConcolic : RuleSet ~> RuleSet .
-    eq rlToConcolic(none) = none .
+    op rlToConcolic : RuleSet Qid ~> RuleSet .
+    eq rlToConcolic(none, PrOp) = none .
     *** Transform unconditional rules
-    eq rlToConcolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet) =
-          (rl '`[_`]`[_`]`[_|_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'STRInit:Stores, 'Pinit:Program]
+    eq rlToConcolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet, PrOp) =
+          (rl '`[_`]`[_`]`[_|_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'STRInit:Stores, prVar(PrOp)]
             =>
-            '`[_`]`[_`]`[_|_`][T2, '_`{_`}[symbMirror(T2), 'Constraints:Boolean], 'STRInit:Stores, 'Pinit:Program]
+            '`[_`]`[_`]`[_|_`][T2, '_`{_`}[symbMirror(T2), 'Constraints:Boolean], 'STRInit:Stores, prVar(PrOp)]
             [label(InstId) AttrSet] .)
-          rlToConcolic(RlSet) .
+          rlToConcolic(RlSet, PrOp) .
     *** Transform conditional rules to two concolic rules
     *** - Conditional rule 1: Advances the state with the concrete condition Cond and appends Cond to the accumulated Constraints
     *** - Conditional rule 2: Appends not(Cond) to the accumulated Constraints and, if Constraints is satisfiable, re-starts the execution with the new Constraints
     ***                       Re-executing requires re-initializing the concrete store with new satisfying values retrieved from the SMT hook, and resetting the symbolic store
-    ceq rlToConcolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet) = 
-          (crl '`[_`]`[_`]`[_|_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'STRInit:Stores, 'Pinit:Program]
+    ceq rlToConcolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, PrOp) = 
+          (crl '`[_`]`[_`]`[_|_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'STRInit:Stores, prVar(PrOp)]
             =>
-            '`[_`]`[_`]`[_|_`][T2, '_`{_`}[symbMirror(T2), 'Constraints':Boolean], 'STRInit:Stores, 'Pinit:Program]
+            '`[_`]`[_`]`[_|_`][T2, '_`{_`}[symbMirror(T2), 'Constraints':Boolean], 'STRInit:Stores, prVar(PrOp)]
             if Cond
             /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, searchSubVarConst(Tcond)]
             [label(InstId) AttrSet] .)
-          (crl '`[_`]`[_`]`[_|_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'STRInit:Stores, 'Pinit:Program]
+          (crl '`[_`]`[_`]`[_|_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], 'STRInit:Stores, prVar(PrOp)]
             =>
-            '`[_`]`[_`]`[_|_`]['updateStore['updateProgram[T2, 'Pinit:Program], 'init-CStore['_|_|_['empty.IStore, 'empty.RStore, 'empty.BStore], 'STRInit:Stores, 'Constraints':Boolean]],
-                                             '_`{_`}['updateStore['updateProgram[symbMirror(T2), 'Pinit:Program], 'STRInit:Stores], 'Constraints':Boolean], 'STRInit:Stores, 'Pinit:Program]
+            '`[_`]`[_`]`[_|_`]['updateStore['updateProgram[T2, prVar(PrOp)], 'init-CStore['_|_|_['empty.IStore, 'empty.RStore, 'empty.BStore], 'STRInit:Stores, 'Constraints':Boolean]],
+                                             '_`{_`}['updateStore['updateProgram[symbMirror(T2), prVar(PrOp)], 'STRInit:Stores], 'Constraints':Boolean], 'STRInit:Stores, prVar(PrOp)]
             if Cond
             /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, 'not_[searchSubVarConst(Tcond)]]
             /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints':Boolean]] = 'true.Bool
             [label(qid(string(InstId) + "-bis")) AttrSet] .)
-          rlToConcolic(RlSet)
+          rlToConcolic(RlSet, PrOp)
         if (Tcond = 'true.Bool) := Cond .
 
     *** Transform the rules for an analysis with MaudeSE
@@ -261,15 +263,14 @@ fmod MODULE-TRANSFORMER is
     op modOpSigConc : OpDeclSet Qid -> OpDeclSet .
     eq modOpSigConc(OpDeclSet, ValOp) = OpDeclSet modOpSigSE(OpDeclSet, ValOp) .
 
-    *** TODO: Abstract 'Program sort as a variable for flexibility (see concurrent language)
     *** Include constructors symbolic/concolic state constructors depending on original state and functional operators
-    op inclSEOps : Qid -> OpDeclSet .
-    eq inclSEOps(StateOp) = *** Constructor for symbolic state, appends the accumulated constraints to the original state 
+    op inclSEOps : Qid Qid -> OpDeclSet .
+    eq inclSEOps(StateOp, PrOp) = *** Constructor for symbolic state, appends the accumulated constraints to the original state 
                             (op '_`{_`} : StateOp 'Boolean -> 'SEState [ctor] .)
                             *** Define state with initial constraints
                             (op '_where_ : StateOp 'Boolean -> 'ConstrainedStart [ctor] .)
                             *** Define the concolic dual state core constructor and its extension to keep track of initial programs
-                            (op '`[_`]`[_`]`[_|_`] : StateOp 'SEState 'Stores 'Program -> 'ConcolicState [ctor] .)
+                            (op '`[_`]`[_`]`[_|_`] : StateOp 'SEState 'Stores PrOp -> 'ConcolicState [ctor] .)
                             *** Construct the symbolic Stores structure with the three symbolic stores
                             (op '_|_|_ : 'IStoreS 'RStoreS 'BStoreS -> 'Stores [ctor] .)
                             *** Initialize the input concrete stores with the symbolic stores and
@@ -293,11 +294,11 @@ fmod MODULE-TRANSFORMER is
                             (op 'startSE : StateOp 'PairSVarL 'Stores -> StateOp [none] .) .
 
     *** Transform operator declarations depending on the transformation type
-    op modSEOps : OpDeclSet Qid Qid TrType -> OpDeclSet .
-    eq modSEOps(OpDeclSet, StateOp, ValOp, conc) = modOpSigConc(OpDeclSet, ValOp)
-                                                   inclSEOps(StateOp) .
-    eq modSEOps(OpDeclSet, StateOp, ValOp, TrId) = modOpSigSE(OpDeclSet, ValOp)
-                                                   inclSEOps(StateOp) [owise] .
+    op modSEOps : OpDeclSet Qid Qid Qid TrType -> OpDeclSet .
+    eq modSEOps(OpDeclSet, StateOp, PrOp, ValOp, conc) = modOpSigConc(OpDeclSet, ValOp)
+                                                         inclSEOps(StateOp, PrOp) .
+    eq modSEOps(OpDeclSet, StateOp, PrOp, ValOp, TrId) = modOpSigSE(OpDeclSet, ValOp)
+                                                         inclSEOps(StateOp, PrOp) [owise] .
 
     *** Transform operator ids to their symbolic representation
     op modSEOpIds : Qid -> Qid .
@@ -443,24 +444,24 @@ fmod MODULE-TRANSFORMER is
 
 
     *** Transform rules depending on transformation type
-    op modRl : RuleSet TrType -> RuleSet .
-    eq modRl(RlSet, symb) = rlToSymbolic(RlSet) .
-    eq modRl(RlSet, conc) = rlToConcolic(RlSet) .
-    eq modRl(RlSet, maudeSE) = rlToMaudeSE(RlSet) .
+    op modRl : RuleSet Qid TrType -> RuleSet .
+    eq modRl(RlSet, PrOp, symb) = rlToSymbolic(RlSet) .
+    eq modRl(RlSet, PrOp, conc) = rlToConcolic(RlSet, PrOp) .
+    eq modRl(RlSet, PrOp, maudeSE) = rlToMaudeSE(RlSet) .
     ***eq modRl(RlSet, clconc) = rlToClConcolic(RlSet, StateOp) inclClConcCrl(StateOp) .
 
     *** NOTE: MaudeSE does not work with smod
     *** Transform a module M considering the original State sort, an auxiliary value operator, and the transfotmation id (symb, conc, maudeSE)
     *** The transformation modifies operators, equations and rewrite rules, and it is specific for the target transformation type
-    op trMod : Module Qid Qid TrType -> Module .
-    eq trMod(M, StateOp, ValOp, TrId) = mod 'TRANSFORMED-MOD is
+    op trMod : Module Qid Qid Qid TrType -> Module .
+    eq trMod(M, StateOp, PrOp, ValOp, TrId) = mod 'TRANSFORMED-MOD is
                                           getImports(M)
                                           sorts inclSESorts(getSorts(M)) .
                                           getSubsorts(M)
-                                          modSEOps(getOps(M), StateOp, ValOp, TrId)
+                                          modSEOps(getOps(M), StateOp, PrOp, ValOp, TrId)
                                           getMbs(M)
                                           modEqs(getEqs(M), TrId) inclSEEqs(StateOp)
-                                          modRl(getRls(M), TrId)
+                                          modRl(getRls(M), PrOp, TrId)
                                           ***getStrats(M)
                                           ***getSds(M)
                                         endm .
@@ -480,10 +481,10 @@ fmod MODULE-TRANSFORMER is
                           endm .
 
     *** Transform a module to include the symbolic/concolic execution requirements. 
-    op transformModSymb : Qid Qid Qid TrType -> Module .
-    eq transformModSymb(ModId, StateOp, ValOp, TrId) = transformModSymb(upModule(ModId, true), StateOp, ValOp, TrId) .
-    op transformModSymb : Module Qid Qid TrType -> Module .
-    eq transformModSymb(M, StateOp, ValOp, TrId) = fuseMods(trMod(M, StateOp, ValOp, TrId), upModule('SMT-CONNECTION, true)) .
+    op transformModSymb : Qid Qid Qid Qid TrType -> Module .
+    eq transformModSymb(ModId, StateOp, PrOp, ValOp, TrId) = transformModSymb(upModule(ModId, true), StateOp, PrOp, ValOp, TrId) .
+    op transformModSymb : Module Qid Qid Qid TrType -> Module .
+    eq transformModSymb(M, StateOp, PrOp, ValOp, TrId) = fuseMods(trMod(M, StateOp, PrOp, ValOp, TrId), upModule('SMT-CONNECTION, true)) .
 
 endfm
 
@@ -492,20 +493,20 @@ mod VERIFICATION-COMMANDS is
     pr MODULE-TRANSFORMER .
     pr LEXICAL .
 
-    vars ModId StateOp SearchType ValOp TargetSt : Qid .
-    var  TrId                                    : TrType .
-    var  PatternSEState                          : Term .
-    var  InitSEState                             : String . 
-    var  SearchCond                              : Condition .
-    var  Bound                                   : Bound .
-    var  SolN                                    : Nat .
-    var  NeModIdList                             : NeQidList .
-    var  M                                       : Module .
-    var  SVDeclL                                 : PairSVarL .
-    var  SymbCond                                : Boolean .
+    vars ModId StateOp PrOp SearchType ValOp TargetSt : Qid .
+    var  TrId                                         : TrType .
+    var  PatternSEState                               : Term .
+    var  InitSEState                                  : String . 
+    var  SearchCond                                   : Condition .
+    var  Bound                                        : Bound .
+    var  SolN                                         : Nat .
+    var  NeModIdList                                  : NeQidList .
+    var  M                                            : Module .
+    var  SVDeclL                                      : PairSVarL .
+    var  SymbCond                                     : Boolean .
 
-    op searchTr : Module Qid Qid TrType Qid String Term Condition Qid Bound Nat PairSVarL Boolean -> ResultTriple .
-    eq searchTr(M, StateOp, ValOp, TrId, TargetSt,
+    op searchTr : Module Qid Qid Qid TrType Qid String Term Condition Qid Bound Nat PairSVarL Boolean -> ResultTriple .
+    eq searchTr(M, StateOp, PrOp, ValOp, TrId, TargetSt,
                   InitSEState,
                   PatternSEState,
                   SearchCond,
@@ -515,7 +516,7 @@ mod VERIFICATION-COMMANDS is
                   SVDeclL,
                   SymbCond)
                   =
-                  metaSearch(transformModSymb(M, StateOp, ValOp, TrId),
+                  metaSearch(transformModSymb(M, StateOp, PrOp, ValOp, TrId),
                              'startC['_where_[getTerm(metaParse(M,
                                                                  tokenize(InitSEState),
                                                                  StateOp)),
@@ -527,8 +528,8 @@ mod VERIFICATION-COMMANDS is
                              Bound,
                              SolN) .
     
-    op searchPathTr : Module Qid Qid TrType Qid String Term Condition Qid Bound Nat PairSVarL Boolean -> Trace? .
-    eq searchPathTr(M, StateOp, ValOp, TrId, TargetSt,
+    op searchPathTr : Module Qid Qid Qid TrType Qid String Term Condition Qid Bound Nat PairSVarL Boolean -> Trace? .
+    eq searchPathTr(M, StateOp, PrOp, ValOp, TrId, TargetSt,
                     InitSEState,
                     PatternSEState,
                     SearchCond,
@@ -538,7 +539,7 @@ mod VERIFICATION-COMMANDS is
                     SVDeclL,
                     SymbCond)
                     =
-                    metaSearchPath(transformModSymb(M, StateOp, ValOp, TrId),
+                    metaSearchPath(transformModSymb(M, StateOp, PrOp, ValOp, TrId),
                                    'startC['_where_[getTerm(metaParse(M,
                                                                        tokenize(InitSEState),
                                                                        StateOp)),
@@ -550,8 +551,8 @@ mod VERIFICATION-COMMANDS is
                                    Bound,
                                    SolN) .
     
-    op searchSymb : Module Qid Qid String Term Condition Qid Bound Nat PairSVarL Boolean -> ResultTriple .
-    eq searchSymb(M, StateOp, ValOp,
+    op searchSymb : Module Qid Qid Qid String Term Condition Qid Bound Nat PairSVarL Boolean -> ResultTriple .
+    eq searchSymb(M, StateOp, PrOp, ValOp,
                   InitSEState,
                   PatternSEState,
                   SearchCond,
@@ -560,7 +561,7 @@ mod VERIFICATION-COMMANDS is
                   SolN,
                   SVDeclL,
                   SymbCond)
-                  = searchTr(M, StateOp, ValOp, symb, 'SEState,
+                  = searchTr(M, StateOp, PrOp, ValOp, symb, 'SEState,
                              InitSEState,
                              PatternSEState,
                              SearchCond,
@@ -570,8 +571,8 @@ mod VERIFICATION-COMMANDS is
                              SVDeclL,
                              SymbCond) .
 
-    op searchConcolic : Module Qid Qid String Term Condition Qid Bound Nat PairSVarL Boolean -> ResultTriple .
-    eq searchConcolic(M, StateOp, ValOp,
+    op searchConcolic : Module Qid Qid Qid String Term Condition Qid Bound Nat PairSVarL Boolean -> ResultTriple .
+    eq searchConcolic(M, StateOp, PrOp, ValOp,
                       InitSEState,
                       PatternSEState,
                       SearchCond,
@@ -580,7 +581,7 @@ mod VERIFICATION-COMMANDS is
                       SolN,
                       SVDeclL,
                       SymbCond)
-                      = searchTr(M, StateOp, ValOp, conc, 'ConcolicState,
+                      = searchTr(M, StateOp, PrOp, ValOp, conc, 'ConcolicState,
                                  InitSEState,
                                  PatternSEState,
                                  SearchCond,
@@ -590,8 +591,8 @@ mod VERIFICATION-COMMANDS is
                                  SVDeclL,
                                  SymbCond) .
 
-    op searchPathConcolic : Module Qid Qid String Term Condition Qid Bound Nat PairSVarL Boolean -> Trace? .
-    eq searchPathConcolic(M, StateOp, ValOp,
+    op searchPathConcolic : Module Qid Qid Qid String Term Condition Qid Bound Nat PairSVarL Boolean -> Trace? .
+    eq searchPathConcolic(M, StateOp, PrOp, ValOp,
                           InitSEState,
                           PatternSEState,
                           SearchCond,
@@ -600,7 +601,7 @@ mod VERIFICATION-COMMANDS is
                           SolN,
                           SVDeclL,
                           SymbCond)
-                          = searchPathTr(M, StateOp, ValOp, conc, 'ConcolicState,
+                          = searchPathTr(M, StateOp, PrOp, ValOp, conc, 'ConcolicState,
                                          InitSEState,
                                          PatternSEState,
                                          SearchCond,
@@ -617,19 +618,19 @@ mod MAUDE-SE-EXT is
     pr VERIFICATION-COMMANDS .
     pr META-SMT-SEARCH . 
 
-    vars StateOp ValOp TrId SearchType Logic : Qid .
-    var  PatternSEState                      : Term .
-    var  InitSEState                         : String . 
-    var  SearchCond                          : Condition .
-    var  Bound                               : Bound .
-    var  SolN                                : Nat .
-    var  NeModIdList                         : NeQidList .
-    var  Fold                                : Bool .
-    var  M                                   : Module .
-    var  SVDeclL                             : PairSVarL .
+    vars StateOp PrOp ValOp TrId SearchType Logic : Qid .
+    var  PatternSEState                           : Term .
+    var  InitSEState                              : String . 
+    var  SearchCond                               : Condition .
+    var  Bound                                    : Bound .
+    var  SolN                                     : Nat .
+    var  NeModIdList                              : NeQidList .
+    var  Fold                                     : Bool .
+    var  M                                        : Module .
+    var  SVDeclL                                  : PairSVarL .
 
-    op searchMaudeSE : Module Qid Qid String Term Condition Qid Bound Nat Qid Bool PairSVarL -> SmtResult2? .
-    eq searchMaudeSE(M, StateOp, ValOp,
+    op searchMaudeSE : Module Qid Qid Qid String Term Condition Qid Bound Nat Qid Bool PairSVarL -> SmtResult2? .
+    eq searchMaudeSE(M, StateOp, PrOp, ValOp,
                      InitSEState,
                      PatternSEState,
                      SearchCond,
@@ -638,8 +639,8 @@ mod MAUDE-SE-EXT is
                      SolN,
                      Logic, Fold,
                      SVDeclL)
-                     = metaSmtSearch(transformModSymb(M, StateOp, ValOp, maudeSE),
-                                     'startSE[getTerm(metaParse(transformModSymb(M, StateOp, ValOp, maudeSE),
+                     = metaSmtSearch(transformModSymb(M, StateOp, PrOp, ValOp, maudeSE),
+                                     'startSE[getTerm(metaParse(transformModSymb(M, StateOp, PrOp, ValOp, maudeSE),
                                                                                   tokenize(InitSEState),
                                                                                   StateOp)),
                                                                 searchSubVarConst(upTerm(SVDeclL)), 
@@ -651,8 +652,8 @@ mod MAUDE-SE-EXT is
                                      SolN,
                                      Logic, Fold) .
     
-    op searchPathMaudeSE : Module Qid Qid String Term Condition Qid Bound Nat Qid Bool PairSVarL -> Trace2Result? .
-    eq searchPathMaudeSE(M, StateOp, ValOp,
+    op searchPathMaudeSE : Module Qid Qid Qid String Term Condition Qid Bound Nat Qid Bool PairSVarL -> Trace2Result? .
+    eq searchPathMaudeSE(M, StateOp, PrOp, ValOp,
                          InitSEState,
                          PatternSEState,
                          SearchCond,
@@ -661,8 +662,8 @@ mod MAUDE-SE-EXT is
                          SolN,
                          Logic, Fold,
                          SVDeclL)
-                         = metaSmtSearchPath(transformModSymb(M, StateOp, ValOp, maudeSE),
-                                             'startSE[getTerm(metaParse(transformModSymb(M, StateOp, ValOp, maudeSE),
+                         = metaSmtSearchPath(transformModSymb(M, StateOp, PrOp, ValOp, maudeSE),
+                                             'startSE[getTerm(metaParse(transformModSymb(M, StateOp, PrOp, ValOp, maudeSE),
                                                                                   tokenize(InitSEState),
                                                                                   StateOp)),
                                                                 searchSubVarConst(upTerm(SVDeclL)), 
