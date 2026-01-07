@@ -110,14 +110,8 @@ mod WHILE-MAUDE is
 
     *** Auxiliary
 
-    op getProgram : State -> Program .
-    eq getProgram(< P | STR >) = P .
-
     op getStore : State -> Stores .
     eq getStore(< P | STR >) = STR .
-
-    op updateProgram : State Program -> State .
-    eq updateProgram(< P | STR >, IL) = < IL | STR > .
 
     op updateStore : State Stores -> State .
     eq updateStore(< P | STR >, STR2) = < P | STR2 > .
