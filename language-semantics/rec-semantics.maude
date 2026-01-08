@@ -5,7 +5,6 @@ fmod REC-LANG-TERM-MOD is
     protecting CONCRETE-AEXP-MOD .
 
     sorts RECTerm RECIVal .
-    subsort RECIVal < IVal .
     subsort IExp RECIVal < RECTerm .
 
     op recVal : Int -> RECIVal [ctor] .
@@ -139,6 +138,11 @@ mod REC-MAUDE is
     op start : Program FDecL Map{Qid, FDec} Stores -> State .
     eq start(P, nil, FSTR, STR) = < P | FSTR | STR > .
     eq start(P, (F [ParamL] = T) FDecL, FSTR, STR) = start(P, FDecL, insert(F, (F [ParamL] = T), FSTR), STR) .
+
+    rl [term-val] :
+        < V | FSTR | (ISTR | RSTR | BSTR) >
+        =>
+        < recVal(evalI(V, ISTR)) | FSTR | (ISTR | RSTR | BSTR) > .
 
     rl [term-sum] :
         < T1 + T2 | FSTR | (ISTR | RSTR | BSTR) >

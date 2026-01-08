@@ -22,62 +22,37 @@ fmod CONCRETE-VARSTATE-MOD is
 
     eq val(F) = val(rat(F)) .
 
+    op -_ : IVal -> IVal [prec 30] .
+    op -_ : RVal -> RVal [prec 30] .
     op _+_ : IVal IVal -> IVal [gather (E e) prec 33] .
     op _+_ : RVal RVal -> RVal [gather (E e) prec 33] .
-    eq val(R1) + val(R2) = val(R1 + R2) .
-    eq val(I1) + val(I2) = val(I1 + I2) .
     op _*_ : IVal IVal -> IVal [gather (E e) prec 31] .
     op _*_ : RVal RVal -> RVal [gather (E e) prec 31] .
-    eq val(R1) * val(R2) = val(R1 * R2) .
-    eq val(I1) * val(I2) = val(I1 * I2) .
     op _-_ : IVal IVal -> IVal [gather (E e) prec 33] .
     op _-_ : RVal RVal -> RVal [gather (E e) prec 33] .
-    eq val(R1) - val(R2) = val(R1 - R2) .
-    eq val(I1) - val(I2) = val(I1 - I2) .
     op _quo_ : IVal IVal -> IVal [gather (E e) prec 31] .
     op _/_ : RVal RVal -> RVal [gather (E e) prec 31] .
-    eq val(R1) / val(R2) = val(R1 / R2) .
-    eq val(I1) quo val(I2) = val(I1 quo I2) . *** quo for Int = div for Integer
 
     op _===_ : BVal BVal -> BVal [gather (e E) prec 51] .
-    eq val(B1) === val(B2) = val(B1 == B2) .
     op _=/==_ : BVal BVal -> BVal [gather (e E) prec 51] .
-    eq val(B1) =/== val(B2) = val(B1 =/= B2) .
     op not_ : BVal -> BVal [prec 53] .
-    eq not val(B1) = val(not B1) .
     op _and_ : BVal BVal -> BVal [gather (e E) prec 55] .
-    eq val(B1) and val(B2) = val(B1 and B2) .
     op _or_ : BVal BVal -> BVal [gather (e E) prec 57] .
-    eq val(B1) or val(B2) = val(B1 or B2) .
     op _xor_ : BVal BVal -> BVal [gather (e E) prec 59] .
-    eq val(B1) xor val(B2) = val(B1 xor B2) .
     op _implies_ : BVal BVal -> BVal [gather (e E) prec 61] .
-    eq val(B1) implies val(B2) = val(B1 implies B2) .
 
     op _===_ : IVal IVal -> BVal [gather (e E) prec 51] .
     op _===_ : RVal RVal -> BVal [gather (e E) prec 51] .
-    eq val(R1) === val(R2) = val(R1 == R2) .
-    eq val(I1) === val(I2) = val(I1 == I2) .
     op _=/==_ : IVal IVal -> BVal [gather (e E) prec 51] .
     op _=/==_ : RVal RVal -> BVal [gather (e E) prec 51] .
-    eq val(R1) =/== val(R2) = val(R1 =/= R2) .
-    eq val(I1) =/== val(I2) = val(I1 =/= I2) .
     op _<_ : IVal IVal -> BVal [prec 37] .
     op _<_ : RVal RVal -> BVal [prec 37] .
-    eq val(R1) < val(R2) = val(R1 < R2) .
-    eq val(I1) < val(I2) = val(I1 < I2) .
     op _<=_ : IVal IVal -> BVal [prec 37] .
     op _<=_ : RVal RVal -> BVal [prec 37] .
-    eq val(R1) <= val(R2) = val(R1 <= R2) .
-    eq val(I1) <= val(I2) = val(I1 <= I2) .
     op _>_ : IVal IVal -> BVal [prec 37] .
     op _>_ : RVal RVal -> BVal [prec 37] .
-    eq val(R1) > val(R2) = val(R1 > R2) .
-    eq val(I1) > val(I2) = val(I1 > I2) .
     op _>=_ : IVal IVal -> BVal [prec 37] .
     op _>=_ : RVal RVal -> BVal [prec 37] .
-    eq val(R1) >= val(R2) = val(R1 >= R2) .
-    eq val(I1) >= val(I2) = val(I1 >= I2) .
 
 endfm
 
@@ -106,62 +81,37 @@ fmod CONCRETE-VAR-MOD is
     op rv : Qid -> RVar [ctor] .
     op bv : Qid -> BVar [ctor] .
 
-    op _===_ : IVar IVal -> BVal [gather (e E) prec 51] .
-    op _===_ : RVar RVal -> BVal [gather (e E) prec 51] .
-    op _===_ : BVar BVal -> BVal [gather (e E) prec 51] .
-    op _=/==_ : IVar IVal -> BVal [gather (e E) prec 51] .
-    op _=/==_ : RVar RVal -> BVal [gather (e E) prec 51] .
-    op _=/==_ : BVar BVal -> BVal [gather (e E) prec 51] .
-    op _<_ : IVar IVal -> BVal [prec 37] .
-    op _<_ : RVar RVal -> BVal [prec 37] .
-    op _<_ : Var Var -> BVal [prec 37] .
-    op _<=_ : IVar IVal -> BVal [prec 37] .
-    op _<=_ : RVar RVal -> BVal [prec 37] .
-    op _<=_ : Var Var -> BVal [prec 37] .
-    op _>_ : IVar IVal -> BVal [prec 37] .
-    op _>_ : RVar RVal -> BVal [prec 37] .
-    op _>_ : Var Var -> BVal [prec 37] .
-    op _>=_ : IVar IVal -> BVal [prec 37] .
-    op _>=_ : RVar RVal -> BVal [prec 37] .
-    op _>=_ : Var Var -> BVal [prec 37] .
+    op _===_ : IExp IExp -> BExp [gather (e E) prec 51] .
+    op _===_ : RExp RExp -> BExp [gather (e E) prec 51] .
+    op _===_ : BExp BExp -> BExp [gather (e E) prec 51] .
+    op _=/==_ : IExp IExp -> BExp [gather (e E) prec 51] .
+    op _=/==_ : RExp RExp -> BExp [gather (e E) prec 51] .
+    op _=/==_ : BExp BExp -> BExp [gather (e E) prec 51] .
+    op _<_ : IExp IExp -> BExp [prec 37] .
+    op _<_ : RExp RExp -> BExp [prec 37] .
+    op _<_ : Var Var -> BExp [prec 37] .
+    op _<=_ : IExp IExp -> BExp [prec 37] .
+    op _<=_ : RExp RExp -> BExp [prec 37] .
+    op _<=_ : Var Var -> BExp [prec 37] .
+    op _>_ : IExp IExp -> BExp [prec 37] .
+    op _>_ : RExp RExp -> BExp [prec 37] .
+    op _>_ : Var Var -> BExp [prec 37] .
+    op _>=_ : IExp IExp -> BExp [prec 37] .
+    op _>=_ : RExp RExp -> BExp [prec 37] .
+    op _>=_ : Var Var -> BExp [prec 37] .
 
-    op _===_ : IVal IVar -> BVal [gather (e E) prec 51] .
-    op _===_ : RVal RVar -> BVal [gather (e E) prec 51] .
-    op _===_ : BVal BVar -> BVal [gather (e E) prec 51] .
-    op _=/==_ : IVal IVar -> BVal [gather (e E) prec 51] .
-    op _=/==_ : RVal RVar -> BVal [gather (e E) prec 51] .
-    op _=/==_ : BVal BVar -> BVal [gather (e E) prec 51] .
-    op _<_ : IVal IVar -> BVal [prec 37] .
-    op _<_ : RVal RVar -> BVal [prec 37] .
-    op _<_ : Var Var -> BVal [prec 37] .
-    op _<=_ : IVal IVar -> BVal [prec 37] .
-    op _<=_ : RVal RVar -> BVal [prec 37] .
-    op _<=_ : Var Var -> BVal [prec 37] .
-    op _>_ : IVal IVar -> BVal [prec 37] .
-    op _>_ : RVal RVar -> BVal [prec 37] .
-    op _>_ : Var Var -> BVal [prec 37] .
-    op _>=_ : IVal IVar -> BVal [prec 37] .
-    op _>=_ : RVal RVar -> BVal [prec 37] .
-    op _>=_ : Var Var -> BVal [prec 37] .
-
-    op -_ : IVar -> IExp [prec 30] .
-    op -_ : RVar -> RExp [prec 30] .
-    op _+_ : IVar IVal -> IExp [gather (E e) prec 33] .
-    op _+_ : RVar RVal -> RExp [gather (E e) prec 33] .
-    op _+_ : IVal IVar -> IExp [gather (E e) prec 33] .
-    op _+_ : RVal RVar -> RExp [gather (E e) prec 33] .
-    op _-_ : IVar IVal -> IExp [gather (E e) prec 33] .
-    op _-_ : RVar RVal -> RExp [gather (E e) prec 33] .
-    op _-_ : IVal IVar -> IExp [gather (E e) prec 33] .
-    op _-_ : RVal RVar -> RExp [gather (E e) prec 33] .
-    op _*_ : IVar IVal -> IExp [gather (E e) prec 31] .
-    op _*_ : RVar RVal -> RExp [gather (E e) prec 31] .
-    op _*_ : IVal IVar -> IExp [gather (E e) prec 31] .
-    op _*_ : RVal RVar -> RExp [gather (E e) prec 31] .
-    op _/_ : IVar IVal -> IExp [gather (E e) prec 31] .
-    op _/_ : RVar RVal -> RExp [gather (E e) prec 31] .
-    op _/_ : IVal IVar -> IExp [gather (E e) prec 31] .
-    op _/_ : RVal RVar -> RExp [gather (E e) prec 31] .
+    op -_ : IExp -> IExp [prec 30] .
+    op -_ : RExp -> RExp [prec 30] .
+    op _+_ : IExp IExp -> IExp [gather (E e) prec 33] .
+    op _+_ : RExp RExp -> RExp [gather (E e) prec 33] .
+    op _-_ : IExp IExp -> IExp [gather (E e) prec 33] .
+    op _-_ : RExp RExp -> RExp [gather (E e) prec 33] .
+    op _*_ : IExp IExp -> IExp [gather (E e) prec 31] .
+    op _*_ : RExp RExp -> RExp [gather (E e) prec 31] .
+    op _/_ : IExp IVar -> IExp [gather (E e) prec 31] .
+    op _/_ : RExp RVar -> RExp [gather (E e) prec 31] .
+    op _/_ : IVar IExp -> IExp [gather (E e) prec 31] .
+    op _/_ : RVar RExp -> RExp [gather (E e) prec 31] .
 
 endfm
 
@@ -193,6 +143,7 @@ fmod CONCRETE-AEXP-MOD is
 
     op _/_ : IVal IVal -> IVal [gather (E e) prec 31] .
     op _/_ : IExp IExp -> IExp [gather (E e) prec 31] .
+    op _/_ : RExp RExp -> RExp [gather (E e) prec 31] .
 
     ***op evalB : BVal -> Bool .
     op evalI : IExp IStore -> Int .
@@ -233,95 +184,21 @@ fmod CONCRETE-AEXP-MOD is
     eq eval(BExp1 /\ BExp2, STR) = eval(BExp1, STR) and eval(BExp2, STR) .
     eq eval(not BExp, STR) = not eval(BExp, STR) .
     
-    eq eval(IV1 === IV2, (ISTR | RSTR | BSTR)) = evalI(IV1, ISTR) == evalI(IV2, ISTR) .
-    eq eval(IVar === IV2, (ISTR | RSTR | BSTR)) = evalI(IVar, ISTR) == evalI(IV2, ISTR) .
-    eq eval(IV1 === IVar, (ISTR | RSTR | BSTR)) = evalI(IV1, ISTR) == evalI(IVar, ISTR) .
-    ceq eval(IVar === IVar', (ISTR | RSTR | BSTR)) = I1 == I2
-      if I1 := evalI(IVar, ISTR)
-      /\ I2 := evalI(IVar', ISTR) .
-    eq eval(IV1 =/== IV2, (ISTR | RSTR | BSTR)) = evalI(IV1, ISTR) =/= evalI(IV2, ISTR) .
-    eq eval(IVar =/== IV2, (ISTR | RSTR | BSTR)) = evalI(IVar, ISTR) =/= evalI(IV2, ISTR) .
-    eq eval(IV1 =/== IVar, (ISTR | RSTR | BSTR)) = evalI(IV1, ISTR) =/= evalI(IVar, ISTR) .
-    ceq eval(IVar =/== IVar', (ISTR | RSTR | BSTR)) = I1 =/= I2
-      if I1 := evalI(IVar, ISTR)
-      /\ I2 := evalI(IVar', ISTR) . 
-    eq eval(IV1 < IV2, (ISTR | RSTR | BSTR)) = evalI(IV1, ISTR) < evalI(IV2, ISTR) .
-    eq eval(IVar < IV2, (ISTR | RSTR | BSTR)) = evalI(IVar, ISTR) < evalI(IV2, ISTR) .
-    eq eval(IV1 < IVar, (ISTR | RSTR | BSTR)) = evalI(IV1, ISTR) < evalI(IVar, ISTR) .
-    ceq eval(IVar < IVar', (ISTR | RSTR | BSTR)) = I1 < I2
-      if I1 := evalI(IVar, ISTR)
-      /\ I2 := evalI(IVar', ISTR) . 
-    eq eval(IV1 <= IV2, (ISTR | RSTR | BSTR)) = evalI(IV1, ISTR) <= evalI(IV2, ISTR) .
-    eq eval(IVar <= IV2, (ISTR | RSTR | BSTR)) = evalI(IVar, ISTR) <= evalI(IV2, ISTR) .
-    eq eval(IV1 <= IVar, (ISTR | RSTR | BSTR)) = evalI(IV1, ISTR) <= evalI(IVar, ISTR) .
-    ceq eval(IVar <= IVar', (ISTR | RSTR | BSTR)) = I1 <= I2
-      if I1 := evalI(IVar, ISTR)
-      /\ I2 := evalI(IVar', ISTR) . 
-    eq eval(IV1 > IV2, (ISTR | RSTR | BSTR)) = evalI(IV1, ISTR) > evalI(IV2, ISTR) .
-    eq eval(IVar > IV2, (ISTR | RSTR | BSTR)) = evalI(IVar, ISTR) > evalI(IV2, ISTR) .
-    eq eval(IV1 > IVar, (ISTR | RSTR | BSTR)) = evalI(IV1, ISTR) > evalI(IVar, ISTR) .
-    ceq eval(IVar > IVar', (ISTR | RSTR | BSTR)) = I1 > I2
-      if I1 := evalI(IVar, ISTR)
-      /\ I2 := evalI(IVar', ISTR) . 
-    eq eval(IV1 >= IV2, (ISTR | RSTR | BSTR)) = evalI(IV1, ISTR) >= evalI(IV2, ISTR) .
-    eq eval(IVar >= IV2, (ISTR | RSTR | BSTR)) = evalI(IVar, ISTR) >= evalI(IV2, ISTR) .
-    eq eval(IV1 >= IVar, (ISTR | RSTR | BSTR)) = evalI(IV1, ISTR) >= evalI(IVar, ISTR) .
-    ceq eval(IVar >= IVar', (ISTR | RSTR | BSTR)) = I1 >= I2
-      if I1 := evalI(IVar, ISTR)
-      /\ I2 := evalI(IVar', ISTR) . 
-    eq eval(RV1 === RV2, (ISTR | RSTR | BSTR)) = evalR(RV1, RSTR) == evalR(RV2, RSTR) .
-    eq eval(RVar === RV2, (ISTR | RSTR | BSTR)) = evalR(RVar, RSTR) == evalR(RV2, RSTR) .
-    eq eval(RV1 === RVar, (ISTR | RSTR | BSTR)) = evalR(RV1, RSTR) == evalR(RVar, RSTR) .
-    ceq eval(RVar === RVar', (ISTR | RSTR | BSTR)) = R1 == R2
-      if R1 := evalR(RVar, RSTR)
-      /\ R2 := evalR(RVar', RSTR) . ***/\ R1 =/= undR /\ R2 =/= undR .
-    eq eval(RV1 =/== RV2, (ISTR | RSTR | BSTR)) = evalR(RV1, RSTR) =/= evalR(RV2, RSTR) .
-    eq eval(RVar =/== RV2, (ISTR | RSTR | BSTR)) = evalR(RVar, RSTR) =/= evalR(RV2, RSTR) .
-    eq eval(RV1 =/== RVar, (ISTR | RSTR | BSTR)) = evalR(RV1, RSTR) =/= evalR(RVar, RSTR) .
-    ceq eval(RVar =/== RVar', (ISTR | RSTR | BSTR)) = R1 =/= R2
-      if R1 := evalR(RVar, RSTR)
-      /\ R2 := evalR(RVar', RSTR) . ***/\ R1 =/= undR /\ R2 =/= undR .
-    eq eval(RV1 < RV2, (ISTR | RSTR | BSTR)) = evalR(RV1, RSTR) < evalR(RV2, RSTR) .
-    eq eval(RVar < RV2, (ISTR | RSTR | BSTR)) = evalR(RVar, RSTR) < evalR(RV2, RSTR) .
-    eq eval(RV1 < RVar, (ISTR | RSTR | BSTR)) = evalR(RV1, RSTR) < evalR(RVar, RSTR) .
-    ceq eval(RVar < RVar', (ISTR | RSTR | BSTR)) = R1 < R2
-      if R1 := evalR(RVar, RSTR)
-      /\ R2 := evalR(RVar', RSTR) . ***/\ R1 =/= undR /\ R2 =/= undR .
-    eq eval(RV1 <= RV2, (ISTR | RSTR | BSTR)) = evalR(RV1, RSTR) <= evalR(RV2, RSTR) .
-    eq eval(RVar <= RV2, (ISTR | RSTR | BSTR)) = evalR(RVar, RSTR) <= evalR(RV2, RSTR) .
-    eq eval(RV1 <= RVar, (ISTR | RSTR | BSTR)) = evalR(RV1, RSTR) <= evalR(RVar, RSTR) .
-    ceq eval(RVar <= RVar', (ISTR | RSTR | BSTR)) = R1 <= R2
-      if R1 := evalR(RVar, RSTR)
-      /\ R2 := evalR(RVar', RSTR) . ***/\ R1 =/= undR /\ R2 =/= undR .
-    eq eval(RV1 > RV2, (ISTR | RSTR | BSTR)) = evalR(RV1, RSTR) > evalR(RV2, RSTR) .
-    eq eval(RVar > RV2, (ISTR | RSTR | BSTR)) = evalR(RVar, RSTR) > evalR(RV2, RSTR) .
-    eq eval(RV1 > RVar, (ISTR | RSTR | BSTR)) = evalR(RV1, RSTR) > evalR(RVar, RSTR) .
-    ceq eval(RVar > RVar', (ISTR | RSTR | BSTR)) = R1 > R2
-      if R1 := evalR(RVar, RSTR)
-      /\ R2 := evalR(RVar', RSTR) . ***/\ R1 =/= undR /\ R2 =/= undR .
-    eq eval(RV1 >= RV2, (ISTR | RSTR | BSTR)) = evalR(RV1, RSTR) >= evalR(RV2, RSTR) .
-    eq eval(RVar >= RV2, (ISTR | RSTR | BSTR)) = evalR(RVar, RSTR) >= evalR(RV2, RSTR) .
-    eq eval(RV1 >= RVar, (ISTR | RSTR | BSTR)) = evalR(RV1, RSTR) >= evalR(RVar, RSTR) .
-    ceq eval(RVar >= RVar', (ISTR | RSTR | BSTR)) = R1 >= R2
-      if R1 := evalR(RVar, RSTR)
-      /\ R2 := evalR(RVar', RSTR) . ***/\ R1 =/= undR /\ R2 =/= undR .
-    eq eval(BV1 === BV2, (ISTR | RSTR | BSTR)) = evalB(BV1, BSTR) == evalB(BV2, BSTR) .
-    eq eval(BVar === BV2, (ISTR | RSTR | BSTR)) = evalB(BVar, BSTR) == evalB(BV2, BSTR) .
-    eq eval(BV1 === BVar, (ISTR | RSTR | BSTR)) = evalB(BV1, BSTR) == evalB(BVar, BSTR) .
-    ceq eval(BVar === BVar', (ISTR | RSTR | BSTR)) = B1 == B2
-      if B1 := evalB(BVar, BSTR)
-      /\ B2 := evalB(BVar', BSTR) . ***/\ B1 =/= undR /\ B2 =/= undR .
-    eq eval(BV1 =/== BV2, (ISTR | RSTR | BSTR)) = evalB(BV1, BSTR) =/= evalB(BV2, BSTR) .
-    eq eval(BVar =/== BV2, (ISTR | RSTR | BSTR)) = evalB(BVar, BSTR) =/= evalB(BV2, BSTR) .
-    eq eval(BV1 =/== BVar, (ISTR | RSTR | BSTR)) = evalB(BV1, BSTR) =/= evalB(BVar, BSTR) .
-    ceq eval(BVar =/== BVar', (ISTR | RSTR | BSTR)) = B1 =/= B2
-      if B1 := evalB(BVar, BSTR)
-      /\ B2 := evalB(BVar', BSTR) .
-    eq eval(val(B), (ISTR | RSTR | BSTR)) = evalB(val(B), BSTR) .
-    ***eq eval(BVar, (ISTR | RSTR | BSTR)) = evalB(BVar, BSTR) .
-    ***eq eval(Var, (((Var |->I val(I)), ISTR) | RSTR | BSTR)) = I .
-    ***eq eval(Var, (ISTR | ((Var |->R val(R)), RSTR) | BSTR)) = R .
-    ***eq eval(Var, (ISTR | RSTR | ((Var |->B val(B)), BSTR))) = B .
+    eq eval(IExp1 === IExp2, (ISTR | RSTR | BSTR)) = evalI(IExp1, ISTR) == evalI(IExp2, ISTR) .
+    eq eval(IExp1 =/== IExp2, (ISTR | RSTR | BSTR)) = evalI(IExp1, ISTR) =/= evalI(IExp2, ISTR) .
+    eq eval(IExp1 < IExp2, (ISTR | RSTR | BSTR)) = evalI(IExp1, ISTR) < evalI(IExp2, ISTR) .
+    eq eval(IExp1 <= IExp2, (ISTR | RSTR | BSTR)) = evalI(IExp1, ISTR) <= evalI(IExp2, ISTR) .
+    eq eval(IExp1 > IExp2, (ISTR | RSTR | BSTR)) = evalI(IExp1, ISTR) > evalI(IExp2, ISTR) .
+    eq eval(IExp1 >= IExp2, (ISTR | RSTR | BSTR)) = evalI(IExp1, ISTR) >= evalI(IExp2, ISTR) .
+    eq eval(RExp1 === RExp2, (ISTR | RSTR | BSTR)) = evalR(RExp1, RSTR) == evalR(RExp2, RSTR) .
+    eq eval(RExp1 =/== RExp2, (ISTR | RSTR | BSTR)) = evalR(RExp1, RSTR) =/= evalR(RExp2, RSTR) .
+    eq eval(RExp1 < RExp2, (ISTR | RSTR | BSTR)) = evalR(RExp1, RSTR) < evalR(RExp2, RSTR) .
+    eq eval(RExp1 <= RExp2, (ISTR | RSTR | BSTR)) = evalR(RExp1, RSTR) <= evalR(RExp2, RSTR) .
+    eq eval(RExp1 > RExp2, (ISTR | RSTR | BSTR)) = evalR(RExp1, RSTR) > evalR(RExp2, RSTR) .
+    eq eval(RExp1 >= RExp2, (ISTR | RSTR | BSTR)) = evalR(RExp1, RSTR) >= evalR(RExp2, RSTR) .
+    eq eval(BExp1 === BExp2, (ISTR | RSTR | BSTR)) = evalB(BExp1, BSTR) == evalB(BExp2, BSTR) .
+    eq eval(BExp1 =/== BExp2, (ISTR | RSTR | BSTR)) = evalB(BExp1, BSTR) =/= evalB(BExp2, BSTR) .
+    eq eval(BV, (ISTR | RSTR | BSTR)) = evalB(BV, BSTR) .
     
     eq evalI(- IExp1, ISTR) = - evalI(IExp1, ISTR) .
     eq evalI(IExp1 + IExp2, ISTR) = evalI(IExp1, ISTR) + evalI(IExp2, ISTR) .
