@@ -7,9 +7,9 @@ fmod WHILE-LANG-INSTS-MOD is
     sort Inst .
 
     op skip ; : -> Inst [ctor prec 20] .
-    op _ := _ ; : Var IExp -> Inst [ctor prec 20] .
-    op _ := _ ; : Var RExp -> Inst [ctor prec 20] .
-    op _ := _ ; : Var BExp -> Inst [ctor prec 20] .
+    op _ := _ ; : IVar IExp -> Inst [ctor prec 20] .
+    op _ := _ ; : RVar RExp -> Inst [ctor prec 20] .
+    op _ := _ ; : BVar BExp -> Inst [ctor prec 20] .
 
 endfm
 
