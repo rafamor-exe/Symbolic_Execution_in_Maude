@@ -180,14 +180,8 @@ mod REC-MAUDE is
 
     *** Auxiliary
 
-    op getProgram : State -> Program .
-    eq getProgram(< P | FSTR | STR >) = P .
-
     op getStore : State -> Stores .
     eq getStore(< P | FSTR | STR >) = STR .
-
-    op updateProgram : State Program -> State .
-    eq updateProgram(< P | FSTR | STR >, IL) = < IL | FSTR | STR > .
 
     op updateStore : State Stores -> State .
     eq updateStore(< P | FSTR | STR >, STR2) = < P | FSTR | STR2 > .

@@ -19,7 +19,6 @@ def get_args():
     parser.add_argument("--analysis", action="store", help="Type of analysis to perform (e.g.: maude-se, concolic)", default="")
     parser.add_argument("--modL", action="store", help="List of Maude modules to transform to SMT", default="")
     parser.add_argument("--stSort", action="store", help="State sort", default="")
-    parser.add_argument("--prSort", action="store", help="Program sort", default="")
     parser.add_argument("--valOp", action="store", help="Value operator", default="'altVal")
     parser.add_argument("--sCond", action="store", help="Search conditions", default="nil")
     parser.add_argument("--sType", action="store", help="Search type", default="'!")
@@ -74,7 +73,6 @@ if __name__ == '__main__':
         t = f"""searchMaudeSE(
                        {args.modL},
                        {args.stSort},
-                       {args.prSort},
                        {args.valOp},
                        "{args.program}",
                        {args.pattern},
@@ -93,7 +91,6 @@ if __name__ == '__main__':
         path = f"""searchPathMaudeSE(" \
                                  {args.modL},
                                  {args.stSort},
-                                 {args.prSort},
                                  {args.valOp},
                                  "{args.program}",
                                  {args.pattern},
@@ -139,7 +136,6 @@ if __name__ == '__main__':
                 t = f"""searchConcolic(
                                    {args.modL},
                                    {args.stSort},
-                                   {args.prSort},
                                    {args.valOp},
                                    "{args.program}",
                                    {args.pattern},
@@ -158,7 +154,6 @@ if __name__ == '__main__':
                     path = f"""searchPathConcolic(
                                            {args.modL},
                                            {args.stSort},
-                                           {args.prSort},
                                            {args.valOp},
                                            "{args.program}",
                                            {args.pattern},
@@ -175,7 +170,6 @@ if __name__ == '__main__':
                 t = f"""transformModSymb(
                                    {args.modL},
                                    {args.stSort},
-                                   {args.prSort},
                                    {args.valOp},
                                    conc)"""
                 t = mod.parseTerm(t)
