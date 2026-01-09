@@ -26,7 +26,7 @@ def get_args():
     parser.add_argument("--solN", action="store", help="Solution number", default=0)
 
     parser.add_argument("--svars", action="store", help="List of symbolic variables pairs of the form (name, type) ; (name2, type2) ; ... ; (nameN, typeN)", default=[])
-    parser.add_argument("--symbCond", action="store", help="Initial symbolic conditions", default="(true).Boolean")
+    parser.add_argument("--symbCond", action="store", help="Initial symbolic conditions", default="true")
 
     parser.add_argument("--logic", action="store", help="Logic to use in MaudeSE analysis", default="'QF_LRA")
     parser.add_argument("--fold", action="store", help="Allow folding in MaudeSE analysis", default="false")
@@ -44,9 +44,14 @@ def getSymbVarCond(args) :
         svDict[svN] = f"{svN}{str(i)}:{svT}"
         svPairs += f"(\'{svN},{svDict[svN]}) "
         i += 1
-    symbCond = args.symbCond
-    for var, val in svDict.items():
-        symbCond = symbCond.replace(var, val)
+    symbCond = args.symbCond.split(" and ")
+    reSymbCond = ['(true).Boolean']
+    for cnd in symbCond:
+        for var, val in svDict.items():
+            if var in cnd:
+                cndMod = cnd.replace(var, val)
+                reSymbCond.append(cndMod)
+    symbCond = ' and '.join(reSymbCond)
     return svPairs, symbCond
 
 if __name__ == '__main__':
