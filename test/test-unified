@@ -33,6 +33,15 @@ python3 semantics-analysis-ext.py --program "start(iv('i) := val(0) ; iv('x) := 
 
 *** Checking invariants with concolic execution:
 
+Program:
+    iv('i) := val(0) ; 
+    iv('x) := val(0) ; 
+    iv('y) := iv('n) ; 
+    while iv('i) < iv('k) do {
+        iv('x) := iv('x) + iv('y) ; 
+        iv('i) := iv('i) + val(2) ;
+    }
+
 *** Check invariant x == (i * n) /\ 0 <= i <= k. Try to find a state where it is not satisfied
 python3 semantics-analysis-ext.py --program "start(iv('i) := val(0) ; iv('x) := val(0) ; iv('y) := iv('n) ; while iv('i) < iv('k) do {iv('x) := iv('x) + iv('y) ; iv('i) := iv('i) + val(1) ;})" --pattern "concolicState('State, '<_|_>['Pf:Program, '_|_|_['_\`,_['_\`,_['_\`,_['_\`,_['_|->I_['iv[''x.Sort],  'X:Int], '_|->I_['iv[''i.Sort],  'I:Int]], '_|->I_['iv[''k.Sort],  'K:Int]], '_|->I_['iv[''n.Sort],  'N:Int]], 'ISTRrest:IStore], 'RSTRf:RStore, 'BSTRf:BStore]])" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(n, Integer) ; (k, Integer)" --symbCond "n > 0" --sType "'*" --sCond "'_and_['_and_['_=/=_['X:Int, '_*_['I:Int, 'N:Int]], '_<=_['0.Zero, 'I:Int]], '_>=_['I:Int, 'K:Int]] = 'true.Bool" --solN 0
 
