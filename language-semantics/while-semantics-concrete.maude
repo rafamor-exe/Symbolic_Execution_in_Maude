@@ -81,7 +81,7 @@ mod WHILE-MAUDE is
     rl [assign-B] : 
         < BVar := BExp ; IL | (ISTR | RSTR | BSTR) >
         =>
-        < IL | ISTR | RSTR | insert(BVar, eval(BExp, BSTR), BSTR) > .
+        < IL | ISTR | RSTR | insert(BVar, eval(BExp, (ISTR | RSTR | BSTR)), BSTR) > .
 
     crl [if..then] : 
         < if BExp then { IL1 } else { IL2 } IL | STR >

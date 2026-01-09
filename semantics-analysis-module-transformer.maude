@@ -379,11 +379,11 @@ fmod MODULE-TRANSFORMER is
     eq patchEvalSESTR(eq 'eval[NeTL]   = T2 [AttrSet] .)        = (eq toSymb('eval)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) [AttrSet] .) .
     eq patchEvalSESTR(eq 'evalI[NeTL]  = T2 [AttrSet] .)        = (eq toSymb('evalI)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) [AttrSet] .) .
     eq patchEvalSESTR(eq 'evalR[NeTL]  = T2 [AttrSet] .)        = (eq toSymb('evalR)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) [AttrSet] .) .
-    eq patchEvalSESTR(eq 'evalB[NeTL]  = T2 [AttrSet] .)        = (eq toSymb('evalB)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) [AttrSet] .) .
+    ***eq patchEvalSESTR(eq 'evalB[NeTL]  = T2 [AttrSet] .)        = (eq toSymb('evalB)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) [AttrSet] .) .
     eq patchEvalSESTR(ceq 'eval[NeTL]  = T2 if EqC [AttrSet] .) = (ceq toSymb('eval)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) if modCond(EqC) [AttrSet] .) .
     eq patchEvalSESTR(ceq 'evalI[NeTL] = T2 if EqC [AttrSet] .) = (ceq toSymb('evalI)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) if modCond(EqC) [AttrSet] .) .
     eq patchEvalSESTR(ceq 'evalR[NeTL] = T2 if EqC [AttrSet] .) = (ceq toSymb('evalR)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) if modCond(EqC) [AttrSet] .) .
-    eq patchEvalSESTR(ceq 'evalB[NeTL] = T2 if EqC [AttrSet] .) = (ceq toSymb('evalB)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) if modCond(EqC) [AttrSet] .) .
+    ***eq patchEvalSESTR(ceq 'evalB[NeTL] = T2 if EqC [AttrSet] .) = (ceq toSymb('evalB)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) if modCond(EqC) [AttrSet] .) .
     eq patchEvalSESTR(Eq) = Eq [owise] .
   
     *** Transform the eval functions definition to convert values to SMT types and patch the stores to the symbolic definition
@@ -393,7 +393,7 @@ fmod MODULE-TRANSFORMER is
                                                                                  modSEEqs(EquationSet) .
     eq modSEEqs(eq 'evalR['val['R:Rat], NeTL] = MVar [AttrSet] . EquationSet)  = (eq toSymb('evalR)[modOpStoreRec(('val['R:Rat], NeTL))] = convert(MVar, getType(MVar)) [AttrSet] .)
                                                                                  modSEEqs(EquationSet) .
-    eq modSEEqs(eq 'evalB['val['B:Bool], NeTL] = MVar [AttrSet] . EquationSet) = (eq toSymb('evalB)[modOpStoreRec(('val['B:Bool], NeTL))] = convert(MVar, getType(MVar)) [AttrSet] .)
+    eq modSEEqs(eq 'eval['val['B:Bool], NeTL] = MVar [AttrSet] . EquationSet) = (eq toSymb('eval)[modOpStoreRec(('val['B:Bool], NeTL))] = convert(MVar, getType(MVar)) [AttrSet] .)
                                                                                  modSEEqs(EquationSet) .
     eq modSEEqs(Eq EquationSet) = patchEvalSESTR(Eq) modSEEqs(EquationSet) [owise] .
     

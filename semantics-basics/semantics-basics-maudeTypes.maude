@@ -148,10 +148,10 @@ fmod CONCRETE-AEXP-MOD is
     ***op evalB : BVal -> Bool .
     op evalI : IExp IStore -> Int .
     op evalR : RExp RStore -> Rat .
-    op evalB : BExp BStore -> Bool .
+    ***op evalB : BExp BStore -> Bool .
     op eval : IExp IStore -> Int .
     op eval : RExp RStore -> Rat .
-    op eval : BExp BStore -> Bool .
+    ***op eval : BExp BStore -> Bool .
     op eval : BExp Stores -> Bool .
     ***op eval : IExp Stores -> Int .
     ***op eval : RExp Stores -> Rat .
@@ -179,7 +179,7 @@ fmod CONCRETE-AEXP-MOD is
 
     eq eval(IExp, ISTR) = evalI(IExp, ISTR) .
     eq eval(RExp, RSTR) = evalR(RExp, RSTR) .
-    eq eval(BExp, BSTR) = evalB(BExp, BSTR) .
+    ***eq eval(BExp, BSTR) = evalB(BExp, BSTR) .
 
     eq eval(BExp1 /\ BExp2, STR) = eval(BExp1, STR) and eval(BExp2, STR) .
     eq eval(not BExp, STR) = not eval(BExp, STR) .
@@ -196,9 +196,10 @@ fmod CONCRETE-AEXP-MOD is
     eq eval(RExp1 <= RExp2, (ISTR | RSTR | BSTR)) = evalR(RExp1, RSTR) <= evalR(RExp2, RSTR) .
     eq eval(RExp1 > RExp2, (ISTR | RSTR | BSTR)) = evalR(RExp1, RSTR) > evalR(RExp2, RSTR) .
     eq eval(RExp1 >= RExp2, (ISTR | RSTR | BSTR)) = evalR(RExp1, RSTR) >= evalR(RExp2, RSTR) .
-    eq eval(BExp1 === BExp2, (ISTR | RSTR | BSTR)) = evalB(BExp1, BSTR) == evalB(BExp2, BSTR) .
-    eq eval(BExp1 =/== BExp2, (ISTR | RSTR | BSTR)) = evalB(BExp1, BSTR) =/= evalB(BExp2, BSTR) .
-    eq eval(BV, (ISTR | RSTR | BSTR)) = evalB(BV, BSTR) .
+    eq eval(BExp1 === BExp2, STR) = eval(BExp1, STR) == eval(BExp2, STR) .
+    eq eval(BExp1 =/== BExp2, STR) = eval(BExp1, STR) =/= eval(BExp2, STR) .
+    eq eval(BVar, (ISTR | RSTR | BSTR)) = BSTR[BVar] .
+    eq eval(val(B), STR) = B .
     
     eq evalI(- IExp1, ISTR) = - evalI(IExp1, ISTR) .
     eq evalI(IExp1 + IExp2, ISTR) = evalI(IExp1, ISTR) + evalI(IExp2, ISTR) .
@@ -212,14 +213,13 @@ fmod CONCRETE-AEXP-MOD is
     eq evalR(RExp1 - RExp2, RSTR) = evalR(RExp1, RSTR) - evalR(RExp2, RSTR) .
     eq evalR(RExp1 / RExp2, RSTR) = evalR(RExp1, RSTR) / evalR(RExp2, RSTR) .
 
-    eq evalB(BExp1 /\ BExp2, BSTR) = evalB(BExp1, BSTR) and evalB(BExp2, BSTR) .
+    ***eq evalB(BExp1 /\ BExp2, BSTR) = evalB(BExp1, BSTR) and evalB(BExp2, BSTR) .
 
     eq evalI(IVar, ISTR) = ISTR[IVar] .
     eq evalR(RVar, RSTR) = RSTR[RVar] .
-    eq evalB(BVar, BSTR) = BSTR[BVar] .
     eq evalI(val(I), ISTR) = I .
     eq evalR(val(R), RSTR) = R .
-    eq evalB(val(B), BSTR) = B .
+    ***eq evalB(val(B), BSTR) = B .
 
     eq not not BExp = BExp .
 
