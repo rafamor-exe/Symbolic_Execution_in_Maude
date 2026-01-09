@@ -96,6 +96,15 @@ python3 semantics-analysis-ext.py --program "start(iv('var2) := val(1000000) ; i
 - 7 solutions:
 python3 semantics-analysis-ext.py --program "< rv('var2) := val(1/1) ; if (rv('var1) < rv('var2)) then { rv('var3) := val(0/1) ; } || rv('var2) := val(0/1) ; | ((empty).IStore | (empty).RStore | (empty).BStore) >" --pattern "'<_|_>['_||_['nil.Program, 'nil.Program], 'STR:Stores]" --file "language-semantics/while-semantics-concurrent.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(var1, Real)" --solN 0 --symbCond "var1 < 5/1"
 
+
+*** Model checking invariants
+***(tricky thing, we have to define the variables in the pattern with their symbolic name (end in S))
+*** This does not end (it satisfies the invariant):
+python3 semantics-analysis-ext.py --program "start(iv('i) := val(0) ; iv('x) := val(0) ; iv('y) := iv('n) ; while iv('i) < iv('k) do {iv('x) := iv('x) + iv('y) ; iv('i) := iv('i) + val(1) ;})" --pattern "'<_|_>['Pf:Program, '_|_|_['_\`,_['_\`,_['_\`,_['_\`,_['_|->Is_['iv[''x.Sort],  'XS:Integer], '_|->Is_['iv[''i.Sort],  'IS:Integer]], '_|->Is_['iv[''k.Sort],  'KS:Integer]], '_|->Is_['iv[''n.Sort],  'NS:Integer]], 'ISTRrest:IStoreS], 'RSTRf:RStoreS, 'BSTRf:BStoreS]]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(n, Integer) ; (k, Integer)" --symbCond "n > 0" --sType "'*" --sCond "'_and_['_and_['_and_['_=/=_['X:Integer, '_*_['I:Integer, 'N:Integer]], '_<=_['0.Integer, 'I:Integer]], '_>=_['I:Integer, 'K:Integer]], '_>_['N:Integer, '0.Integer]] = 'true.Bool" --solN 0
+
+*** Buggy implementation (i += 2)
+python3 semantics-analysis-ext.py --program "start(iv('i) := val(0) ; iv('x) := val(0) ; iv('y) := iv('n) ; while iv('i) < iv('k) do {iv('x) := iv('x) + iv('y) ; iv('i) := iv('i) + val(2) ;})" --pattern "'<_|_>['Pf:Program, '_|_|_['_\`,_['_\`,_['_\`,_['_\`,_['_|->Is_['iv[''x.Sort],  'XS:Integer], '_|->Is_['iv[''i.Sort],  'IS:Integer]], '_|->Is_['iv[''k.Sort],  'KS:Integer]], '_|->Is_['iv[''n.Sort],  'NS:Integer]], 'ISTRrest:IStoreS], 'RSTRf:RStoreS, 'BSTRf:BStoreS]]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(n, Integer) ; (k, Integer)" --symbCond "n > 0" --sType "'*" --sCond "'_and_['_and_['_and_['_=/=_['X:Integer, '_*_['I:Integer, 'N:Integer]], '_<=_['0.Integer, 'I:Integer]], '_>=_['I:Integer, 'K:Integer]], '_>_['N:Integer, '0.Integer]] = 'true.Bool" --solN 0
+
 ***NOT WORKING:
 ***- Division by 0 error capture
 ***python3 semantics-analysis-ext.py --program "< var('var2) := val((1).Integer) ; if var('var1) < var('var2) then{var('var3) := var('var2) / val((0).Integer) ;} | var('var1) |-> val(p:Integer) >" --pattern "'errState['P:Program, 'S:Stores]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --solN 0 --sType "'*"
