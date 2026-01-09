@@ -39,7 +39,7 @@ Program:
     iv('y) := iv('n) ; 
     while iv('i) < iv('k) do {
         iv('x) := iv('x) + iv('y) ; 
-        iv('i) := iv('i) + val(2) ;
+        iv('i) := iv('i) + val(1) ;
     }
 
 *** Check invariant x == (i * n) /\ 0 <= i <= k. Try to find a state where it is not satisfied
@@ -57,6 +57,23 @@ python3 semantics-analysis-ext.py --program "start(iv('i) := val(0) ; iv('x) := 
 
 The invariant is satisfied, therefore we can always get a solution that satisfies it (example: try solution number 25)
 python3 semantics-analysis-ext.py --program "start(iv('i) := val(0) ; iv('x) := val(0) ; iv('y) := iv('n) ; while iv('i) < iv('k) do {iv('x) := iv('x) + iv('y) ; iv('i) := iv('i) + val(1) ;})" --pattern "concolicState('State, '<_|_>['nil.Program, '_|_|_['_\`,_['_\`,_['_\`,_['_\`,_['_|->I_['iv[''x.Sort],  'X:Int], '_|->I_['iv[''i.Sort],  'I:Int]], '_|->I_['iv[''k.Sort],  'K:Int]], '_|->I_['iv[''n.Sort],  'N:Int]], 'ISTRrest:IStore], 'RSTRf:RStore, 'BSTRf:BStore]])" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(n, Integer) ; (k, Integer)" --symbCond "n > 0" --sType "'*" --sCond "'_==_['X:Int, '_*_['I:Int, 'N:Int]] = 'true.Bool" --solN 25
+
+
+Program:
+    iv('i) := val(1) ; 
+    iv('s) := val(0) ; 
+    iv('p) := val(1) ; 
+    while iv('i) <= iv('n) do {
+        iv('s) := iv('s) + val(1) ; 
+        iv('p) := iv('p) * val(i) ;
+        iv('i) := iv('i) + val(1) ;
+    }
+
+Invariant: p >= s /\ 1 <= i <= n
+python3 semantics-analysis-ext.py --program "start(iv('i) := val(1) ; iv('s) := val(0) ; iv('p) := val(1) ; while iv('i) < iv('n) do {iv('s) := iv('s) + iv('i) ; iv('p) := iv('p) * iv('i) ; iv('i) := iv('i) + val(1) ;})" --pattern "concolicState('State, '<_|_>['Pf:Program, '_|_|_['_\`,_['_\`,_['_\`,_['_\`,_['_|->I_['iv[''s.Sort],  'S:Int], '_|->I_['iv[''i.Sort],  'I:Int]], '_|->I_['iv[''p.Sort],  'P:Int]], '_|->I_['iv[''n.Sort],  'N:Int]], 'ISTRrest:IStore], 'RSTRf:RStore, 'BSTRf:BStore]])" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(n, Integer)" --symbCond "n > 0" --sType "'*" --sCond "'_and_['_and_['_<_['P:Int, 'S:Int], '_<=_['s_['0.Zero], 'I:Int]], '_>=_['I:Int, 'N:Int]] = 'true.Bool" --solN 0
+
+*** This is always satisfied
+python3 semantics-analysis-ext.py --program "start(iv('i) := val(1) ; iv('s) := val(0) ; iv('p) := val(1) ; while iv('i) < iv('n) do {iv('s) := iv('s) + iv('i) ; iv('p) := iv('p) * iv('i) ; iv('i) := iv('i) + val(1) ;})" --pattern "concolicState('State, '<_|_>['Pf:Program, '_|_|_['_\`,_['_\`,_['_\`,_['_\`,_['_|->I_['iv[''s.Sort],  'S:Int], '_|->I_['iv[''i.Sort],  'I:Int]], '_|->I_['iv[''p.Sort],  'P:Int]], '_|->I_['iv[''n.Sort],  'N:Int]], 'ISTRrest:IStore], 'RSTRf:RStore, 'BSTRf:BStore]])" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(n, Integer)" --symbCond "n > 0" --sType "'*" --sCond "'_and_['_and_['_>=_['P:Int, 'S:Int], '_<=_['s_['0.Zero], 'I:Int]], '_>=_['I:Int, 'N:Int]] = 'true.Bool" --solN 0
 
 - Concurrent while
 python3 semantics-analysis-ext.py --program "start(rv('var2) := val(1/1) ; if rv('var1) < rv('var2) then{rv('var3) := val(0/1) ;} || rv('var2) := val(0/1) ;)" --pattern "concolicState('State)" --file "language-semantics/while-semantics-concurrent.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(var1, Real)" --symbCond "var1 < 5/1" --solN 0
@@ -105,14 +122,42 @@ python3 semantics-analysis-ext.py --program "start(iv('var2) := val(1000000) ; i
 - 7 solutions:
 python3 semantics-analysis-ext.py --program "< rv('var2) := val(1/1) ; if (rv('var1) < rv('var2)) then { rv('var3) := val(0/1) ; } || rv('var2) := val(0/1) ; | ((empty).IStore | (empty).RStore | (empty).BStore) >" --pattern "'<_|_>['_||_['nil.Program, 'nil.Program], 'STR:Stores]" --file "language-semantics/while-semantics-concurrent.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(var1, Real)" --solN 0 --symbCond "var1 < 5/1"
 
+*** Division by 0 error capture
+python3 semantics-analysis-ext.py --program "start(iv('var2) := val(3) ; if iv('var1) < iv('var2) then{iv('var3) := iv('var2) / val(0) ; })" --pattern "'<_|_>['__['_:=_;['Var:Var, '_/_['IExp1:IExp, 'val['0.Zero]]], 'Prest:Program], 'STRend:Stores]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(var1, Integer)" --symbCond "var1 < 5" --sType "'*" --solN 0
 
-*** Model checking invariants
+
+****************
+********REVISE
+****************
+*** Model checking invariants (x == (i * n))
 ***(tricky thing, we have to define the variables in the pattern with their symbolic name (end in S))
 *** This does not end (it satisfies the invariant):
-python3 semantics-analysis-ext.py --program "start(iv('i) := val(0) ; iv('x) := val(0) ; iv('y) := iv('n) ; while iv('i) < iv('k) do {iv('x) := iv('x) + iv('y) ; iv('i) := iv('i) + val(1) ;})" --pattern "'<_|_>['Pf:Program, '_|_|_['_\`,_['_\`,_['_\`,_['_\`,_['_|->Is_['iv[''x.Sort],  'XS:Integer], '_|->Is_['iv[''i.Sort],  'IS:Integer]], '_|->Is_['iv[''k.Sort],  'KS:Integer]], '_|->Is_['iv[''n.Sort],  'NS:Integer]], 'ISTRrest:IStoreS], 'RSTRf:RStoreS, 'BSTRf:BStoreS]]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(n, Integer) ; (k, Integer)" --symbCond "n > 0" --sType "'*" --sCond "'_and_['_and_['_and_['_=/=_['X:Integer, '_*_['I:Integer, 'N:Integer]], '_<=_['0.Integer, 'I:Integer]], '_>=_['I:Integer, 'K:Integer]], '_>_['N:Integer, '0.Integer]] = 'true.Bool" --solN 0
+python3 semantics-analysis-ext.py --program "start(iv('i) := val(0) ; iv('x) := val(0) ; iv('y) := iv('n) ; while iv('i) < iv('k) do {iv('x) := iv('x) + iv('y) ; iv('i) := iv('i) + val(1) ;})" --pattern "'<_|_>['Pf:Program, '_|_|_['_\`,_['_\`,_['_\`,_['_\`,_['_|->Is_['iv[''x.Sort],  'XS:Integer], '_|->Is_['iv[''i.Sort],  'IS:Integer]], '_|->Is_['iv[''k.Sort],  'KS:Integer]], '_|->Is_['iv[''n.Sort],  'NS:Integer]], 'ISTRrest:IStoreS], 'RSTRf:RStoreS, 'BSTRf:BStoreS]]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(n, Integer) ; (k, Integer)" --symbCond "n > 0" --sType "'*" --sCond "'_and_['_and_['_and_['_=/=_['X:Integer, '_*_['I:Integer, 'N:Integer]], '_<=_['0.Integer, 'I:Integer]], '_<=_['I:Integer, 'K:Integer]], '_>_['N:Integer, '0.Integer]] = 'true.Bool" --solN 0
 
 *** Buggy implementation (i += 2)
-python3 semantics-analysis-ext.py --program "start(iv('i) := val(0) ; iv('x) := val(0) ; iv('y) := iv('n) ; while iv('i) < iv('k) do {iv('x) := iv('x) + iv('y) ; iv('i) := iv('i) + val(2) ;})" --pattern "'<_|_>['Pf:Program, '_|_|_['_\`,_['_\`,_['_\`,_['_\`,_['_|->Is_['iv[''x.Sort],  'XS:Integer], '_|->Is_['iv[''i.Sort],  'IS:Integer]], '_|->Is_['iv[''k.Sort],  'KS:Integer]], '_|->Is_['iv[''n.Sort],  'NS:Integer]], 'ISTRrest:IStoreS], 'RSTRf:RStoreS, 'BSTRf:BStoreS]]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(n, Integer) ; (k, Integer)" --symbCond "n > 0" --sType "'*" --sCond "'_and_['_and_['_and_['_=/=_['X:Integer, '_*_['I:Integer, 'N:Integer]], '_<=_['0.Integer, 'I:Integer]], '_>=_['I:Integer, 'K:Integer]], '_>_['N:Integer, '0.Integer]] = 'true.Bool" --solN 0
+python3 semantics-analysis-ext.py --program "start(iv('i) := val(0) ; iv('x) := val(0) ; iv('y) := iv('n) ; while iv('i) < iv('k) do {iv('x) := iv('x) + iv('y) ; iv('i) := iv('i) + val(2) ;})" --pattern "'<_|_>['Pf:Program, '_|_|_['_\`,_['_\`,_['_\`,_['_\`,_['_|->Is_['iv[''x.Sort],  'XS:Integer], '_|->Is_['iv[''i.Sort],  'IS:Integer]], '_|->Is_['iv[''k.Sort],  'KS:Integer]], '_|->Is_['iv[''n.Sort],  'NS:Integer]], 'ISTRrest:IStoreS], 'RSTRf:RStoreS, 'BSTRf:BStoreS]]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(n, Integer) ; (k, Integer)" --symbCond "n > 0" --sType "'*" --sCond "'_and_['_and_['_and_['_=/=_['X:Integer, '_*_['I:Integer, 'N:Integer]], '_<=_['0.Integer, 'I:Integer]], '_<=_['I:Integer, 'K:Integer]], '_>_['N:Integer, '0.Integer]] = 'true.Bool" --solN 0
+
+Program:
+    iv('i) := val(1) ; 
+    iv('s) := val(0) ; 
+    iv('p) := val(1) ; 
+    while iv('i) <= iv('n) do {
+        iv('s) := iv('s) + val(1) ; 
+        iv('p) := iv('p) * val(i) ;
+        iv('i) := iv('i) + val(1) ;
+    }
+****************
+********REVISE
+****************
+Invariant: p >= s /\ 1 <= i <= n
+*** Search counter-example
+python3 semantics-analysis-ext.py --program "start(iv('i) := val(1) ; iv('s) := val(0) ; iv('p) := val(1) ; while iv('i) < iv('n) do {iv('s) := iv('s) + iv('i) ; iv('p) := iv('p) * iv('i) ; iv('i) := iv('i) + val(1) ;})" --pattern "'<_|_>['Pf:Program, '_|_|_['_\`,_['_\`,_['_\`,_['_\`,_['_|->Is_['iv[''s.Sort],  'SS:Integer], '_|->Is_['iv[''i.Sort],  'IS:Integer]], '_|->Is_['iv[''p.Sort],  'PS:Integer]], '_|->Is_['iv[''n.Sort],  'NS:Integer]], 'ISTRrest:IStoreS], 'RSTRf:RStoreS, 'BSTRf:BStoreS]]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(n, Integer)" --symbCond "n > 0" --sType "'*" --sCond "'_and_['_and_['_<_['P:Integer, 'S:Integer], '_<=_['1.Integer, 'I:Integer]], '_>=_['I:Integer, '_+_['N:Integer, '1.Integer]]] = 'true.Bool" --solN 0
+
+*** Buggy implementation (i += 2) 
+python3 semantics-analysis-ext.py --program "start(iv('i) := val(1) ; iv('s) := val(0) ; iv('p) := val(1) ; while iv('i) < iv('n) do {iv('s) := iv('s) + iv('i) ; iv('p) := iv('p) * iv('i) ; iv('i) := iv('i) + val(2) ;})" --pattern "'<_|_>['Pf:Program, '_|_|_['_\`,_['_\`,_['_\`,_['_\`,_['_|->Is_['iv[''s.Sort],  'SS:Integer], '_|->Is_['iv[''i.Sort],  'IS:Integer]], '_|->Is_['iv[''p.Sort],  'PS:Integer]], '_|->Is_['iv[''n.Sort],  'NS:Integer]], 'ISTRrest:IStoreS], 'RSTRf:RStoreS, 'BSTRf:BStoreS]]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(n, Integer)" --symbCond "n > 0" --sType "'*" --sCond "'_and_['_and_['_<_['P:Integer, 'S:Integer], '_<=_['1.Integer, 'I:Integer]], '_>=_['I:Integer, '_+_['N:Integer, '1.Integer]]] = 'true.Bool" --solN 0
+
+*** This is always satisfied
+python3 semantics-analysis-ext.py --program "start(iv('i) := val(1) ; iv('s) := val(0) ; iv('p) := val(1) ; while iv('i) < iv('n) do {iv('s) := iv('s) + iv('i) ; iv('p) := iv('p) * iv('i) ; iv('i) := iv('i) + val(1) ;})" --pattern "'<_|_>['Pf:Program, '_|_|_['_\`,_['_\`,_['_\`,_['_\`,_['_|->Is_['iv[''s.Sort],  'SS:Integer], '_|->Is_['iv[''i.Sort],  'IS:Integer]], '_|->Is_['iv[''p.Sort],  'PS:Integer]], '_|->Is_['iv[''n.Sort],  'NS:Integer]], 'ISTRrest:IStoreS], 'RSTRf:RStoreS, 'BSTRf:BStoreS]]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(n, Integer)" --symbCond "n > 0" --sType "'*" --sCond "'_and_['_and_['_and_['_>=_['P:Integer, 'S:Integer], '_<=_['1.Integer, 'I:Integer]], '_<=_['I:Integer, '_+_['N:Integer, '1.Integer]]], '_>_['N:Integer, '0.Integer]] = 'true.Bool" --solN 0
 
 ***NOT WORKING:
 ***- Division by 0 error capture
