@@ -114,3 +114,6 @@ class SMTAssignmentHook (maude.Hook):
                     l[i] = re.sub(r'\.Boolean', '', l[i]).capitalize()
                     #print(l[i])
         return l, var_dic
+
+hook = SMTAssignmentHook()
+maude.connectEqHook('get-SMTassignment', hook)
