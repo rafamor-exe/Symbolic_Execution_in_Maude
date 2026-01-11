@@ -16,6 +16,25 @@ red in VERIFICATION-COMMANDS : searchSymb(upModule('WHILE-MAUDE, true), 'State, 
 red in VERIFICATION-COMMANDS : transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, symb) .
 red in VERIFICATION-COMMANDS : transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc) .
 
+Maude> search < if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;} | iv('k) |->I 0 | RSTR:RStore | BSTR:BStore > =>! S:State .
+search in WHILE-MAUDE : < if iv('k) >= val(0) then{iv('res) := iv('k) ;}else{iv('res) := - iv('k) ;} | iv('k) |->I 0 | RSTR | BSTR > =>! S:State .
+
+Solution 1 (state 2)
+states: 3  rewrites: 24 in 0ms cpu (0ms real) (~ rewrites/second)
+S:State --> < nil | (iv('k) |->I 0, iv('res) |->I 0) | RSTR | BSTR >
+
+No more solutions.
+states: 3  rewrites: 24 in 0ms cpu (0ms real) (~ rewrites/second)
+Maude> search < if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;} | iv('k) |->I -1 | RSTR:RStore | BSTR:BStore > =>! S:State .
+search in WHILE-MAUDE : < if iv('k) >= val(0) then{iv('res) := iv('k) ;}else{iv('res) := - iv('k) ;} | iv('k) |->I -1 | RSTR | BSTR > =>! S:State .
+
+Solution 1 (state 2)
+states: 3  rewrites: 26 in 0ms cpu (0ms real) (~ rewrites/second)
+S:State --> < nil | (iv('k) |->I -1, iv('res) |->I 1) | RSTR | BSTR >
+
+No more solutions.
+states: 3  rewrites: 26 in 0ms cpu (0ms real) (~ rewrites/second)
+
 -------------
 *** Concolic
 python3 semantics-analysis-ext.py --program "start(rv('var2) := val(1/1) ; if rv('var1) < rv('var2) then{rv('var3) := val(0/1) ; })" --pattern "concolicState('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(var1, Real)" --symbCond "var1 < 5/1" --solN 0
@@ -111,6 +130,37 @@ python3 semantics-analysis-ext.py --program "start(iv('var2) := val(3) ; if iv('
 python3 semantics-analysis-ext.py --program "start(iv('var2) := val(3) ; if iv('var1) < iv('var2) then{iv('var3) := iv('var2) / val(0) ; })" --pattern "concolicState('State, '<_|_>['__['_:=_;['Var:Var, '_/_['IExp1:IExp, 'IExp2:IExp]], 'Prest:Program], 'STRend:Stores])" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(var1, Integer)" --symbCond "var1 < 5" --sType "'*" --solN 0
 
 python3 semantics-analysis-ext.py --program "start(rv('var2) := val(20/1) ; while rv('var1) < rv('var2) do {rv('var3) := val(2) * rv('var2) ; if rv('var1) > val(10) then {rv('var3) := rv('var2) / val(0) ; } rv('var1) := rv('var1) + val(1/1) ;})" --pattern "concolicState('State, '<_|_>['__['_:=_;['RV:RVar, '_/_['RExp1:RExp, 'val['0.Zero]]], 'Prest:Program], 'STRend:Stores])" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(var1, Real)" --symbCond "var1 < 5/1" --sType "'*" --solN 0
+
+python3 semantics-analysis-ext.py --program "start(rv('var2) := val(20/1) ; rv('i) := val(5/1) ; rv('var3) := val(1) ; while rv('var1) < rv('var2) do {if rv('var1) > val(10/1) then {rv('var3) := rv('var2) / rv('i) ; } rv('var3) := rv('var3) * val(5) ; rv('var1) := rv('var1) + val(1/1) ; rv('i) := rv('i) - val(1/1) ;})" --pattern "concolicState('State, '<_|_>['Prest:Program, '_|_|_['ISTRf:IStore, '_\`,_['_|->R_['rv[''i.Sort], '0.Zero], 'RSTRf:RStore], 'BSTRf:BStore]])" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(var1, Real)" --sType "'*" --solN 0
+
+rv('y) := val(20); rv('i) := val(5); 
+while rv('k) < rv('y) do {
+    if rv('k) > val(10) then {
+        rv('z) := rv('y) / rv('i);
+    }
+    rv('k) := rv('k) + val(1); 
+    rv('i) := rv('i) - val(1);
+}
+
+python3 semantics-analysis-ext.py --program "start(rv('y) := val(20/1) ; rv('i) := val(5/1) ; rv('z) := val(1) ; while rv('k) < rv('y) do {if rv('k) > val(10/1) then {rv('z) := rv('y) / rv('i) ; } rv('k) := rv('k) + val(1/1) ; rv('i) := rv('i) - val(1/1) ;})" --pattern "concolicState('State, '<_|_>['__['_:=_;['RV1:RVar, '_/_['RExp1:RExp, 'RV:RVar]], 'Prest:Program], '_|_|_['ISTRf:IStore, '_\`,_['_|->R_['RV:RVar, '0.Zero], 'RSTRf:RStore], 'BSTRf:BStore]])" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(k, Real)" --sType "'*" --solN 0
+
+python3 semantics-analysis-ext.py --program "start(rv('y) := val(20/1) ; rv('i) := val(5/1) ; rv('z) := val(1) ; while rv('y) < rv('k) do {if rv('k) > val(10/1) then {rv('z) := rv('y) / rv('i) ; } rv('y) := rv('y) + val(1/1) ; rv('i) := rv('i) - val(1/1) ;})" --pattern "concolicState('State, '<_|_>['__['_:=_;['RV1:RVar, '_/_['RExp1:RExp, 'RV:RVar]], 'Prest:Program], '_|_|_['ISTRf:IStore, '_\`,_['_|->R_['RV:RVar, '0.Zero], 'RSTRf:RStore], 'BSTRf:BStore]])" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(k, Real)" --sType "'*" --solN 0
+
+*** Complex program
+
+iv('i) := val(5); 
+while iv('k) < iv('y) do {
+    if iv('k) > val(10) then {
+        iv('x) := iv('k) * iv('y);
+        iv('a) := iv('x) - iv('i);
+        iv('z) := iv('y) / iv('a);
+    }
+    iv('k) := iv('k) + val(1); 
+    iv('i) := iv('i) * val(2);
+}
+
+python3 semantics-analysis-ext.py --program "start(iv('i) := val(5); while iv('k) < iv('y) do { if iv('k) > val(10) then {iv('x) := iv('k) * iv('y) ; iv('a) := iv('x) - iv('i); iv('z) := iv('y) / iv('a) ;} iv('k) := iv('k) + val(1) ; iv('i) := iv('i) * val(2) ;})" --pattern "concolicState('State, '<_|_>['__['_:=_;['IV1:IVar, '_/_['IExp1:IExp, 'IV:IVar]], 'Prest:Program], '_|_|_['_\`,_['_|->I_['IV:IVar, '0.Zero], 'ISTRf:IStore], 'RSTRf:RStore, 'BSTRf:BStore]])" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(k, Integer) ; (y, Integer)" --sType "'*" --solN 0
+
 -------------
 *** Incorporated MaudeSE (need to load smt-check.maude)
 *** - MaudeSE metaSmtSearch does not allow '! (does not reduce) (remember --sType "'*")
@@ -155,7 +205,48 @@ python3 semantics-analysis-ext.py --program "start(iv('var2) := val(3) ; if iv('
 *** With vars
 python3 semantics-analysis-ext.py --program "start(rv('var2) := val(20/1) ; rv('i) := val(5/1) ; rv('var3) := val(1) ; while rv('var1) < rv('var2) do {if rv('i) === val(0/1) then {rv('var3) := rv('var2) / rv('i) ; } rv('var3) := rv('var3) * val(5) ; rv('var1) := rv('var1) + val(1/1) ; rv('i) := rv('i) - val(1/1) ;})" --pattern "'<_|_>['Prest:Program, '_|_|_['ISTRSf:IStoreS, '_\`,_['_|->Rs_['rv[''i.Sort], '0/1.Real], 'RSTRSf:RStoreS], 'BSTRSf:BStoreS]]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(var1, Real)" --sType "'*" --solN 0
 
+*** Search for a state where we are diving by rv('i), and it is 0 (solution provided var1 = 21/4 = 5,25)
+
+rv('y) := val(20); rv('i) := val(5); 
+while rv('k) < rv('y) do {
+    if rv('k) > val(10) then {
+        rv('z) := rv('y) / rv('i);
+    }
+    rv('k) := rv('k) + val(1); 
+    rv('i) := rv('i) - val(1);
+}
+
+python3 semantics-analysis-ext.py --program "start(rv('y) := val(20) ; rv('i) := val(5) ; while rv('k) < rv('y) do {if rv('k) > val(10) then {rv('z) := rv('y) / rv('i) ; } rv('k) := rv('k) + val(1) ; rv('i) := rv('i) - val(1) ;})" --pattern "'<_|_>['__['_:=_;['RV1:RVar, '_/_['RExp1:RExp, 'rv[''i.Sort]]], 'Prest:Program], '_|_|_['ISTRSf:IStoreS, '_\`,_['_|->Rs_['rv[''i.Sort], '0/1.Real], 'RSTRSf:RStoreS], 'BSTRSf:BStoreS]]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(k, Real)" --sType "'*" --solN 0
+
+*** With Integer
+python3 semantics-analysis-ext.py --program "start(iv('y) := val(20) ; iv('i) := val(5) ; while iv('k) < iv('y) do {if iv('k) > val(10) then {iv('z) := iv('y) / iv('i) ; } iv('k) := iv('k) + val(1) ; iv('i) := iv('i) - val(1) ;})" --pattern "'<_|_>['__['_:=_;['IV1:IVar, '_/_['IExp1:IExp, 'iv[''i.Sort]]], 'Prest:Program], '_|_|_['_\`,_['_|->Is_['iv[''i.Sort], '0.Integer], 'ISTRSf:IStoreS], 'RSTRSf:RStoreS, 'BSTRSf:BStoreS]]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(k, Integer)" --sType "'*" --solN 0
+
+*** Complex program (it should take too long)
+
+iv('i) := val(5); 
+while iv('k) < iv('y) do {
+    if iv('k) > val(10) then {
+        iv('x) := iv('k) * iv('y);
+        iv('a) := iv('x) - iv('i);
+        iv('z) := iv('y) / iv('a);
+    }
+    iv('k) := iv('k) + val(1); 
+    iv('i) := iv('i) * val(2);
+}
+
+python3 semantics-analysis-ext.py --program "start(iv('i) := val(5); while iv('k) < iv('y) do { if iv('k) > val(10) then {iv('x) := iv('k) * iv('y) ; iv('a) := iv('x) - iv('i); iv('z) := iv('y) / iv('a) ;} iv('k) := iv('k) + val(1) ; iv('i) := iv('i) * val(2) ;})" --pattern "'<_|_>['__['_:=_;['IV1:IVar, '_/_['IExp1:IExp, 'iv[''a.Sort]]], 'Prest:Program], '_|_|_['_\`,_['_|->Is_['iv[''a.Sort], '0.Integer], 'ISTRSf:IStoreS], 'RSTRSf:RStoreS, 'BSTRSf:BStoreS]]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(k, Integer) ; (y, Integer)" --sType "'*" --solN 0
+
+python3 semantics-analysis-ext.py --program "start(rv('var2) := val(0) ; rv('i) := val(5) ; rv('var3) := val(1) ; while rv('var2) < rv('var1) do {if rv('var2) > val(2/1) then {rv('var3) := rv('var2) / rv('i) ; } rv('var2) := rv('var2) + val(1/1) ; rv('i) := rv('i) - val(1/1) ;})" --pattern "'<_|_>['__['_:=_;['RV1:RVar, '_/_['RExp1:RExp, 'rv[''i.Sort]]], 'Prest:Program], '_|_|_['ISTRSf:IStoreS, '_\`,_['_|->Rs_['rv[''i.Sort], '0/1.Real], 'RSTRSf:RStoreS], 'BSTRSf:BStoreS]]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(var1, Real)" --sType "'*" --solN 0 --symbCond "var1 > 0/1 and var1 < 4/1"
+
+----------
+
 python3 semantics-analysis-ext.py --program "start(rv('var2) := val(20/1) ; rv('i) := val(5/1) ; rv('var3) := val(1) ; while rv('var1) < rv('var2) do {if rv('var1) > val(10/1) then {rv('var3) := rv('var2) / rv('i) ; } rv('var3) := rv('var3) * val(5) ; rv('var1) := rv('var1) + val(1/1) ; rv('i) := rv('i) - val(1/1) ;})" --pattern "'<_|_>['Prest:Program, '_|_|_['ISTRSf:IStoreS, '_\`,_['_|->Rs_['rv[''i.Sort], '0/1.Real], 'RSTRSf:RStoreS], 'BSTRSf:BStoreS]]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(var1, Real)" --sType "'*" --solN 0
+
+
+*** Does not work, cannot use 'RV:RVar as denominator...?
+python3 semantics-analysis-ext.py --program "start(rv('var2) := val(20) ; rv('i) := val(5) ; rv('var3) := val(1) ; while rv('var1) < rv('var2) do {if rv('var1) > val(10) then {rv('var3) := rv('var2) / rv('i) ; } rv('var3) := rv('var3) * val(5) ; rv('var1) := rv('var1) + val(1) ; rv('i) := rv('i) - val(1) ;})" --pattern "'<_|_>['__['_:=_;['RV1:RVar, '_/_['RExp1:RExp, 'RV:RVar]], 'Prest:Program], '_|_|_['ISTRSf:IStoreS, '_\`,_['_|->Rs_['RV:RVar, '0/1.Real], 'RSTRSf:RStoreS], 'BSTRSf:BStoreS]]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(var1, Real)" --sType "'*" --solN 0
+
+"'metaCheck['upModule[''REAL-INTEGER.Sort, 'false.Bool], '_===_['RvalS:Real, '0/1.Real]] = 'true.Bool"
 
 *** With value directly
 python3 semantics-analysis-ext.py --program "start(rv('var2) := val(20/1) ; while rv('var1) < rv('var2) do {rv('var3) := val(2) * rv('var2) ; if rv('var1) > val(10/1) then {rv('var3) := rv('var2) / val(0/1) ; } rv('var1) := rv('var1) + val(1/1) ;})" --pattern "'<_|_>['__['_:=_;['RV:RVar, '_/_['RExp1:RExp, 'val['0.Zero]]], 'Prest:Program], 'STRend:Stores]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(var1, Real)" --sType "'*" --solN 0
@@ -333,6 +424,38 @@ search startC(start(if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res
 *** Division by 0 *** CHECK
 *** Bound search to 1 solution
 search [1] startC(start(rv('var2) := val(20/1) ; while rv('var1) < rv('var2) do {rv('var3) := val(2) * rv('var2) ; if rv('var1) > val(10) then {rv('var3) := rv('var2) / val(0) ; } rv('var1) := rv('var1) + val(1/1) ;}), ('var1, var10S:Real)) =>* [< RV:RVar := RExp1:RExp / val(0) ; Pf:Program | STRend:Stores >][SMS:State {CST:Boolean}][SMSInit:State] .
+
+
+*** Complex program
+
+iv('i) := val(5); 
+while iv('k) < iv('y) do {
+    if iv('k) > val(10) then {
+        iv('x) := iv('k) * iv('y);
+        iv('a) := iv('x) - iv('i);
+        iv('z) := iv('y) / iv('a);
+    }
+    iv('k) := iv('k) + val(1); 
+    iv('i) := iv('i) * val(2);
+}
+
+search [1] startC(start(iv('i) := val(5); while iv('k) < iv('y) do { if iv('k) > val(10) then {iv('x) := iv('k) * iv('y) ; iv('a) := iv('x) - iv('i); iv('z) := iv('y) / iv('a) ;} iv('k) := iv('k) + val(1) ; iv('i) := iv('i) * val(2) ;}), ('k, k0S:Integer) ('y, y0S:Integer)) =>* [< IV1:IVar := IExp1:IExp / IV:IVar ; Pf:Program |(ISTRf:IStore, IV:IVar |->I 0) | RSTRf:RStore | BSTRf:BStore >][SMS:State {CST:Boolean}][SMSInit:State] .
+
+
+while iv('y) < iv('k) do {
+    while iv('k) + iv('y) < val(100) do {
+        iv('k) := iv('k) + val(1); 
+        iv('y) := iv('y) * val(2);
+    }
+    iv('a) := iv('k) - iv('y);
+    iv('z) := iv('y) / iv('a);
+}
+
+search [1] startC(start(while iv(') < iv('k) do {while iv('k) + iv('y) < val(100) do {iv('k) := iv('k) + val(1); iv('y) := iv('y) * val(2);} iv('a) := iv('k) - iv('y); iv('z) := iv('y) / iv('a);}), ('k, k0S:Integer) ('y, y0S:Integer)) =>* [< IV1:IVar := IExp1:IExp / IV:IVar ; Pf:Program |(ISTRf:IStore, IV:IVar |->I 0) | RSTRf:RStore | BSTRf:BStore >][SMS:State {CST:Boolean}][SMSInit:State] .
+
+
+select VERIFICATION-COMMANDS .
+select transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, conc) .
 
 red downTerm('<_|_>['Pf:Program, '_|_|_['_`,_['_`,_['_`,_['_`,_['_|->I_['iv[''x.Sort],  'X:Int], '_|->I_['iv[''i.Sort],  'I:Int]], '_|->I_['iv[''k.Sort],  'K:Int]], '_|->I_['iv[''n.Sort],  'N:Int]], 'ISTRrest:IStore], 'RSTRf:RStore, 'BSTRf:BStore]], err:ConcolicState) .
 < Pf:Program | (ISTRrest:IStore, iv('i) |->I I:Int, iv('k) |->I K:Int, iv('n) |->I N:Int, iv('x) |->I X:Int) | RSTRf:RStore | BSTRf:BStore >
