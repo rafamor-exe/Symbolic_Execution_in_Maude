@@ -2,7 +2,7 @@ load ../semantics-basics/semantics-basics-maudeTypes.maude
 
 fmod REC-LANG-TERM-MOD is
 
-    protecting CONCRETE-AEXP-MOD .
+    protecting CONCRETE-FW .
 
     sorts RECTerm RECIVal .
     subsort IExp RECIVal < RECTerm .

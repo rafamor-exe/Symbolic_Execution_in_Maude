@@ -128,7 +128,7 @@ view BVar from TRIV to CONCRETE-VAR-MOD is
   sort Elt to BVar .
 endv
 
-fmod CONCRETE-AEXP-MOD is
+fmod CONCRETE-FW is
 
     protecting CONCRETE-VAR-MOD .
     protecting MAP{Qid, Int} * (sort Map{Qid, Int} to IStore) * (op _|->_ to _|->I_ ) .

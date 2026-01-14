@@ -2,7 +2,7 @@ load ../semantics-basics/semantics-basics-maudeTypes.maude
 
 fmod WHILE-LANG-INSTS-MOD is
 
-    protecting CONCRETE-AEXP-MOD .
+    protecting CONCRETE-FW .
 
     sort Inst .
 
