@@ -161,6 +161,11 @@ while iv('k) < iv('y) do {
 
 python3 semantics-analysis-ext.py --program "start(iv('i) := val(5); while iv('k) < iv('y) do { if iv('k) > val(10) then {iv('x) := iv('k) * iv('y) ; iv('a) := iv('x) - iv('i); iv('z) := iv('y) / iv('a) ;} iv('k) := iv('k) + val(1) ; iv('i) := iv('i) * val(2) ;})" --pattern "concolicState('State, '<_|_>['__['_:=_;['IV1:IVar, '_/_['IExp1:IExp, 'iv['IV:Qid]]], 'Prest:Program], '_|_|_['_\`,_['_|->I_['IV:Qid, '0.Zero], 'ISTRf:IStore], 'RSTRf:RStore, 'BSTRf:BStore]])" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(k, Integer) ; (y, Integer)" --sType "'*" --solN 0
 
+*** Factorial
+- Solutions up to 3...
+python3 semantics-analysis-ext.py --program "start('f [iv('k)], ('f [iv('x)] = if iv('x) then {val(1)} else {iv('x) * ('f [iv('x) - val(1)])}))" --pattern "'S:ConcolicState" --file "language-semantics/rec-semantics-v2.maude" --analysis "concolic" --logic "'QF_LRA" --fold "false" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(k, Integer)" --symbCond "k >= 0" --sType "'!" --solN 0
+
+
 -------------
 *** Incorporated MaudeSE (need to load smt-check.maude)
 *** - MaudeSE metaSmtSearch does not allow '! (does not reduce) (remember --sType "'*")
@@ -346,8 +351,10 @@ python3 semantics-analysis-ext.py --program "start('f [iv('var1) ', val(3)], ('f
 python3 semantics-analysis-ext.py --program "start('f [iv('k)], ('f [iv('x)] = if lt(iv('x), recVal(0)) then {iv('y)} else {val(0) - iv('y)}))" --pattern "'<_|_|_>['Pf:Program, 'FSTR:Map\`{Qid\`,FDec\`}, 'STRf:Stores]" --file "language-semantics/rec-semantics.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(k, Integer)" --solN 0
 
 - Factorial
-
+*** Infinite state
 python3 semantics-analysis-ext.py --program "start('f [iv('k)], ('f [iv('x)] = if iv('x) then {val(1)} else {iv('x) * ('f [iv('x) - val(1)])}))" --pattern "'S:State" --file "language-semantics/rec-semantics.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(k, Integer)" --symbCond "k >= 0" --solN 5
+
+python3 semantics-analysis-ext.py --program "start('f [iv('k)], ('f [iv('x)] = if iv('x) then {val(1)} else {iv('x) * ('f [iv('x) - val(1)])}))" --pattern "'S:State" --file "language-semantics/rec-semantics.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(k, Integer)" --symbCond "k === 5" --solN 10
 
 'f [iv('k)],
 ('f [iv('x)] = if iv('x) then {val(1)} else {'m [iv('x), ('f [iv('x) - val(1)])]}) ('m [iv('x) ', iv('y)] = (iv('x) * iv('y)))
@@ -442,6 +449,11 @@ select VERIFICATION-COMMANDS .
 select transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, conc) .
 
 select transformModSymb(upModule('REC-MAUDE, true), 'State, 'recVal, conc) .
+
+'`[_`]`[_`]`[_`]['<_|_|_>['_*_['iv[''k.Sort], '_`[_`][''f.Sort, '_-_['iv[''k.Sort], 'val['s_['0.Zero]]]]], '_|->_[''f.Sort, '_`[_`]=_[''f.Sort, 'iv[''x.Sort], 'if_then`{_`}else`{_`}['iv[''x.Sort], 'val['s_['0.Zero]], '_*_['iv[''x.Sort], '_`[_`][''f.Sort, '_-_['iv[''x.Sort], 'val['s_['0.Zero]]]]]]]], '_|_|_['_|->I_[''k.Sort, 's_['0.Zero]], 'empty.RStore, 'empty.BStore]], '_`{_`}['<_|_|_>['_*_['iv[''k.Sort], '_`[_`][''f.Sort, '_-_['iv[''k.Sort], 'val['s_['0.Zero]]]]], '_|->_[''f.Sort, '_`[_`]=_[''f.Sort, 'iv[''x.Sort], 'if_then`{_`}else`{_`}['iv[''x.Sort], 'val['s_['0.Zero]], '_*_['iv[''x.Sort], '_`[_`][''f.Sort, '_-_['iv[''x.Sort], 'val['s_['0.Zero]]]]]]]], '_|_|_['_|->Is_[''k.Sort, 'k0S:Integer], 'empty.RStoreS, 'empty.BStoreS]], '_and_['_and_['_and_['true.Boolean, '_>=_['k0S:Integer, '0.Integer]], 'not_['_===_['k0S:Integer, '0.Integer]]], 'not_['_===_['k0S:Integer, '0.Integer]]]], '<_|_|_>['_`[_`][''f.Sort, 'iv[''k.Sort]], '_|->_[''f.Sort, '_`[_`]=_[''f.Sort, 'iv[''x.Sort], 'if_then`{_`}else`{_`}['iv[''x.Sort], 'val['s_['0.Zero]], '_*_['iv[''x.Sort], '_`[_`][''f.Sort, '_-_['iv[''x.Sort], 'val['s_['0.Zero]]]]]]]], '_|_|_['_|->Is_[''k.Sort, 'k0S:Integer], 'empty.RStoreS, 'empty.BStoreS]]]
+
+[< iv('k) * 'f[iv('k) - val((1).NzNat)] | 'f |-> 'f[iv('x)]= if iv('x) then{val((1).NzNat)}else{iv('x) * 'f[iv('x) - val((1).NzNat)]} | 'k |->I 1 | (empty).RStore | (empty).BStore >][< iv('k) * 'f[iv('k) - val((1).NzNat)] | 'f |-> 'f[iv('x)]= if iv('x) then{val((1).NzNat)}else{iv('x) * 'f[iv('x) - val((1).NzNat)]} | 'k |->Is k0S:Integer | (empty).RStoreS | (empty).BStoreS >{true and k0S:Integer >= (0).Integer and not k0S:Integer === (0).Integer and not k0S:Integer === (0).Integer}][< 'f[iv('k)] | 'f |-> 'f[iv('x)]= if iv('x) then{val((1).NzNat)}else{iv('x) * 'f[iv('x) - val((1).NzNat)]} | 'k |->Is k0S:Integer | (empty).RStoreS | (empty).BStoreS >]
+
 
 '_*_[''k.Sort, '_`[_`][''f.Sort, '_-_[''k.Sort, 'val['s_['0.Zero]]]]]
 
