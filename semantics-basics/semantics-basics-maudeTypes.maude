@@ -131,9 +131,9 @@ endv
 fmod CONCRETE-AEXP-MOD is
 
     protecting CONCRETE-VAR-MOD .
-    protecting MAP{IVar, Int} * (sort Map{IVar, Int} to IStore) * (op _|->_ to _|->I_ ) .
-    protecting MAP{RVar, Rat} * (sort Map{RVar, Rat} to RStore) * (op _|->_ to _|->R_ ) .
-    protecting MAP{BVar, Bool} * (sort Map{BVar, Bool} to BStore) * (op _|->_ to _|->B_ ) .
+    protecting MAP{Qid, Int} * (sort Map{Qid, Int} to IStore) * (op _|->_ to _|->I_ ) .
+    protecting MAP{Qid, Rat} * (sort Map{Qid, Rat} to RStore) * (op _|->_ to _|->R_ ) .
+    protecting MAP{Qid, Bool} * (sort Map{Qid, Bool} to BStore) * (op _|->_ to _|->B_ ) .
 
     sorts Stores .
 
@@ -176,6 +176,7 @@ fmod CONCRETE-AEXP-MOD is
     vars I I1 I2 : Int .
     vars R R1 R2 : Rat .
     vars B B1 B2 : Bool .
+    var Q : Qid .
 
     eq eval(IExp, ISTR) = evalI(IExp, ISTR) .
     eq eval(RExp, RSTR) = evalR(RExp, RSTR) .
@@ -198,7 +199,7 @@ fmod CONCRETE-AEXP-MOD is
     eq eval(RExp1 >= RExp2, (ISTR | RSTR | BSTR)) = evalR(RExp1, RSTR) >= evalR(RExp2, RSTR) .
     eq eval(BExp1 === BExp2, STR) = eval(BExp1, STR) == eval(BExp2, STR) .
     eq eval(BExp1 =/== BExp2, STR) = eval(BExp1, STR) =/= eval(BExp2, STR) .
-    eq eval(BVar, (ISTR | RSTR | BSTR)) = BSTR[BVar] .
+    eq eval(bv(Q), (ISTR | RSTR | BSTR)) = BSTR[Q] .
     eq eval(val(B), STR) = B .
     
     eq evalI(- IExp1, ISTR) = - evalI(IExp1, ISTR) .
@@ -215,8 +216,8 @@ fmod CONCRETE-AEXP-MOD is
 
     ***eq evalB(BExp1 /\ BExp2, BSTR) = evalB(BExp1, BSTR) and evalB(BExp2, BSTR) .
 
-    eq evalI(IVar, ISTR) = ISTR[IVar] .
-    eq evalR(RVar, RSTR) = RSTR[RVar] .
+    eq evalI(iv(Q), ISTR) = ISTR[Q] .
+    eq evalR(rv(Q), RSTR) = RSTR[Q] .
     eq evalI(val(I), ISTR) = I .
     eq evalR(val(R), RSTR) = R .
     ***eq evalB(val(B), BSTR) = B .
