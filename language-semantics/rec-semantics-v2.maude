@@ -5,7 +5,7 @@ fmod REC-LANG-TERM-MOD is
     protecting CONCRETE-FW .
 
     sorts RECTerm RECIVal .
-    subsort IExp RECIVal < RECTerm .
+    subsort RECIVal IExp < RECTerm .
 
     op recVal : Int -> RECIVal [ctor] .
 
@@ -13,9 +13,17 @@ fmod REC-LANG-TERM-MOD is
     op _-_ : RECTerm RECTerm -> RECTerm [gather (E e) prec 33] .
     op _*_ : RECTerm RECTerm -> RECTerm [gather (E e) prec 31] .
 
-    var I : Int .
+    vars I I' I1 I2 : Int .
     var ISTR : IStore .
+    var Q : Qid .
     eq evalI(recVal(I), ISTR) = I .
+    ***eq evalI(recVal(I) * recVal(I'), ISTR) = I * I' .
+    ***eq evalI(recVal(I) * val(I'), ISTR) = I * I' .
+    ***eq evalI(recVal(I) * iv(Q), ISTR) = I * ISTR[Q] .
+
+    ***eq recVal(I1) + recVal(I2) = recVal(I1 + I2) .
+    ***eq recVal(I1) - recVal(I2) = recVal(I1 - I2) .
+    ***eq recVal(I1) * recVal(I2) = recVal(I1 * I2) .
     
 endfm
 
@@ -132,6 +140,7 @@ mod REC-MAUDE is
     var F : Qid .
     var ParamL : ParamL .
     var Args : Args .
+    var I1 I2 : Int .
 
     op start : Program FDecL -> State .
     eq start(P, FDecL) = start(P, FDecL, empty, (empty | empty | empty)) .
@@ -139,88 +148,89 @@ mod REC-MAUDE is
     eq start(P, nil, FSTR, STR) = < P | FSTR | STR > .
     eq start(P, (F [ParamL] = T) FDecL, FSTR, STR) = start(P, FDecL, insert(F, (F [ParamL] = T), FSTR), STR) .
 
-    rl [term-val] :
+    eq T1 * (T2 * T') = (T1 * T2) * T' .
+
+    rl [term-val1] :
         < IExp | FSTR | (ISTR | RSTR | BSTR) >
         =>
         < recVal(evalI(IExp, ISTR)) | FSTR | (ISTR | RSTR | BSTR) > .
     
-    rl [term-val] :
+    rl [term-val2] :
         < T' + IExp | FSTR | (ISTR | RSTR | BSTR) >
         =>
         < T' + recVal(evalI(IExp, ISTR)) | FSTR | (ISTR | RSTR | BSTR) > .
     
-    rl [term-val] :
+    rl [term-val3] :
         < T' - IExp | FSTR | (ISTR | RSTR | BSTR) >
         =>
         < T' - recVal(evalI(IExp, ISTR)) | FSTR | (ISTR | RSTR | BSTR) > .
     
-    rl [term-val] :
+    rl [term-val4] :
         < T' * IExp | FSTR | (ISTR | RSTR | BSTR) >
         =>
         < T' * recVal(evalI(IExp, ISTR)) | FSTR | (ISTR | RSTR | BSTR) > .
     
-    rl [term-val] :
+    rl [term-val5] :
         < IExp + T' | FSTR | (ISTR | RSTR | BSTR) >
         =>
         < recVal(evalI(IExp, ISTR)) + T' | FSTR | (ISTR | RSTR | BSTR) > .
     
-    rl [term-val] :
+    rl [term-val6] :
         < IExp - T' | FSTR | (ISTR | RSTR | BSTR) >
         =>
         < recVal(evalI(IExp, ISTR)) - T' | FSTR | (ISTR | RSTR | BSTR) > .
     
-    rl [term-val] :
+    rl [term-val7] :
         < IExp * T'  | FSTR | (ISTR | RSTR | BSTR) >
         =>
         < recVal(evalI(IExp, ISTR)) * T' | FSTR | (ISTR | RSTR | BSTR) > .
 
-    ***rl [term-sum] :
-    ***    < T1 + T2 | FSTR | STR >
-    ***    =>
-    ***    < evalIF(T1, FSTR, STR) + evalIF(T2, FSTR, STR) | FSTR | STR > .
-    ***    ***< recVal(evalI(T1, ISTR) + evalI(T2, ISTR)) | FSTR | (ISTR | RSTR | BSTR) > .
-***
-    ***rl [term-subtract] :
-    ***    < T1 - T2 | FSTR | STR >
-    ***    =>
-    ***    < evalIF(T1, FSTR, STR) - evalIF(T2, FSTR, STR) | FSTR | STR > .
-***
-    ***rl [term-mult] :
-    ***    < T1 * T2 | FSTR | STR >
-    ***    =>
-    ***    < evalIF(T1, FSTR, STR) * evalIF(T2, FSTR, STR) | FSTR | STR > .
+    rl [term-recval1] :
+        < recVal(I1) + recVal(I2) | FSTR | (ISTR | RSTR | BSTR) >
+        =>
+        < recVal(I1 + I2) | FSTR | (ISTR | RSTR | BSTR) > .
+    
+    rl [term-recval2] :
+        < recVal(I1) - recVal(I2) | FSTR | (ISTR | RSTR | BSTR) >
+        =>
+        < recVal(I1 - I2) | FSTR | (ISTR | RSTR | BSTR) > .
+    
+    rl [term-recval3] :
+        < recVal(I1) * recVal(I2) | FSTR | (ISTR | RSTR | BSTR) >
+        =>
+        < recVal(I1 * I2) | FSTR | (ISTR | RSTR | BSTR) > .
 
-    rl [apply-func] :
+    rl [apply-func1] :
         < F [Args] | (F |-> FDec, FSTR) | STR >
         =>
         < FDec[Args] | (F |-> FDec, FSTR) | STR > .
     
-    rl [apply-func] :
+    rl [apply-func2] :
         < T' + F [Args] | (F |-> FDec, FSTR) | STR >
         =>
         < T' + FDec[Args] | (F |-> FDec, FSTR) | STR > .
     
-    rl [apply-func] :
+    rl [apply-func3] :
         < T' - F [Args] | (F |-> FDec, FSTR) | STR >
         =>
         < T' - FDec[Args] | (F |-> FDec, FSTR) | STR > .
     
-    rl [apply-func] :
+    rl [apply-func4] :
         < T' * F [Args] | (F |-> FDec, FSTR) | STR >
         =>
         < T' * FDec[Args] | (F |-> FDec, FSTR) | STR > .
     
-    rl [apply-func] :
+    rl [apply-func5] :
         < F [Args] + T' | (F |-> FDec, FSTR) | STR >
         =>
         < FDec[Args] + T' | (F |-> FDec, FSTR) | STR > .
     
-    rl [apply-func] :
+    rl [apply-func6] :
         < F [Args] - T' | (F |-> FDec, FSTR) | STR >
         =>
         < FDec[Args] - T' | (F |-> FDec, FSTR) | STR > .
     
-    rl [apply-func] :
+    rl [apply-func7] :
         < F [Args] * T'  | (F |-> FDec, FSTR) | STR >
         =>
         < FDec[Args] * T' | (F |-> FDec, FSTR) | STR > .
@@ -329,10 +339,6 @@ mod REC-MAUDE is
 
     op updateStore : State Stores -> State .
     eq updateStore(< P | FSTR | STR >, STR2) = < P | FSTR | STR2 > .
-
-    op evalIF : RECTerm Map{Qid, FDec} Stores -> RECTerm .
-    eq evalIF(F [Args], (F |-> FDec, FSTR), STR) = FDec[Args] .
-    eq evalIF(T, FSTR, STR) = T [owise] .
     
     *** Ignore
     op test : Bool Int -> Rat .
