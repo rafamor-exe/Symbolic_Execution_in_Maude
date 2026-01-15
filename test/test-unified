@@ -350,24 +350,25 @@ python3 semantics-analysis-ext.py --program "start('f [iv('var1) ', val(3)], ('f
 python3 semantics-analysis-ext.py --program "start('f [iv('var1) ', val(3)], ('f [iv('x) ', iv('y)] = if iv('x) then {iv('y)} else {val(0) - iv('y)}))" --pattern "concolicState('State)" --file "language-semantics/rec-semantics.maude" --analysis "concolic" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(var1, Integer)" --symbCond "var1 < 5" --solN 0
 python3 semantics-analysis-ext.py --program "start('f [iv('var1) ', val(3)], ('f [iv('x) ', iv('y)] = if iv('x) then {iv('y)} else {val(0) - iv('y)}))" --pattern "concolicState('State)" --file "language-semantics/rec-semantics.maude" --analysis "concolic" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(var1, Integer)" --symbCond "var1 < 5" --solN 1
 
-python3 semantics-analysis-ext.py --program "start('f [iv('var1) ', val(3)], ('f [iv('x) ', iv('y)] = if iv('x) then {iv('y)} else {val(0) - iv('y)}))" --pattern "concolicState('State, '<_|_|_>['Pf:Program, 'FSTR:Map\`{Qid\`,FDec\`}, 'STRf:Stores])" --file "language-semantics/rec-semantics.maude" --analysis "concolic" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(var1, Integer)" --symbCond "var1 < 5" --solN 0
+python3 semantics-analysis-ext.py --program "start('f [iv('var1) ', val(3)], ('f [iv('x) ', iv('y)] = if iv('x) then {iv('y)} else {val(0) - iv('y)}))" --pattern "concolicState('State, '<_|_|_>['recVal['N:Int], 'FSTR:Map\`{Qid\`,FDec\`}, 'STRf:Stores])" --file "language-semantics/rec-semantics.maude" --analysis "concolic" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(var1, Integer)" --symbCond "var1 < 5" --solN 0
 
-python3 semantics-analysis-ext.py --program "start('f [iv('k)], ('f [iv('x)] = if iv('x) then {val(1)} else {iv('x) * ('f [iv('x) - val(1)])}))" --pattern "concolicState('State, '<_|_|_>['Pf:Program, 'FSTR:Map\`{Qid\`,FDec\`}, 'STRf:Stores])" --file "language-semantics/rec-semantics.maude" --analysis "concolic" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(k, Integer)" --solN 0
+- Factorial
+python3 semantics-analysis-ext.py --program "start('f [iv('k)], ('f [iv('x)] = if iv('x) then {val(1)} else {iv('x) * ('f [iv('x) - val(1)])}))" --pattern "concolicState('State, '<_|_|_>['recVal['N:Int], 'FSTR:Map\`{Qid\`,FDec\`}, 'STRf:Stores])" --file "language-semantics/rec-semantics-v2.maude" --analysis "concolic" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(k, Integer)" --solN 0
 
+*** Revise
 - Absolute value
 python3 semantics-analysis-ext.py --program "start('f [iv('k)], ('f [iv('x)] = if lt(iv('x), recVal(0)) then {iv('y)} else {val(0) - iv('y)}))" --pattern "concolicState('State, '<_|_|_>['Pf:Program, 'FSTR:Map\`{Qid\`,FDec\`}, 'STRf:Stores])" --file "language-semantics/rec-semantics.maude" --analysis "concolic" --sType "'*" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(k, Integer)" --solN 0
+
+python3 semantics-analysis-ext.py --program "start('f [iv('k)], ('f [iv('x)] = if le(iv('x), val(0)) then {iv('y)} else {val(0) - iv('y)}))" --pattern "concolicState('State, '<_|_|_>['Pf:Program, 'FSTR:Map\`{Qid\`,FDec\`}, 'STRf:Stores])" --file "language-semantics/rec-semantics.maude" --analysis "concolic" --sType "'*" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(k, Integer)" --solN 0
 
 *** MaudeSE
 
 python3 semantics-analysis-ext.py --program "start('f [iv('var1) ', val(3)], ('f [iv('x) ', iv('y)] = if iv('x) then {iv('y)} else {val(0) - iv('y)}))" --pattern "'<_|_|_>['V:RECIVal, 'FSTR:Map\`{Qid\`,FDec\`}, 'STRf:Stores]" --file "language-semantics/rec-semantics.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(var1, Integer)" --solN 0
 
-- Absolute value
-python3 semantics-analysis-ext.py --program "start('f [iv('k)], ('f [iv('x)] = if lt(iv('x), recVal(0)) then {iv('y)} else {val(0) - iv('y)}))" --pattern "'<_|_|_>['Pf:Program, 'FSTR:Map\`{Qid\`,FDec\`}, 'STRf:Stores]" --file "language-semantics/rec-semantics.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(k, Integer)" --solN 0
-
 - Factorial
 
 *** Check factorial always positive
-- Always holds
+- Always holds (each solution n gives the result n!)
 python3 semantics-analysis-ext.py --program "start('f [iv('k)], ('f [iv('x)] = if iv('x) then {val(1)} else {iv('x) * ('f [iv('x) - val(1)])}))" --pattern "'<_|_|_>['recVal['NS:Integer], 'FSTR:Map\`{Qid\`,FDec\`}, 'STR:Stores]" --file "language-semantics/rec-semantics-v2.maude" --analysis "maude-se" --logic "'QF_LRA" --fold "true" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(k, Integer)" --sCond "upTerm(N:Integer >= 0) = 'true.Bool" --symbCond "k >= 0" --sType "'*" --solN 0
 
 *** Try to find counterexample
@@ -380,22 +381,9 @@ python3 semantics-analysis-ext.py --program "start('f [iv('k)], ('f [iv('x)] = i
 *** Calculate 3!
 python3 semantics-analysis-ext.py --program "start('f [iv('k)], ('f [iv('x)] = if iv('x) then {val(1)} else {iv('x) * ('f [iv('x) - val(1)])}))" --pattern "'<_|_|_>['recVal['6.Integer], 'FSTR:Map\`{Qid\`,FDec\`}, 'STR:Stores]" --file "language-semantics/rec-semantics-v2.maude" --analysis "maude-se" --logic "'QF_LRA" --fold "true" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(k, Integer)" --symbCond "k === 3" --sType "'*" --solN 0
 
-*** OLD
-*** Infinite state
-python3 semantics-analysis-ext.py --program "start('f [iv('k)], ('f [iv('x)] = if iv('x) then {val(1)} else {iv('x) * ('f [iv('x) - val(1)])}))" --pattern "'S:State" --file "language-semantics/rec-semantics.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(k, Integer)" --symbCond "k >= 0" --solN 5
-
-python3 semantics-analysis-ext.py --program "start('f [iv('k)], ('f [iv('x)] = if iv('x) then {val(1)} else {iv('x) * ('f [iv('x) - val(1)])}))" --pattern "'S:State" --file "language-semantics/rec-semantics.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(k, Integer)" --symbCond "k === 5" --solN 10
-
-'f [iv('k)],
-('f [iv('x)] = if iv('x) then {val(1)} else {'m [iv('x), ('f [iv('x) - val(1)])]}) ('m [iv('x) ', iv('y)] = (iv('x) * iv('y)))
-
-'f [iv('k)], ('f [iv('x)] = if iv('x) then {val(1)} else {iv('x) * ('f [iv('x) - val(1)])})
-
-start('f [iv('k)], ('f [iv('x)] = if iv('x) then {val(1)} else {iv('x) * ('f [iv('x) - val(1)])}))
-
-python3 semantics-analysis-ext.py --program "start('f [iv('k)], ('f [iv('x)] = if iv('x) then {val(1)} else { 'm [iv('x) ', ('f [iv('x) - val(1)])]}) ('m [iv('x) ', iv('y)] = (iv('x) * iv('y))))" --pattern "'<_|_|_>['Pf:Program, 'FSTR:Map\`{Qid\`,FDec\`}, 'STRf:Stores]" --file "language-semantics/rec-semantics.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(k, Integer)" --symbCond "k >= 0" --solN 0
-
-python3 semantics-analysis-ext.py --program "start('f [iv('k)], ('f [iv('x)] = if iv('x) then {val(1)} else {iv('x) * ('f [iv('x) - val(1)])}))" --pattern "'<_|_|_>['Pf:Program, 'FSTR:Map\`{Qid\`,FDec\`}, 'STRf:Stores]" --file "language-semantics/rec-semantics.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(k, Integer)" --symbCond "k >= 0" --solN 0
+*** Revise
+- Absolute value
+python3 semantics-analysis-ext.py --program "start('f [iv('k)], ('f [iv('x)] = if lt(iv('x), recVal(0)) then {iv('y)} else {val(0) - iv('y)}))" --pattern "'<_|_|_>['Pf:Program, 'FSTR:Map\`{Qid\`,FDec\`}, 'STRf:Stores]" --file "language-semantics/rec-semantics.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(k, Integer)" --solN 0
 
 *** Custom SE + Concolic
 search start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('var3) := val(0/1) ; if (var('var1) < val(0/1)) then { var('var3) := val(2/1) ; if (var('var1) < val(-1/1)) then { var('var3) := val(3/1) ; } } } where (p:Real < 5/1), (var('var1), val(p:Real))) =>! FinalState:SEState .
@@ -480,14 +468,7 @@ select transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, c
 
 select transformModSymb(upModule('REC-MAUDE, true), 'State, 'recVal, conc) .
 
-'`[_`]`[_`]`[_`]['<_|_|_>['_*_['iv[''k.Sort], '_`[_`][''f.Sort, '_-_['iv[''k.Sort], 'val['s_['0.Zero]]]]], '_|->_[''f.Sort, '_`[_`]=_[''f.Sort, 'iv[''x.Sort], 'if_then`{_`}else`{_`}['iv[''x.Sort], 'val['s_['0.Zero]], '_*_['iv[''x.Sort], '_`[_`][''f.Sort, '_-_['iv[''x.Sort], 'val['s_['0.Zero]]]]]]]], '_|_|_['_|->I_[''k.Sort, 's_['0.Zero]], 'empty.RStore, 'empty.BStore]], '_`{_`}['<_|_|_>['_*_['iv[''k.Sort], '_`[_`][''f.Sort, '_-_['iv[''k.Sort], 'val['s_['0.Zero]]]]], '_|->_[''f.Sort, '_`[_`]=_[''f.Sort, 'iv[''x.Sort], 'if_then`{_`}else`{_`}['iv[''x.Sort], 'val['s_['0.Zero]], '_*_['iv[''x.Sort], '_`[_`][''f.Sort, '_-_['iv[''x.Sort], 'val['s_['0.Zero]]]]]]]], '_|_|_['_|->Is_[''k.Sort, 'k0S:Integer], 'empty.RStoreS, 'empty.BStoreS]], '_and_['_and_['_and_['true.Boolean, '_>=_['k0S:Integer, '0.Integer]], 'not_['_===_['k0S:Integer, '0.Integer]]], 'not_['_===_['k0S:Integer, '0.Integer]]]], '<_|_|_>['_`[_`][''f.Sort, 'iv[''k.Sort]], '_|->_[''f.Sort, '_`[_`]=_[''f.Sort, 'iv[''x.Sort], 'if_then`{_`}else`{_`}['iv[''x.Sort], 'val['s_['0.Zero]], '_*_['iv[''x.Sort], '_`[_`][''f.Sort, '_-_['iv[''x.Sort], 'val['s_['0.Zero]]]]]]]], '_|_|_['_|->Is_[''k.Sort, 'k0S:Integer], 'empty.RStoreS, 'empty.BStoreS]]]
 
-[< iv('k) * 'f[iv('k) - val((1).NzNat)] | 'f |-> 'f[iv('x)]= if iv('x) then{val((1).NzNat)}else{iv('x) * 'f[iv('x) - val((1).NzNat)]} | 'k |->I 1 | (empty).RStore | (empty).BStore >][< iv('k) * 'f[iv('k) - val((1).NzNat)] | 'f |-> 'f[iv('x)]= if iv('x) then{val((1).NzNat)}else{iv('x) * 'f[iv('x) - val((1).NzNat)]} | 'k |->Is k0S:Integer | (empty).RStoreS | (empty).BStoreS >{true and k0S:Integer >= (0).Integer and not k0S:Integer === (0).Integer and not k0S:Integer === (0).Integer}][< 'f[iv('k)] | 'f |-> 'f[iv('x)]= if iv('x) then{val((1).NzNat)}else{iv('x) * 'f[iv('x) - val((1).NzNat)]} | 'k |->Is k0S:Integer | (empty).RStoreS | (empty).BStoreS >]
-
-
-'_*_[''k.Sort, '_`[_`][''f.Sort, '_-_[''k.Sort, 'val['s_['0.Zero]]]]]
-
-< iv('k) * 'f[iv('k) - val((1).NzNat)] | FSTR | (ISTR | RSTR | BSTR) >
 
 *** The problem is that it does not reduce because concolic needs the Python hook
 search startC(start(rv('var2) := val(1/1) ; if rv('var1) < rv('var2) then{rv('var3) := val(0/1) ; }) where var10S:Real < 5/1, ('var1, var10S:Real)) =>! Cs:ConcolicState .

@@ -170,21 +170,6 @@ mod REC-MAUDE is
         =>
         < T' * recVal(evalI(IExp, ISTR)) | FSTR | (ISTR | RSTR | BSTR) > .
     
-    rl [term-val5] :
-        < IExp + T' | FSTR | (ISTR | RSTR | BSTR) >
-        =>
-        < recVal(evalI(IExp, ISTR)) + T' | FSTR | (ISTR | RSTR | BSTR) > .
-    
-    rl [term-val6] :
-        < IExp - T' | FSTR | (ISTR | RSTR | BSTR) >
-        =>
-        < recVal(evalI(IExp, ISTR)) - T' | FSTR | (ISTR | RSTR | BSTR) > .
-    
-    rl [term-val7] :
-        < IExp * T'  | FSTR | (ISTR | RSTR | BSTR) >
-        =>
-        < recVal(evalI(IExp, ISTR)) * T' | FSTR | (ISTR | RSTR | BSTR) > .
-
     rl [term-recval1] :
         < recVal(I1) + recVal(I2) | FSTR | (ISTR | RSTR | BSTR) >
         =>
@@ -235,97 +220,97 @@ mod REC-MAUDE is
         =>
         < FDec[Args] * T' | (F |-> FDec, FSTR) | STR > .
     
-    crl [if..then] : 
+    crl [if..then1] : 
         < if T then { T1 } else { T2 } | FSTR | (ISTR | RSTR | BSTR) >
         =>
         < T1 | FSTR | (ISTR | RSTR | BSTR) >
         if evalI(T, ISTR) == 0 .
         ***if T => val(0) .
 
-    crl [if..else] : 
+    crl [if..else1] : 
         < if T then { T1 } else { T2 } | FSTR | (ISTR | RSTR | BSTR) >
         =>
         < T2 | FSTR | (ISTR | RSTR | BSTR) >
         if not evalI(T, ISTR) == 0 .
 
-    crl [if..then] : 
+    crl [if..then2] : 
         < T' + if T then { T1 } else { T2 } | FSTR | (ISTR | RSTR | BSTR) >
         =>
         < T' + T1 | FSTR | (ISTR | RSTR | BSTR) >
         if evalI(T, ISTR) == 0 .
         ***if T => val(0) .
 
-    crl [if..else] : 
+    crl [if..else2] : 
         < T' + if T then { T1 } else { T2 } | FSTR | (ISTR | RSTR | BSTR) >
         =>
         < T' + T2 | FSTR | (ISTR | RSTR | BSTR) >
         if not evalI(T, ISTR) == 0 .
         ***if T => val(N:NzInt) .
 
-    crl [if..then] : 
+    crl [if..then3] : 
         < T' - if T then { T1 } else { T2 } | FSTR | (ISTR | RSTR | BSTR) >
         =>
         < T' - T1 | FSTR | (ISTR | RSTR | BSTR) >
         if evalI(T, ISTR) == 0 .
         ***if T => val(0) .
 
-    crl [if..else] : 
+    crl [if..else3] : 
         < T' - if T then { T1 } else { T2 } | FSTR | (ISTR | RSTR | BSTR) >
         =>
         < T' - T2 | FSTR | (ISTR | RSTR | BSTR) >
         if not evalI(T, ISTR) == 0 .
         ***if T => val(N:NzInt) .
 
-    crl [if..then] : 
+    crl [if..then4] : 
         < T' * if T then { T1 } else { T2 } | FSTR | (ISTR | RSTR | BSTR) >
         =>
         < T' * T1 | FSTR | (ISTR | RSTR | BSTR) >
         if evalI(T, ISTR) == 0 .
         ***if T => val(0) .
 
-    crl [if..else] : 
+    crl [if..else4] : 
         < T' * if T then { T1 } else { T2 } | FSTR | (ISTR | RSTR | BSTR) >
         =>
         < T' * T2 | FSTR | (ISTR | RSTR | BSTR) >
         if not evalI(T, ISTR) == 0 .
         ***if T => val(N:NzInt) .
 
-    crl [if..then] : 
+    crl [if..then5] : 
         < if T then { T1 } else { T2 } + T' | FSTR | (ISTR | RSTR | BSTR) >
         =>
         < T' + T1 | FSTR | (ISTR | RSTR | BSTR) >
         if evalI(T, ISTR) == 0 .
         ***if T => val(0) .
 
-    crl [if..else] : 
+    crl [if..else5] : 
         < if T then { T1 } else { T2 } + T' | FSTR | (ISTR | RSTR | BSTR) >
         =>
         < T' * T2 | FSTR | (ISTR | RSTR | BSTR) >
         if not evalI(T, ISTR) == 0 .
         ***if T => val(N:NzInt) .
 
-    crl [if..then] : 
+    crl [if..then6] : 
         < if T then { T1 } else { T2 } - T' | FSTR | (ISTR | RSTR | BSTR) >
         =>
         < T' - T1 | FSTR | (ISTR | RSTR | BSTR) >
         if evalI(T, ISTR) == 0 .
         ***if T => val(0) .
 
-    crl [if..else] : 
+    crl [if..else6] : 
         < if T then { T1 } else { T2 } - T' | FSTR | (ISTR | RSTR | BSTR) >
         =>
         < T' - T2 | FSTR | (ISTR | RSTR | BSTR) >
         if not evalI(T, ISTR) == 0 .
         ***if T => val(N:NzInt) .
 
-    crl [if..then] : 
+    crl [if..then7] : 
         < if T then { T1 } else { T2 } * T' | FSTR | (ISTR | RSTR | BSTR) >
         =>
         < T1 * T' | FSTR | (ISTR | RSTR | BSTR) >
         if evalI(T, ISTR) == 0 .
         ***if T => val(0) .
 
-    crl [if..else] : 
+    crl [if..else7] : 
         < if T then { T1 } else { T2 } * T' | FSTR | (ISTR | RSTR | BSTR) >
         =>
         < T2 * T' | FSTR | (ISTR | RSTR | BSTR) >
