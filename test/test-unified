@@ -355,6 +355,12 @@ python3 semantics-analysis-ext.py --program "start('f [iv('var1) ', val(3)], ('f
 - Factorial
 python3 semantics-analysis-ext.py --program "start('f [iv('k)], ('f [iv('x)] = if iv('x) then {val(1)} else {iv('x) * ('f [iv('x) - val(1)])}))" --pattern "concolicState('State, '<_|_|_>['recVal['N:Int], 'FSTR:Map\`{Qid\`,FDec\`}, 'STRf:Stores])" --file "language-semantics/rec-semantics-v2.maude" --analysis "concolic" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(k, Integer)" --solN 0
 
+*** Always holds
+python3 semantics-analysis-ext.py --program "start('f [iv('k)], ('f [iv('x)] = if iv('x) then {val(1)} else {iv('x) * ('f [iv('x) - val(1)])}))" --pattern "concolicState('State, '<_|_|_>['recVal['N:Int], 'FSTR:Map\`{Qid\`,FDec\`}, 'STRf:Stores])" --file "language-semantics/rec-semantics-v2.maude" --analysis "concolic" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(k, Integer)" --sCond "'_>=_['N:Int, '0.Zero] = 'true.Bool" --solN 0
+
+*** Try to find a counterexample in 0 <= k <= 100
+python3 semantics-analysis-ext.py --program "start('f [iv('k)], ('f [iv('x)] = if iv('x) then {val(1)} else {iv('x) * ('f [iv('x) - val(1)])}))" --pattern "concolicState('State, '<_|_|_>['recVal['N:Int], 'FSTR:Map\`{Qid\`,FDec\`}, 'STRf:Stores])" --file "language-semantics/rec-semantics-v2.maude" --analysis "concolic" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(k, Integer)" --symbCond "k >= 0 and k <= 100" --sCond "'not_['_>=_['N:Int, '0.Zero]] = 'true.Bool" --solN 0
+
 *** Revise
 - Absolute value
 python3 semantics-analysis-ext.py --program "start('f [iv('k)], ('f [iv('x)] = if lt(iv('x), recVal(0)) then {iv('y)} else {val(0) - iv('y)}))" --pattern "concolicState('State, '<_|_|_>['Pf:Program, 'FSTR:Map\`{Qid\`,FDec\`}, 'STRf:Stores])" --file "language-semantics/rec-semantics.maude" --analysis "concolic" --sType "'*" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(k, Integer)" --solN 0
