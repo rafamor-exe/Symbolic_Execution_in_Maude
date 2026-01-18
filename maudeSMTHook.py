@@ -8,33 +8,100 @@ class SMTAssignmentHook (maude.Hook):
     def __init__(self):
         super().__init__()
         self.solver = None
+        self.module = None
+        self.trueT = None
+        self.falseT = None
+        self.op_conv = {
+                        "not_": lambda a: Not(self.toZ3(a)),
+                        "_<_": lambda a, b: self.toZ3(a) < self.toZ3(b),
+                        "_>_": lambda a, b: self.toZ3(a) > self.toZ3(b),
+                        "_<=_": lambda a, b: self.toZ3(a) <= self.toZ3(b),
+                        "_>=_": lambda a, b: self.toZ3(a) >= self.toZ3(b),
+                        "_==_": lambda a, b: self.toZ3(a) == self.toZ3(b),
+                        "_===_": lambda a, b: self.toZ3(a) == self.toZ3(b),
+                        "_!=_": lambda a, b: self.toZ3(a) != self.toZ3(b),
+                        "_+_": lambda a, b: self.toZ3(a) + self.toZ3(b),
+                        "_-_": lambda a, b: self.toZ3(a) - self.toZ3(b),
+                        "_*_": lambda a, b: self.toZ3(a) * self.toZ3(b),
+                        "_/_": lambda a, b: self.toZ3(a) / self.toZ3(b),
+                        "_div_": lambda a, b: self.toZ3(a) / self.toZ3(b),
+                        "toReal": lambda a: self.toZ3(a),
+                        "toInteger": lambda a: self.toZ3(a),
+                        "toBoolean": lambda a: self.toZ3(a),
+                        }
+
+    def toZ3(self, t):
+        op = t.symbol()
+        args = list(t.arguments())
+        #print(op)
+        #print(args)
+        if not args:
+            # If no arguments, then t it is either a constant or a variable
+            if t.equal(self.falseT):
+                return False
+            elif t.equal(self.trueT):
+                return True
+            elif t.isVariable():
+                var_n = t.getVarName()
+                var_t = t.getSort()
+                #print(var_n, var_t)
+                if str(var_t) == "Boolean":
+                    return Bool(var_n)
+                elif str(var_t) == "Integer":
+                    return Int(var_n)
+                elif str(var_t) == "Real":
+                    return Real(var_n)
+            else: 
+                # Integer and Real constants
+                cons_t = t.getSort()
+                if str(cons_t) == "Integer":
+                    return t.toInt()
+                elif str(cons_t) == "Real":
+                    return t.toFloat()
+        else:
+            #print(*args)
+            #print(str(self.op_conv[str(op)](*args)))
+            # If term has args, construct operation with dictorionary of operators
+            return self.op_conv[str(op)](*args)
+
+    def separate_constraints(self, t):
+        consL = []
+        #print(t.symbol())
+        # Recursively convert individual constraints to Z3 constraints 
+        if not (str(t.symbol()) == '_and_'):
+            consL.append(self.toZ3(t))
+        else:
+            args = list(t.arguments())
+            #print(args)
+            consL.extend(self.separate_constraints(args[0]))
+            consL.extend(self.separate_constraints(args[1]))
+        # Return list of Z3 cosntraints
+        return consL
 
     def run(self , term , data):
-        self.solver = Solver()
         #print(term)
-        module = term.symbol().getModule()
+        # Hook attributes definition
+        self.solver = Solver()
+        self.module = term.symbol().getModule()
+        self.trueT = self.module.parseTerm('(true).Boolean')
+        self.falseT = self.module.parseTerm('(false).Boolean')
+        
         argument , = term.arguments()
-        maude_constraints = re.sub(r"(toBoolean)?(toInteger)?(toReal)?(val)?[\(\)]", '', str(argument)).split(' and ')
-        #print(maude_constraints)
-        for constraint in maude_constraints:
-            if constraint == '(false).Boolean':
-                return module.parseTerm("failed")
-            elif constraint == 'true.Boolean':
-                z3_constraint = True
-            else:
-                lhs, op, rhs = self.parse_constraint(constraint)
-                #print(lhs, op, rhs)
-                z3_constraint = self.get_z3constraint(lhs, op, rhs)
-            #print(z3_constraint)
-            self.solver.add(z3_constraint)
-            #print("added")
+        #print(argument)
+
+        # Separate constraint by conjunction operator
+        consL = self.separate_constraints(argument)
+        #print(consL)
+        
+        for cst in consL:
+            self.solver.add(cst)
 
         if self.solver.check() == unsat:
-            return module.parseTerm("failed")
+            return self.module.parseTerm("failed")
 
         model = self.solver.model()
         if len(model) == 0:
-            return module.parseTerm("(true).Boolean <-- (true).Boolean")
+            return self.module.parseTerm("(true).Boolean <-- (true).Boolean")
         #print(model)
         assignments = ""
         for svar in model:
@@ -53,67 +120,7 @@ class SMTAssignmentHook (maude.Hook):
                 #val_ext = "." + var_type
             assignments += f"{svar}:{var_type} <-- {str(model[svar]).lower()}{val_ext} , "
             #print(assignments)
-        return module.parseTerm(assignments[:-3])
-
-    def parse_constraint(self, argument):
-        return re.split(r' ([<>=!]+) ', argument)
-
-    def get_z3constraint(self, lhs, op, rhs):
-        lhs_list, lvar_dic = self.process_operands(lhs.split(' '))
-        rhs_list, rvar_dic = self.process_operands(rhs.split(' '))
-        ops = {
-            "<": lambda a, b: a < b,
-            ">": lambda a, b: a > b,
-            "<=": lambda a, b: a <= b,
-            ">=": lambda a, b: a >= b,
-            "==": lambda a, b: a == b,
-            "===": lambda a, b: a == b,
-            "!=": lambda a, b: a != b,
-        }
-        #print(lhs_list)
-        #print(rhs_list)
-        if lhs_list[0] != 'not':
-            constraint = ops[op](eval(''.join(lhs_list), lvar_dic), eval(''.join(rhs_list), rvar_dic))
-        else:
-            #print("a")
-            #print(op)
-            #print(ops[op])
-            #print(eval(''.join(lhs_list[1:]), lvar_dic))
-            #print(eval(''.join(rhs_list), rvar_dic))
-            constraint = Not(ops[op](eval(''.join(lhs_list[1:]), lvar_dic), eval(''.join(rhs_list), rvar_dic)))
-        #print(constraint)
-        return constraint
-
-    def process_operands(self, l):
-        var_dic = {}
-        for i in range(0,len(l)):
-            match_var = re.match(r'(\w+):(\w+)', l[i])
-            if match_var:
-                var_n, var_t = match_var.groups()
-                if var_t == "Integer":
-                    var_dic[var_n] = Int(var_n)
-                elif var_t == "Real":
-                    var_dic[var_n] = Real(var_n)
-                else:
-                    var_dic[var_n] = Bool(var_n)
-                l[i] = var_n
-            else:
-                match_int = re.search(r'.Integer', l[i])
-                if match_int:
-                    #print("int matched")
-                    l[i] = re.sub(r'\.Integer', '', l[i])
-                    #print(l[i])
-                match_real = re.search(r'.Real', l[i])
-                if match_real:
-                    #print("real matched")
-                    l[i] = re.sub(r'\.Real', '', l[i])
-                    #print(l[i])
-                match_bool = re.search(r'.Boolean', l[i])
-                if match_bool:
-                    #print("boolean matched")
-                    l[i] = re.sub(r'\.Boolean', '', l[i]).capitalize()
-                    #print(l[i])
-        return l, var_dic
+        return self.module.parseTerm(assignments[:-3])
 
 hook = SMTAssignmentHook()
 maude.connectEqHook('get-SMTassignment', hook)
