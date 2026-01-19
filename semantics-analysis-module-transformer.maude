@@ -110,7 +110,7 @@ fmod MODULE-TRANSFORMER is
 
     *** Construct a symbolic mirror of a given a term. Transform all its Maude variables to use SMT types and stores, and change their name
     op symbMirror : Term -> Term .
-    eq symbMirror(T1) = searchSubVar(T1) .
+    eq symbMirror(T1) = searchSubVarConst(T1) .
 
     *** Transform teh rules for a pure symbolic analysis without MaudeSE. For now, rule conditions must be of the form: eval(B, STR) = true
     *** The function symbMirror creates a symbolic mirror of the concrete state
@@ -135,14 +135,14 @@ fmod MODULE-TRANSFORMER is
     *** Transform the rules for a concolic analysis. For now, rule conditions must be of the form: eval(B, STR) = true
     *** The symbolic state advances naturally following the concrete state, executing the same instructions.
     *** The function symbMirror ensures the symbolic state is of the same form as the concrete state at each step, but using symbolic functions and stores
-    op rlToConcolic : RuleSet Qid ~> RuleSet .
+    op rlToConcolic : RuleSet Qid -> RuleSet .
     eq rlToConcolic(none, StateOp) = none .
     *** Transform unconditional rules
-    eq rlToConcolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet, StateOp) =
+    eq rlToConcolic(rl T1 => T2 [AttrSet] . RlSet, StateOp) =
           (rl '`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], stateVar(StateOp)]
             =>
             '`[_`]`[_`]`[_`][T2, '_`{_`}[symbMirror(T2), 'Constraints:Boolean], stateVar(StateOp)]
-            [label(InstId) AttrSet] .)
+            [AttrSet] .)
           rlToConcolic(RlSet, StateOp) .
     *** Transform conditional rules to two concolic rules
     *** - Conditional rule 1: Advances the state with the concrete condition Cond and appends Cond to the accumulated Constraints
@@ -166,6 +166,14 @@ fmod MODULE-TRANSFORMER is
             [label(qid(string(InstId) + "-bis")) AttrSet] .)
           rlToConcolic(RlSet, StateOp)
         if (Tcond = 'true.Bool) := Cond .
+    eq rlToConcolic(crl T1 => T2 if Cond [AttrSet] . RlSet, StateOp) = 
+          (crl '`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], stateVar(StateOp)]
+            =>
+            '`[_`]`[_`]`[_`][T2, '_`{_`}[symbMirror(T2), 'Constraints:Boolean], stateVar(StateOp)]
+            if Cond
+            [AttrSet] .)
+          rlToConcolic(RlSet, StateOp) [owise] .
+    ***eq rlToConcolic(Rule RlSet, StateOp) = Rule rlToConcolic(RlSet, StateOp) [owise] .
 
     *** Transform the rules for an analysis with MaudeSE
     *** - Transform the terms and conditions to use symbolic eval functions and symbolic stores
@@ -317,27 +325,43 @@ fmod MODULE-TRANSFORMER is
     eq modSEOpIds(Q) = Q [owise] .
 
     *** Transform a variable to use SMT type and use a new symbolic name
-    op subSEVarSorts : Variable -> Variable .
-    eq subSEVarSorts(MVar) = qid(string(toSymb(getName(MVar))) + ":" + string(toSMTSorts(getType(MVar)))) .
+    op subSEVarSorts : Variable Type -> Variable .
+    eq subSEVarSorts(MVar, 'Stores) = qid(string(toSymb(getName(MVar))) + ":" + string('Stores)) .
+    eq subSEVarSorts(MVar, 'IStore) = qid(string(toSymb(getName(MVar))) + ":" + string(toSMTSorts('IStore))) .
+    eq subSEVarSorts(MVar, 'RStore) = qid(string(toSymb(getName(MVar))) + ":" + string(toSMTSorts('RStore))) .
+    eq subSEVarSorts(MVar, 'BStore) = qid(string(toSymb(getName(MVar))) + ":" + string(toSMTSorts('BStore))) .
+    eq subSEVarSorts(MVar, 'Int) = qid(string(getName(MVar)) + ":" + string(toSMTSorts('Int))) .
+    eq subSEVarSorts(MVar, 'Rat) = qid(string(getName(MVar)) + ":" + string(toSMTSorts('Rat))) .
+    eq subSEVarSorts(MVar, 'Bool) = qid(string(getName(MVar)) + ":" + string(toSMTSorts('Bool))) .
+    eq subSEVarSorts(MVar, T) = MVar [owise] .
+
+    *** Transform a variable to use SMT type
+    ***op subSEVarSorts : Variable -> Variable .
+    ***eq subSEVarSorts(MVar) = qid(string(getName(MVar)) + ":" + string(toSMTSorts(getType(MVar)))) .
 
     *** Transform a constant's type to SMT
     op subSEConstSortsT : Constant -> Constant .
     eq subSEConstSortsT(MConst) = qid(string(getName(MConst)) + "." + string(toSMTSorts(getType(MConst)))) .
 
     *** Substitute all variables in a TermList with the corresponding term with SMT types
-    op searchSubVar : TermList -> TermList .
-    eq searchSubVar(empty)           = empty .
-    eq searchSubVar(MConst)          = MConst .
-    eq searchSubVar(MVar)            = subSEVarSorts(MVar) .
-    eq searchSubVar(OpId[NeTL])      = modSEOpIds(OpId)[searchSubVar(NeTL)] .
-    eq searchSubVar((T1, NeTL))      = searchSubVar(T1), searchSubVar(NeTL) .
+    ***op searchSubVar : TermList -> TermList .
+    ***eq searchSubVar(empty)           = empty .
+    ***eq searchSubVar(MConst)          = MConst .
+    ***eq searchSubVar(MVar)            = subSEVarSorts(MVar, getType(MVar)) .
+    ***eq searchSubVar(OpId[NeTL])      = modSEOpIds(OpId)[searchSubVar(NeTL)] .
+    ***eq searchSubVar((T1, NeTL))      = searchSubVar(T1), searchSubVar(NeTL) .
 
     *** Substitute all variables and constants in a TermList with the corresponding term with SMT types
     op searchSubVarConst : TermList -> TermList .
     eq searchSubVarConst(empty)           = empty .
     eq searchSubVarConst(MConst)          = subSEConstSortsT(MConst) .
-    eq searchSubVarConst(MVar)            = subSEVarSorts(MVar) .
-    eq searchSubVarConst(OpId[NeTL])      = modSEOpIds(OpId)[searchSubVarConst(NeTL)] .
+    eq searchSubVarConst(MVar)            = subSEVarSorts(MVar, getType(MVar)) .
+    eq searchSubVarConst('val[T1])        = 'val[T1] .
+    eq searchSubVarConst('s_['0.Zero])    = '1.Integer .
+    ceq searchSubVarConst(Q['0.Zero])     = qid(string(rat(substr(Str, 3, sd(length(Str), 3)), 10), 10) + ".Integer")
+      if Str := string(Q)
+      /\ substr(Str, 0, 3) = "s_^" .
+    eq searchSubVarConst(OpId[NeTL])      = modSEOpIds(OpId)[searchSubVarConst(NeTL)] [owise] .
     eq searchSubVarConst((T1, NeTL))      = searchSubVarConst(T1), searchSubVarConst(NeTL) .
 
     *** Convert constant with Maude type to the corresponding SMT type
@@ -357,8 +381,12 @@ fmod MODULE-TRANSFORMER is
     *** Recursively transform terms to use symbolic stores and convert constants to SMT values
     op subSETermSTR : Term -> Term .
     eq subSETermSTR(MConst)          = convert(MConst, getType(MConst)) .
-    eq subSETermSTR(MVar)            = subSEVarSorts(MVar) .
+    eq subSETermSTR(MVar)            = subSEVarSorts(MVar, getType(MVar)) .
     eq subSETermSTR('val[T1])        = 'val[T1] .
+    eq subSETermSTR('s_['0.Zero])    = '1.Integer .
+    ceq subSETermSTR(Q['0.Zero])     = qid(string(rat(substr(Str, 3, sd(length(Str), 3)), 10), 10) + ".Integer")
+      if Str := string(Q)
+      /\ substr(Str, 0, 3) = "s_^" .
     eq subSETermSTR(OpId[NeTL])      = modSEOpIds(OpId)[modOpStoreRec(NeTL)] [owise] .
 
     *** Transform terms in a list to use symbolic stores
@@ -369,7 +397,8 @@ fmod MODULE-TRANSFORMER is
     *** Transform variables and constants within conditions to use SMT types
     op modCond : Condition -> Condition .
     eq modCond(T1 = T2)        = (searchSubVarConst(T1) = searchSubVarConst(T2)) .
-    eq modCond(T1 := T2)       = (searchSubVarConst(T1) := searchSubVarConst(T2)) .
+    eq modCond(T1 := T2)       = (T1 := T2) .
+    ***eq modCond(T1 => T2)       = (T1 => T2) .
     eq modCond(EqC /\ EqC2)    = modCond(EqC) /\ modCond(EqC2) .
     eq modCond(Cond1 /\ Cond2) = modCond(Cond1) /\ modCond(Cond2) .
     eq modCond(Cond) = Cond [owise] .

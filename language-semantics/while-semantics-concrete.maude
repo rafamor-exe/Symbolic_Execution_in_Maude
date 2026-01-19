@@ -28,9 +28,9 @@ fmod WHILE-LANG-BLOCK-MOD is
     op while _ do {_} : BExp Program -> Inst [ctor prec 20] .
 
     var B : BExp .
-    var IL1 : Program .
+    var P1 : Program .
 
-    eq if B then {IL1} = if B then {IL1} else {nil} .
+    eq if B then {P1} = if B then {P1} else {nil} .
 
 endfm
 
@@ -52,7 +52,7 @@ mod WHILE-MAUDE is
     var RVar : RVar .
     var BVar : BVar .
     vars BExp BExp2 : BExp .
-    vars IL IL1 IL2 P : Program .
+    vars P P1 P2 : Program .
     vars STR STR2 : Stores .
     var ISTR : IStore .
     var RSTR : RStore .
@@ -65,48 +65,48 @@ mod WHILE-MAUDE is
     eq start(P) = < P | ((empty).IStore | (empty).RStore | (empty).BStore) > .
 
     rl [skip] : 
-        < skip ; IL | STR >
+        < skip ; P | STR >
         =>
-        < IL | STR > .
+        < P | STR > .
 
     rl [assign-I] : 
-        < iv(Q) := IExp ; IL | (ISTR | RSTR | BSTR) >
+        < iv(Q) := IExp ; P | (ISTR | RSTR | BSTR) >
         =>
-        < IL | insert(Q, eval(IExp, ISTR), ISTR) | RSTR | BSTR > .
+        < P | insert(Q, eval(IExp, ISTR), ISTR) | RSTR | BSTR > .
     
     rl [assign-R] : 
-        < rv(Q) := RExp ; IL | (ISTR | RSTR | BSTR) >
+        < rv(Q) := RExp ; P | (ISTR | RSTR | BSTR) >
         =>
-        < IL | ISTR | insert(Q, eval(RExp, RSTR), RSTR) | BSTR > .
+        < P | ISTR | insert(Q, eval(RExp, RSTR), RSTR) | BSTR > .
 
     rl [assign-B] : 
-        < bv(Q) := BExp ; IL | (ISTR | RSTR | BSTR) >
+        < bv(Q) := BExp ; P | (ISTR | RSTR | BSTR) >
         =>
-        < IL | ISTR | RSTR | insert(Q, eval(BExp, (ISTR | RSTR | BSTR)), BSTR) > .
+        < P | ISTR | RSTR | insert(Q, eval(BExp, (ISTR | RSTR | BSTR)), BSTR) > .
 
-    crl [if..then] : 
-        < if BExp then { IL1 } else { IL2 } IL | STR >
+    crl [if-then] : 
+        < if BExp then { P1 } else { P2 } P | STR >
         =>
-        < IL1 IL | STR >
+        < P1 P | STR >
         if eval(BExp, STR) .
 
-    crl [if..else] : 
-        < if BExp then { IL1 } else { IL2 } IL | STR >
+    crl [if-else] : 
+        < if BExp then { P1 } else { P2 } P | STR >
         =>
-        < IL2 IL | STR >
+        < P2 P | STR >
         if not eval(BExp, STR) .
     
 
-    crl [while..loop] : 
-        < while BExp do { IL1 } IL | STR >
+    crl [while-loop] : 
+        < while BExp do { P1 } P | STR >
         =>
-        < IL1 while BExp do { IL1 } IL | STR >
+        < P1 while BExp do { P1 } P | STR >
         if eval(BExp, STR) .
         
-    crl [while..exit] : 
-        < while BExp do { IL1 } IL | STR >
+    crl [while-exit] : 
+        < while BExp do { P1 } P | STR >
         =>
-        < IL | STR >
+        < P | STR >
         if not eval(BExp, STR) .
 
     *** Auxiliary
