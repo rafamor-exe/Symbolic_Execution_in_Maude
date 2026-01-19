@@ -28,6 +28,12 @@ Requires:
 - MaudeSE (for symbolic execution)
 - Z3 Python library
 
+Download the framework with
+```
+git clone https://github.com/rafamor-exe/Symbolic_Execution_in_Maude
+cd Symbolic_Execution_in_Maude
+```
+
 ---
 
 ## ⚙️ Usage
