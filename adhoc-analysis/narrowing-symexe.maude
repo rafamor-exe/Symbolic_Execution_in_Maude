@@ -1,0 +1,243 @@
+***
+*** Example of symbolic execution by narrowing
+***
+
+set include BOOL off .
+
+*** The moules BOOL-FVP and NAT-FVP are taken from Santiago Escobar's 
+*** "Extensions of Logic Programming in Maude", ALP.
+***
+*** BOOL-FVP, NAT-FVP, and INT-FVP specify Booleans, natural numbers and
+*** integers while satisfying the finite variant property (FVP).
+
+fmod BOOL-FVP is
+	sort Bool .
+
+	ops true false : -> Bool [ctor] .
+
+	op _and_ : Bool Bool -> Bool [assoc comm] .
+	op _xor_ : Bool Bool -> Bool [assoc comm] .
+	op not_ : Bool -> Bool .
+	op _or_ : Bool Bool -> Bool .
+	op _<=>_ : Bool Bool -> Bool .
+
+	vars X Y Z W : Bool .
+
+	eq X and true = X [variant] .
+	eq X and false = false [variant] .
+	eq X and X = X [variant] .
+	eq X and X and Y = X and Y [variant] .  *** AC extension
+	eq X xor false = X [variant] .
+	eq X xor X = false [variant] .
+	eq X xor X xor Y = Y [variant] .  *** AC extension
+	eq not X = X xor true [variant] .
+	eq X or Y = (X and Y) xor X xor Y [variant] .
+	eq X <=> Y = true xor X xor Y [variant] .
+endfm
+
+*** NAT-FVP specifies the decidable theory of Presburger arithmetic,
+*** with only addition and order. Its numbers are not s s s N
+*** like in Peano arithmetic but 1 + 1 + 1 + N. INT-FVP extends it
+*** with negative numbers and subtraction.
+
+fmod NAT-FVP is
+	protecting BOOL-FVP .
+
+	sorts Nat NzNat .
+	subsort NzNat < Nat . *** Non-zero naturals
+
+	op 0 : -> Nat [ctor] .
+	op 1 : -> NzNat [ctor] .
+	op _+_ : NzNat Nat -> NzNat [ctor assoc comm id: 0] .
+	op _+_ : Nat Nat -> Nat [ctor assoc comm id: 0] .
+
+	vars X Y : Nat . var Z : NzNat .
+
+	op _>_ : Nat Nat -> Bool .
+	eq X + Z > X = true [variant] .
+	eq X > X + Y = false [variant] .
+endfm
+
+fmod INT-FVP is
+	extending NAT-FVP .
+
+	sort Int .
+	subsort Nat < Int .
+
+	op -_ : NzNat -> Int [ctor] .  *** negative numbers
+
+	*** Extended operations and subtraction
+	op -_ : Int -> Int [ditto] .
+	op _+_ : Int Int -> Int [ditto] .
+	op _>_ : Int Int -> Bool [ditto] .
+	op _-_ : Int Int -> Int .
+
+	vars N M : Nat .
+	vars X Y : Int .
+	vars Z P : NzNat .
+
+	eq - (- Z) = Z [variant] .
+	eq - 0 = 0 [variant] .
+
+	eq (- Z) + (- P) = - (Z + P) [variant] .
+	eq (P + N) + (- P) = N [variant] .
+	eq P + (- (P + Z)) = - Z [variant] .
+
+	eq (- Z) > N = false [variant] .
+	eq N > (- Z) = true [variant] .
+	eq (- Z) > (- P) = P > Z [variant] .
+
+	eq X - Y = X + (- Y) [variant] .
+endfm
+
+mod SYMBOLIC-EXECUTION-NARROWING is
+	protecting INT-FVP * (
+		sort Bool to BoolFVP,
+		sort Int to IntFVP,
+		sort Nat to NatFVP,
+		sort NzNat to NzNatFVP,
+		op true to tt,
+		op false to ff
+	) .
+	protecting NAT .
+	protecting QID .
+
+	sorts AExp BExp .
+
+	*** Logic and arithmetic expressions (more logic operators
+	*** could be defined, but not integer product)
+
+	op ivar : Qid -> AExp [ctor] .
+	op ival : Nat -> AExp [ctor] .
+	op bval : Bool -> BExp [ctor] .
+	op _+_ : AExp AExp -> AExp [ctor] .
+	op _-_ : AExp AExp -> AExp [ctor] .
+	op -_ : AExp -> AExp [ctor] .
+	op _>_ : AExp AExp -> BExp [ctor] .
+	op _and_ : BExp BExp -> BExp [ctor] .
+	op not_ : BExp -> BExp [ctor] .
+
+	var  ISTR       : IStore .
+	var  N          : Nat .
+	vars AE AE1 AE2 : AExp .
+	vars BE BE1 BE2 : BExp .
+	vars NF NF1     : IntFVP .
+	vars Q Q'       : Qid .
+	vars P1 P2 P3   : Program .
+
+	*** Integer variable store (for simplicity,
+	*** we do not define other variable stores)
+	sort IStore .
+
+	op none : -> IStore [ctor] .
+	op _|->_ : Qid IntFVP -> IStore [ctor] .
+	op _;_ : IStore IStore -> IStore [ctor assoc comm id: none prec 50] .
+
+	op store : Qid IntFVP IStore -> IStore .
+
+	eq store(Q, NF, none) = Q |-> NF .
+	eq store(Q, NF, Q |-> NF1 ; ISTR) = Q |-> NF ; ISTR .
+	eq store(Q, NF, Q' |-> NF1 ; ISTR) = Q' |-> NF1 ; store(Q, NF, ISTR) .
+
+	*** Evaluation functions
+
+	op eval : AExp IStore -> IntFVP .
+	op eval : BExp IStore -> BoolFVP .
+
+	eq eval(ivar(Q), Q |-> NF ; ISTR) = NF .
+	eq eval(ival(0), ISTR) = 0 .
+	eq eval(ival(s N), ISTR) = 1 + eval(ival(N), ISTR) .
+	eq eval(AE1 + AE2, ISTR) = eval(AE1, ISTR) + eval(AE2, ISTR) .
+	eq eval(AE1 - AE2, ISTR) = eval(AE1, ISTR) - eval(AE2, ISTR) .
+	eq eval(- AE, ISTR) = - eval(AE, ISTR) .
+
+	eq eval(bval(true), ISTR) = tt .
+	eq eval(bval(false), ISTR) = ff .
+	eq eval(AE1 > AE2, ISTR) = eval(AE1, ISTR) > eval(AE2, ISTR) .
+	eq eval(BE1 and BE2, ISTR) = eval(BE1, ISTR) and eval(BE2, ISTR) .
+	eq eval(not BE, ISTR) = not eval(BE, ISTR) .
+
+	*** Programs
+	sort Program .
+
+	op if _ then {_} else {_} : BExp Program Program -> Program [ctor] .  *** condicional
+	op _:=_ : Qid AExp -> Program [ctor] .  *** asignación
+
+	op skip : -> Program [ctor] .
+	op _;_ : Program Program -> Program [ctor assoc prec 50] .
+
+	eq P1 ; skip = P1 [variant] . *** needed for narrowing
+
+	*** Exucution state (and auxiliary extension)
+	sort State .
+
+	op <_,_>   : Program IStore -> State [ctor] .
+	op <_,_,_> : Program IStore BoolFVP -> State [ctor] .
+
+	*** Semantic rules
+
+	*** Each rule L => R if eval(...) = C is translated to
+	*** L => < L, eval(...) > y < L, C > => R (narrowing as
+	*** implemented in Maude is unconditional and topmost)
+
+	rl [ifpre] :
+		< if BE then { P1 } else { P2 } ; P3, ISTR >
+	=>
+		< if BE then { P1 } else { P2 } ; P3, ISTR, eval(BE, ISTR) >
+	[narrowing] .
+
+	rl [ifthen] :
+		< if BE then { P1 } else { P2 } ; P3, ISTR, tt >
+	=>
+		< P1 ; P3, ISTR >
+	[narrowing] .
+
+	rl [ifelse] :
+		< if BE then { P1 } else { P2 } ; P3, ISTR, ff >
+	=>
+		< P2 ; P3, ISTR >
+	[narrowing] .
+
+	rl [assign] :
+		< (Q := AE) ; P3, ISTR >
+	=>
+		< P3, store(Q, eval(AE, ISTR), ISTR) >
+	[narrowing] .
+endm
+
+mod EXAMPLE is
+	protecting SYMBOLIC-EXECUTION-NARROWING .
+
+	ops ex1 ex2 : -> Program .
+
+	eq ex1 = if ivar('x) > ival(1)
+	                 then { 'x := ivar('x) + ival(3) }
+	                 else { 'x := ival(7) } .
+
+	eq ex2 = if ivar('x) > ival(0)
+					then { 'x := ivar('x) }
+					else { 'x := - ivar('x) } .
+
+	*** To be used as < ex1, 'x |-> X:IntFVP > .
+
+	var S    : State .
+	var ISTR : IStore .
+	var NF   : NatFVP .
+	var IF   : IntFVP .
+endm
+
+eof
+
+*** Reachable finite states
+*** (fold or vfold can be used, but substitutions are lost)
+*** (path can be used to retrieve the execution path)
+vu-narrow {delay, filter} < ex1, 'x |-> X:NatFVP > =>+ < skip, ISTR > .
+
+*** Property: the result is no 7 seven greater than X
+vu-narrow {delay, filter} < ex1, 'x |-> X:NatFVP > =>+ < skip, 'x |-> 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + X:NatFVP > .
+
+*** Property: the result is positive
+vu-narrow {delay, filter} < ex2, 'x |-> X:IntFVP > =>+ < skip, 'x |-> - Y:NzNatFVP > .
+
+*** Preimages of the result (Y and - Y)
+vu-narrow {delay, filter} < ex2, 'x |-> X:IntFVP > =>+ < skip, 'x |-> Y:NzNatFVP > .
