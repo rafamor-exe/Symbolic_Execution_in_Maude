@@ -23,6 +23,8 @@ In both cases, the execution is performed by the subsequent application of seman
 
 The framework provides the arithmetic for Boolean, integer, and real-valued expressions including literals and variables. In addition, it includes evaluation functions (`eval`) that transform those expressions in ordinary Maude types `Bool`, `Int`, and `Rat` to symbolic types `Boolean`, `Integer`, and `Real` from the Maude SMT library.
 
+We also provide a proof of concept for narrowing symbolic execution as an ad-hoc transformation.
+
 ---
 
 ## Structure
@@ -96,3 +98,4 @@ python3 semantics-analysis-ext.py
     --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" 
     --svars "(k, Integer)" --solN 0
 ```
+More usage examples can be found in the [test](test/README.md) directory

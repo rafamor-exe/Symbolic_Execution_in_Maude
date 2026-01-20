@@ -16,21 +16,21 @@ red in VERIFICATION-COMMANDS : searchSymb(upModule('WHILE-MAUDE, true), 'State, 
 red in VERIFICATION-COMMANDS : transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, symb) .
 red in VERIFICATION-COMMANDS : transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'val, conc) .
 
-Maude> search < if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;} | iv('k) |->I 0 | RSTR:RStore | BSTR:BStore > =>! S:State .
-search in WHILE-MAUDE : < if iv('k) >= val(0) then{iv('res) := iv('k) ;}else{iv('res) := - iv('k) ;} | iv('k) |->I 0 | RSTR | BSTR > =>! S:State .
+Maude> search < if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;} | 'k |->I 0 | RSTR:RStore | BSTR:BStore > =>! S:State .
+search in WHILE-MAUDE : < if iv('k) >= val(0) then{iv('res) := iv('k) ;}else{iv('res) := - iv('k) ;} | 'k |->I 0 | RSTR | BSTR > =>! S:State .
 
 Solution 1 (state 2)
 states: 3  rewrites: 24 in 0ms cpu (0ms real) (~ rewrites/second)
-S:State --> < nil | (iv('k) |->I 0, iv('res) |->I 0) | RSTR | BSTR >
+S:State --> < nil | ('k |->I 0, 'res |->I 0) | RSTR | BSTR >
 
 No more solutions.
 states: 3  rewrites: 24 in 0ms cpu (0ms real) (~ rewrites/second)
-Maude> search < if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;} | iv('k) |->I -1 | RSTR:RStore | BSTR:BStore > =>! S:State .
-search in WHILE-MAUDE : < if iv('k) >= val(0) then{iv('res) := iv('k) ;}else{iv('res) := - iv('k) ;} | iv('k) |->I -1 | RSTR | BSTR > =>! S:State .
+Maude> search < if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;} | 'k |->I -1 | RSTR:RStore | BSTR:BStore > =>! S:State .
+search in WHILE-MAUDE : < if iv('k) >= val(0) then{iv('res) := iv('k) ;}else{iv('res) := - iv('k) ;} | 'k |->I -1 | RSTR | BSTR > =>! S:State .
 
 Solution 1 (state 2)
 states: 3  rewrites: 26 in 0ms cpu (0ms real) (~ rewrites/second)
-S:State --> < nil | (iv('k) |->I -1, iv('res) |->I 1) | RSTR | BSTR >
+S:State --> < nil | ('k |->I -1, 'res |->I 1) | RSTR | BSTR >
 
 No more solutions.
 states: 3  rewrites: 26 in 0ms cpu (0ms real) (~ rewrites/second)
