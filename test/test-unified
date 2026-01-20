@@ -60,6 +60,11 @@ Program:
 
 python3 semantics-analysis-ext.py --program "start(if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;})" --pattern "concolicState('State)" --file "language-semantics/while-semantics-concrete.maude" --analysis "concolic" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(k, Integer)" --symbCond "true" --solN 0
 
+*** Example with non-trivil init store:
+
+python3 semantics-analysis-ext.py --program "< 'f [iv('k)]  | 'f |-> ('f [iv('x)] = if iv('x) then {val(1)} else {iv('x) * ('f [iv('x) - val(1)])}) | ('k |->I -1 | empty | empty) >" --pattern "concolicState('State)" --file "language-semantics/rec-semantics-v2.maude" --analysis "concolic" --modL "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(k, Integer)" --sType "'!" --solN 0 --symbCond "k >= 0"
+
+
 *** Checking invariants with concolic execution:
 
 Program:
