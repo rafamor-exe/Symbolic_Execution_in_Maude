@@ -4,23 +4,27 @@
 
 ---
 
-## 📌 Table of Contents
+## Table of Contents
 - [About](#about)
 - [Installation](#installation)
 - [Usage](#usage)
 
 ---
 
-## 📖 About
+## About
 
 This project provides a framework for symbolic analysis and concolic testing based on program semantics specified in [Maude](https://github.com/maude-lang/Maude). The framework transforms concrete program semantics into semantics ready for such analyses. After the transformation:
 
 - Symbolic execution is performed with [MaudeSE](https://github.com/postechsv/maude-se).
 - Concolic testing is performed with the transformed rules and a custom Python hook that connects with an SMT solver.
 
+In both cases, the execution is performed by the subsequent application of semantic rules, represented by rewrite rules.
+
+The framework provides the arithmetic for Boolean, integer, and real-valued expressions including literals and variables. In addition, it includes evaluation functions (`eval`) that transform those expressions in ordinary Maude types `Bool`, `Int`, and `Rat` to symbolic types `Boolean`, `Integer`, and `Real` from the Maude SMT library.
+
 ---
 
-## 📦 Installation
+## Installation
 
 Requires:
 - Python >= 3.10
@@ -36,7 +40,9 @@ cd Symbolic_Execution_in_Maude
 
 ---
 
-## ⚙️ Usage
+## Usage
+
+Import module `CONCRETE-FW` from `semantics-basics/semantics-basics-maudeTypes.maude` in the target semantics system module. Construct the concrete semantics with the expressions provided (`BExp`, `IExp`, and `RExp`), and use `eval` functions to evaluate them. `eval` functions can be used as rule conditions to explore symbolic paths during execution. There are semantics examples that already implement this in the `language-semantics/` directory.
 
 The script `semantics-analysis-ext.py` is provided as a high-level interface for both analyses. It has several parameters that can be adjusted. The following command lists all parameters
 
@@ -44,7 +50,7 @@ The script `semantics-analysis-ext.py` is provided as a high-level interface for
 python3 semantics-analysis-ext.py --help
 ```
 
-Consider a program $P$ that calculates the absolute value:
+As an example, the semantics of a simple While language are specified in `language-semantics/while-semantics-concrete.maude`. Consider a program $P$ that calculates the absolute value:
 ```
 if iv('k) >= val(0) then { iv('res) := iv('k); }
 else { iv('res) := - iv('k); }
