@@ -57,3 +57,9 @@ The semantics are transformed, and the symbolic search uses the `metaSmtSearch` 
 ---
 
 ## Concolic testing
+
+[WIP]
+
+## Symbolic execution via narrowing
+
+Examples of symbolic execution with narrowing can be found in the [ad-hoc transformation file](../adhoc-analysis/narrowing-symexe.maude)
