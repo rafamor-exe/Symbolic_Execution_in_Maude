@@ -4,7 +4,7 @@ import re
 
 ADHOC_CONCOLIC_IMPL = 'adhoc-analysis/while-semantics-concolic.maude'
 
-SEMANTICS_TRANSFORMER_MAUDE = 'semantics-analysis-module-transformer.maude'
+SEMANTICS_TRANSFORMER_MAUDE = 'semantics-analysis-tr.maude'
 
 def get_args():
     parser = argparse.ArgumentParser(description="Argument Parser for Maude While Language Concolic Engine", 
