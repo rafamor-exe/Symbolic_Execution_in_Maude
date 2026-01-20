@@ -39,7 +39,7 @@ while rv('k) < rv('y) do {
   rv('i) := rv('i) - val(1); 
 }
 ```
-We want to find a buggy state where we have a division by $0$. So we search in the state space for a state where `'i == 0` to catch the bug. We can execute the following:
+where `'k` is a symbolic variable. We want to find a buggy state where we have a division by $0$. So we search in the state space for a state where `'i == 0` to catch the bug. We can execute the following:
 
 ```
 python3 semantics-analysis-ext.py 
@@ -58,7 +58,57 @@ The semantics are transformed, and the symbolic search uses the `metaSmtSearch` 
 
 ## Concolic testing
 
-[WIP]
+We can execute $P$ with concolic testing as shown in the main [Usage Section](../README.md#usage).
+
+Similarly to the previous example, we can use concolic testing to find bugs in complex programs. Consider a program $P_2$ that, at some point in execution, may end encounter a division by $0$. $P_2$ is presented as
+
+```
+iv('i) := val(5); 
+while iv('k) < iv('y) do {
+    if iv('k) > val(10) then {
+        iv('x) := iv('k) * iv('y);
+        iv('a) := iv('x) - iv('i);
+        iv('z) := iv('y) / iv('a);
+    }
+    iv('k) := iv('k) + val(1); 
+    iv('i) := iv('i) * val(2);
+}
+```
+where variables `'k` and `'y` are symbolic. We can execute the program with
+
+```
+python3 semantics-analysis-ext.py 
+  --program "start(iv('i) := val(5); while iv('k) < iv('y) do { if iv('k) > val(10) then {iv('x) := iv('k) * iv('y) ; iv('a) := iv('x) - iv('i); iv('z) := iv('y) / iv('a) ;} iv('k) := iv('k) + val(1) ; iv('i) := iv('i) * val(2) ;})" 
+  --pattern "concolicState('State, '<_|_>['__['_:=_;['IV1:IVar, '_/_['IExp1:IExp, 'iv['IV:Qid]]], 'Prest:Program], '_|_|_['_\`,_['_|->I_['IV:Qid, '0.Zero], 'ISTRf:IStore], 'RSTRf:RStore, 'BSTRf:BStore]])" 
+  --file "language-semantics/while-semantics-concrete.maude" 
+  --analysis "concolic" 
+  --modL "upModule('WHILE-MAUDE, true)" 
+  --stSort "'State" 
+  --svars "(k, Integer) ; (y, Integer)" 
+  --sType "'*" --solN 0
+```
+The function `concolicState` is provided by the framework and generates a concolic state from the concrete state sort and the target pattern as a Maude term. This execution finds the bug with the initial assignment $\texttt{'k} \mapsto 9, \texttt{'y} \mapsto 20$ and after $7$ iterations of the loop.
+
+
+We can use [maude_shell](https://github.com/ningit/maude-shell) to execute the same command over the transformed concolic module as
+
+```
+search [1] startC(start(
+                    while iv('k) < iv('y) do {
+                      if iv('k) > val(10) then {
+                          iv('x) := iv('k) * iv('y);
+                          iv('a) := iv('x) - iv('i);
+                          iv('z) := iv('y) / iv('a);
+                      }
+                      iv('k) := iv('k) + val(1); 
+                      iv('i) := iv('i) * val(2);
+                    }), 
+                  ('k, k0S:Integer) ('y, y0S:Integer)) 
+          =>* 
+          [< IV1:IVar := IExp1:IExp / iv(IV:Qid) ; Pf:Program | (IS:IStore, IV:Qid |->I 0) | RS:RStore | BS:BStore >]
+          [SMS:State {CST:Boolean}][SMSInit:State] .
+
+```
 
 ## Symbolic execution via narrowing
 
