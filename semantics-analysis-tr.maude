@@ -288,13 +288,18 @@ fmod MODULE-TRANSFORMER is
                             *** Initialize the input concrete stores with the symbolic stores and
                             *** values satisfying Boolean constrains retrieved from the SMT hook 
                             (op 'init-CStore : 'Stores 'Boolean -> 'Stores [none] .)
+                            (op 'init-CStore : 'Stores 'Stores 'Boolean -> 'Stores [none] .)
+                            *** Only insert if var is not already assigned
+                            (op 'insertFirst : 'Qid 'Int  'IStore -> 'IStore [none] .)
+                            (op 'insertFirst : 'Qid 'Rat  'RStore -> 'RStore [none] .)
+                            (op 'insertFirst : 'Qid 'Bool 'BStore -> 'BStore [none] .)
                             *** Apply a symbolic assignment retrieved from the SMT hook to a concrete store.
                             *** The symbolic store is used to match the assigned variable. 
                             (op '$apply-SMTassignment : 'Stores 'Stores 'AssignmentSMT -> 'Stores [none] .)
                             *** Initialize a concrete store with default values from a symbolic store
-                            (op 'initialize-def : 'IStoreS -> 'IStore [none] .)
-                            (op 'initialize-def : 'RStoreS -> 'RStore [none] .)
-                            (op 'initialize-def : 'BStoreS -> 'BStore [none] .)
+                            (op 'initialize-def : 'IStore 'IStoreS -> 'IStore [none] .)
+                            (op 'initialize-def : 'RStore 'RStoreS -> 'RStore [none] .)
+                            (op 'initialize-def : 'BStore 'BStoreS -> 'BStore [none] .)
                             ***(op 'size : 'Boolean -> 'Nat [none] .)
                             *** Create a concolic dual state with the concrete and symbolic state objects, and the symbolic variable-value pairs
                             (op 'startC : StateOp 'PairSVarL -> 'ConcolicState [none] .)
@@ -437,27 +442,34 @@ fmod MODULE-TRANSFORMER is
 
     *** Include equational definitions for injected operators 
     op inclSEEqs : Qid -> EquationSet .
-    eq inclSEEqs(StateOp) = *** Initialize symbolic variables in a concrete store with concrete values satisfying the accumulated Constraints 
+    eq inclSEEqs(StateOp) = *** Initialize symbolic variables in a concrete store with concrete values satisfying the accumulated Constraints (concrete store might be pre-initialized)
                             (eq 'init-CStore['STRS:Stores, 'Constraints:Boolean] = '$apply-SMTassignment['_|_|_['empty.IStore, 'empty.RStore, 'empty.BStore], 'STRS:Stores, 'get-SMTassignment['Constraints:Boolean]] [none] .)
-                            (eq '$apply-SMTassignment['_|_|_['ISTR:IStore, 'RSTR:RStore, 'BSTR:BStore], '_|_|_['ISTRS:IStoreS, '_`,_['_|->Rs_['Var:Qid, 'R:Real], 'RSTRS:RStoreS], 'BSTRS:BStoreS], '_<--_['R:Real, 'Rconc:Real]]          = '_|_|_['_`,_['ISTR:IStore, 'initialize-def['ISTRS:IStoreS]], '_`,_['_|->R_['Var:Qid, 'toRat['Rconc:Real]], '_`,_['RSTR:RStore, 'initialize-def['RSTRS:RStoreS]]], '_`,_['BSTR:BStore, 'initialize-def['BSTRS:BStoreS]]] [none] .)
-                            (eq '$apply-SMTassignment['_|_|_['ISTR:IStore, 'RSTR:RStore, 'BSTR:BStore], '_|_|_['_`,_['_|->Is_['Var:Qid, 'I:Integer], 'ISTRS:IStoreS], 'RSTRS:RStoreS, 'BSTRS:BStoreS], '_<--_['I:Integer, 'Iconc:Integer]] = '_|_|_['_`,_['_|->I_['Var:Qid, 'toInt['Iconc:Integer]], ('ISTR:IStore, 'initialize-def['ISTRS:IStoreS])], '_`,_['RSTR:RStore, 'initialize-def['RSTRS:RStoreS]], '_`,_['BSTR:BStore, 'initialize-def['BSTRS:BStoreS]]] [none] .)
-                            (eq '$apply-SMTassignment['_|_|_['ISTR:IStore, 'RSTR:RStore, 'BSTR:BStore], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, '_`,_['_|->Bs_['Var:Qid, 'B:Boolean], 'BSTRS:BStoreS]], '_<--_['B:Boolean, 'Bconc:Boolean]] = '_|_|_['_`,_['ISTR:IStore, 'initialize-def['ISTRS:IStoreS]], '_`,_['RSTR:RStore, 'initialize-def['RSTRS:RStoreS]], '_`,_['_|->B_['Var:Qid, 'toBool['Bconc:Boolean]], '_`,_['BSTR:BStore, 'initialize-def['BSTRS:BStoreS]]]] [none] .)
-                            (eq '$apply-SMTassignment['_|_|_['ISTR:IStore, 'RSTR:RStore, 'BSTR:BStore], '_|_|_['ISTRS:IStoreS, '_`,_['_|->Rs_['Var:Qid, 'R:Real], 'RSTRS:RStoreS], 'BSTRS:BStoreS], '_`,_['_<--_['R:Real, 'Rconc:Real], 'AssignmentSMT:AssignmentSMT]]          = '$apply-SMTassignment['_|_|_['ISTR:IStore, '_`,_['_|->R_['Var:Qid, 'toRat['Rconc:Real]], 'RSTR:RStore], 'BSTR:BStore], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'AssignmentSMT:AssignmentSMT] [none] .)
-                            (eq '$apply-SMTassignment['_|_|_['ISTR:IStore, 'RSTR:RStore, 'BSTR:BStore], '_|_|_['_`,_['_|->Is_['Var:Qid, 'I:Integer], 'ISTRS:IStoreS], 'RSTRS:RStoreS, 'BSTRS:BStoreS], '_`,_['_<--_['I:Integer, 'Iconc:Integer], 'AssignmentSMT:AssignmentSMT]] = '$apply-SMTassignment['_|_|_['_`,_['_|->I_['Var:Qid, 'toInt['Iconc:Integer]], 'ISTR:IStore], 'RSTR:RStore, 'BSTR:BStore], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'AssignmentSMT:AssignmentSMT] [none] .)
-                            (eq '$apply-SMTassignment['_|_|_['ISTR:IStore, 'RSTR:RStore, 'BSTR:BStore], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, '_`,_['_|->Bs_['Var:Qid, 'B:Boolean], 'BSTRS:BStoreS]], '_`,_['_<--_['B:Boolean, 'Bconc:Boolean], 'AssignmentSMT:AssignmentSMT]] = '$apply-SMTassignment['_|_|_['ISTR:IStore, 'RSTR:RStore, '_`,_['_|->B_['Var:Qid, 'toBool['Bconc:Boolean]], 'BSTR:BStore]], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'AssignmentSMT:AssignmentSMT] [none] .)
+                            (eq 'init-CStore['STR:Stores, 'STRS:Stores, 'Constraints:Boolean] = '$apply-SMTassignment['STR:Stores, 'STRS:Stores, 'get-SMTassignment['Constraints:Boolean]] [none] .)
+                            *** Fill the gaps in a given concrete store with values satisfying the accumulated constraints. An initial store can only be provided at the beginning, new iterations use empty stores.
+                            (eq '$apply-SMTassignment['_|_|_['ISTR:IStore, 'RSTR:RStore, 'BSTR:BStore], '_|_|_['ISTRS:IStoreS, '_`,_['_|->Rs_['Var:Qid, 'R:Real], 'RSTRS:RStoreS], 'BSTRS:BStoreS], '_<--_['R:Real, 'Rconc:Real]]          = '_|_|_['initialize-def['ISTR:IStore, 'ISTRS:IStoreS], '_`,_['insertFirst['Var:Qid, 'toRat['Rconc:Real], 'RSTR:RStore], 'initialize-def['empty.RStore, 'RSTRS:RStoreS]], 'initialize-def['BSTR:BStore, 'BSTRS:BStoreS]] [none] .)
+                            (eq '$apply-SMTassignment['_|_|_['ISTR:IStore, 'RSTR:RStore, 'BSTR:BStore], '_|_|_['_`,_['_|->Is_['Var:Qid, 'I:Integer], 'ISTRS:IStoreS], 'RSTRS:RStoreS, 'BSTRS:BStoreS], '_<--_['I:Integer, 'Iconc:Integer]] = '_|_|_['_`,_['insertFirst['Var:Qid, 'toInt['Iconc:Integer], 'ISTR:IStore], 'initialize-def['empty.IStore, 'ISTRS:IStoreS]], 'initialize-def['RSTR:RStore, 'RSTRS:RStoreS], 'initialize-def['BSTR:BStore, 'BSTRS:BStoreS]] [none] .)
+                            (eq '$apply-SMTassignment['_|_|_['ISTR:IStore, 'RSTR:RStore, 'BSTR:BStore], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, '_`,_['_|->Bs_['Var:Qid, 'B:Boolean], 'BSTRS:BStoreS]], '_<--_['B:Boolean, 'Bconc:Boolean]] = '_|_|_['initialize-def['ISTR:IStore, 'ISTRS:IStoreS], 'initialize-def['RSTR:RStore, 'RSTRS:RStoreS], '_`,_['insertFirst['Var:Qid, 'toBool['Bconc:Boolean], 'BSTR:BStore], 'initialize-def['empty.BStore, 'BSTRS:BStoreS]]] [none] .)
+                            (eq '$apply-SMTassignment['_|_|_['ISTR:IStore, 'RSTR:RStore, 'BSTR:BStore], '_|_|_['ISTRS:IStoreS, '_`,_['_|->Rs_['Var:Qid, 'R:Real], 'RSTRS:RStoreS], 'BSTRS:BStoreS], '_`,_['_<--_['R:Real, 'Rconc:Real], 'AssignmentSMT:AssignmentSMT]]          = '$apply-SMTassignment['_|_|_['ISTR:IStore, 'insertFirst['Var:Qid, 'toRat['Rconc:Real], 'RSTR:RStore], 'BSTR:BStore], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'AssignmentSMT:AssignmentSMT] [none] .)
+                            (eq '$apply-SMTassignment['_|_|_['ISTR:IStore, 'RSTR:RStore, 'BSTR:BStore], '_|_|_['_`,_['_|->Is_['Var:Qid, 'I:Integer], 'ISTRS:IStoreS], 'RSTRS:RStoreS, 'BSTRS:BStoreS], '_`,_['_<--_['I:Integer, 'Iconc:Integer], 'AssignmentSMT:AssignmentSMT]] = '$apply-SMTassignment['_|_|_['insertFirst['Var:Qid, 'toInt['Iconc:Integer], 'ISTR:IStore], 'RSTR:RStore, 'BSTR:BStore], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'AssignmentSMT:AssignmentSMT] [none] .)
+                            (eq '$apply-SMTassignment['_|_|_['ISTR:IStore, 'RSTR:RStore, 'BSTR:BStore], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, '_`,_['_|->Bs_['Var:Qid, 'B:Boolean], 'BSTRS:BStoreS]], '_`,_['_<--_['B:Boolean, 'Bconc:Boolean], 'AssignmentSMT:AssignmentSMT]] = '$apply-SMTassignment['_|_|_['ISTR:IStore, 'RSTR:RStore, 'insertFirst['Var:Qid, 'toBool['Bconc:Boolean], 'BSTR:BStore]], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'AssignmentSMT:AssignmentSMT] [none] .)
                             (eq '$apply-SMTassignment['STR:Stores, 'STRS:Stores, 'failed.AssignmentSMT] = 'STR:Stores [none] .)
-                            (eq '$apply-SMTassignment['STR:Stores, '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS], '_<--_['true.Boolean, 'true.Boolean]] = '_|_|_['initialize-def['ISTRS:IStoreS], 'initialize-def['RSTRS:RStoreS], 'initialize-def['BSTRS:BStoreS]] [none] .)
+                            (eq '$apply-SMTassignment['_|_|_['ISTR:IStore, 'RSTR:RStore, 'BSTR:BStore], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS], '_<--_['true.Boolean, 'true.Boolean]] = '_|_|_['initialize-def['ISTR:IStore, 'ISTRS:IStoreS], 'initialize-def['RSTR:RStore, 'RSTRS:RStoreS], 'initialize-def['BSTR:BStore, 'BSTRS:BStoreS]] [none] .)
                             
                             *** Recursively initialize symbolic variables with default values in concrete store 
-                            (eq 'initialize-def['empty.IStoreS] = 'empty.IStore [none] .)
-                            (eq 'initialize-def['empty.RStoreS] = 'empty.RStore [none] .)
-                            (eq 'initialize-def['empty.BStoreS] = 'empty.BStore [none] .)
-                            (eq 'initialize-def['_`,_['_|->Is_['Var:Qid, 'I:Integer], 'ISTRS:IStoreS]] = '_`,_['_|->I_['Var:Qid, '0.Int], 'initialize-def['ISTRS:IStoreS]] [none] .)
-                            (eq 'initialize-def['_`,_['_|->Rs_['Var:Qid, 'R:Real],    'RSTRS:RStoreS]] = '_`,_['_|->R_['Var:Qid, '0.Rat], 'initialize-def['RSTRS:RStoreS]] [none] .)
-                            (eq 'initialize-def['_`,_['_|->Bs_['Var:Qid, 'B:Boolean], 'BSTRS:BStoreS]] = '_`,_['_|->B_['Var:Qid, 'true.Bool], 'initialize-def['BSTRS:BStoreS]] [none] .)
+                            (eq 'initialize-def['ISTR:IStore, 'empty.IStoreS] = 'ISTR:IStore [none] .)
+                            (eq 'initialize-def['RSTR:RStore, 'empty.RStoreS] = 'RSTR:RStore [none] .)
+                            (eq 'initialize-def['BSTR:BStore, 'empty.BStoreS] = 'BSTR:BStore [none] .)
+                            (eq 'initialize-def['ISTR:IStore, '_`,_['_|->Is_['Var:Qid, 'I:Integer], 'ISTRS:IStoreS]] = 'initialize-def['insertFirst['Var:Qid, '0.Zero, 'ISTR:IStore], 'ISTRS:IStoreS] [none] .)
+                            (eq 'initialize-def['RSTR:RStore, '_`,_['_|->Rs_['Var:Qid, 'R:Real],    'RSTRS:RStoreS]] = 'initialize-def['insertFirst['Var:Qid, '0.Zero, 'RSTR:RStore], 'RSTRS:RStoreS] [none] .)
+                            (eq 'initialize-def['BSTR:BStore, '_`,_['_|->Bs_['Var:Qid, 'B:Boolean], 'BSTRS:BStoreS]] = 'initialize-def['insertFirst['Var:Qid, 'true.Bool, 'BSTR:BStore], 'BSTRS:BStoreS] [none] .)
                            
                             *** Boolean simplification
                             (eq 'not_['not_['B:Boolean]] = 'B:Boolean [none] .)
+
+                            *** Insert only if variable has not been already assigned
+                            (eq 'insertFirst['Var:Qid, 'I:Int,  'ISTR:IStore] = 'if_then_else_fi['_==_['_`[_`]['ISTR:IStore, 'Var:Qid], 'undefined.Rat], 'insert['Var:Qid, 'I:Int, 'ISTR:IStore], 'ISTR:IStore] [none] .)
+                            (eq 'insertFirst['Var:Qid, 'R:Rat,  'RSTR:RStore] = 'if_then_else_fi['_==_['_`[_`]['RSTR:RStore, 'Var:Qid], 'undefined.Rat], 'insert['Var:Qid, 'R:Rat, 'RSTR:RStore], 'RSTR:RStore] [none] .)
+                            (eq 'insertFirst['Var:Qid, 'B:Bool, 'BSTR:BStore] = 'if_then_else_fi['_==_['_`[_`]['BSTR:BStore, 'Var:Qid], 'undefined.Bool], 'insert['Var:Qid, 'B:Bool, 'BSTR:BStore], 'BSTR:BStore] [none] .)
                             
                             ***(eq 'size['C1:Boolean] = ''s_['0.Nat] [none] .)
                             ***(eq 'size['_and_['C1:Boolean, 'Constraints:Boolean]] = ''s_['0.Nat] + 'size['Constraints:Boolean] [none] .)
@@ -465,7 +477,7 @@ fmod MODULE-TRANSFORMER is
                             (eq 'startC[stateVar(StateOp), 'SVDeclL:PairSVarL]                       = '$startC[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_|_['empty.IStoreS, 'empty.RStoreS, 'empty.BStoreS], 'true.Boolean] [none] .)
                             (eq 'startC['_where_[stateVar(StateOp), 'B:Boolean], 'SVDeclL:PairSVarL] = '$startC[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_|_['empty.IStoreS, 'empty.RStoreS, 'empty.BStoreS], 'B:Boolean] [none] .)
                             
-                            (eq '$startC[stateVar(StateOp), 'nil.PairSVarL, 'STR:Stores, 'B:Boolean] = '`[_`]`[_`]`[_`]['updateStore[stateVar(StateOp), 'init-CStore['STR:Stores, 'B:Boolean]], '_`{_`}['updateStore[stateVar(StateOp), 'STR:Stores], 'B:Boolean], 'updateStore[stateVar(StateOp), 'STR:Stores]] [none] .)
+                            (eq '$startC[stateVar(StateOp), 'nil.PairSVarL, 'STR:Stores, 'B:Boolean] = '`[_`]`[_`]`[_`]['updateStore[stateVar(StateOp), 'init-CStore['getStore[stateVar(StateOp)], 'STR:Stores, 'B:Boolean]], '_`{_`}['updateStore[stateVar(StateOp), 'STR:Stores], 'B:Boolean], 'updateStore[stateVar(StateOp), 'STR:Stores]] [none] .)
                             (eq '$startC[stateVar(StateOp), '__['_`,_['Var:Qid, 'I1:Integer], 'SVDeclL:PairSVarL], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'B:Boolean] = '$startC[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_|_['insert['Var:Qid, 'I1:Integer, 'ISTRS:IStoreS], 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'B:Boolean] [none] .)
                             (eq '$startC[stateVar(StateOp), '__['_`,_['Var:Qid, 'R1:Real],    'SVDeclL:PairSVarL], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'B:Boolean] = '$startC[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_|_['ISTRS:IStoreS, 'insert['Var:Qid, 'R1:Real, 'RSTRS:RStoreS], 'BSTRS:BStoreS], 'B:Boolean] [none] .)
                             (eq '$startC[stateVar(StateOp), '__['_`,_['Var:Qid, 'B1:Boolean], 'SVDeclL:PairSVarL], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS], 'B:Boolean] = '$startC[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'insert['Var:Qid, 'B1:Boolean, 'BSTRS:BStoreS]], 'B:Boolean] [none] .)
