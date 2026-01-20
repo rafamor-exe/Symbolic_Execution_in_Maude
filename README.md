@@ -6,6 +6,7 @@
 
 ## Table of Contents
 - [About](#about)
+- [Structure](#structure)
 - [Installation](#installation)
 - [Usage](#usage)
 
@@ -21,6 +22,22 @@ This project provides a framework for symbolic analysis and concolic testing bas
 In both cases, the execution is performed by the subsequent application of semantic rules, represented by rewrite rules.
 
 The framework provides the arithmetic for Boolean, integer, and real-valued expressions including literals and variables. In addition, it includes evaluation functions (`eval`) that transform those expressions in ordinary Maude types `Bool`, `Int`, and `Rat` to symbolic types `Boolean`, `Integer`, and `Real` from the Maude SMT library.
+
+---
+
+## Structure
+
+```text
+Symbolic_Execution_in_Maude/
+├── semantics-basics/           # Framework basics
+├── language-semantics/         # Semantics examples
+├── test/                       # Tests and commands
+├── adhoc-analysis/             # Ad-hoc implementations (e.g. narrowing)
+├── README.md
+├── maudeSMTHook.py             # Custom Python SMT Maude hook for concolic
+├── semantics-analysis-ext.py   # High-level execution script
+└── semantics-analysis-tr.maude # Semantics metalevel transformer
+```
 
 ---
 
