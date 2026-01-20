@@ -9,7 +9,7 @@ SEMANTICS_TRANSFORMER_MAUDE = 'semantics-analysis-tr.maude'
 def get_args():
     parser = argparse.ArgumentParser(description="Argument Parser for Maude While Language Concolic Engine", 
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--program", action="store", help="Program to load", default='')
+    parser.add_argument("--program", action="store", help="Concrete initial state of the search", default='')
     parser.add_argument("--pattern", action="store", help="Pattern to match", default='')
     parser.add_argument("--op", action="store", help="Maude operation", default="search")
     parser.add_argument("--file", action="store", help="File containing the semantics", default=ADHOC_CONCOLIC_IMPL)
@@ -18,7 +18,7 @@ def get_args():
 
     parser.add_argument("--analysis", action="store", help="Type of analysis to perform (e.g.: maude-se, concolic)", default="")
     parser.add_argument("--modL", action="store", help="List of Maude modules to transform to SMT", default="")
-    parser.add_argument("--stSort", action="store", help="State sort", default="")
+    parser.add_argument("--stSort", action="store", help="State sort", default="'State")
     parser.add_argument("--valOp", action="store", help="Value operator", default="'altVal")
     parser.add_argument("--sCond", action="store", help="Search conditions", default="nil")
     parser.add_argument("--sType", action="store", help="Search type", default="'!")
