@@ -471,7 +471,7 @@ red in VERIFICATION-COMMANDS : metaParse(transformModSymb(upModule('WHILE-MAUDE,
 MAUDE-SHELL (careful, if some execution fails i may affect the next)
 *****************
 load ../../Symbolic_Execution_in_Maude/language-semantics/while-semantics-concrete.maude
-load ../../Symbolic_Execution_in_Maude/semantics-analysis-module-transformer.maude
+load ../../Symbolic_Execution_in_Maude/semantics-analysis-tr.maude
 *** As we do not parse the program over the original module previous to the search, 
 *** we have to make sure the semantic value is not 'val, if it is we have to annotate literals with Maude types
 select VERIFICATION-COMMANDS .
@@ -535,7 +535,7 @@ red downTerm('<_|_>['Pf:Program, '_|_|_['_`,_['_`,_['_`,_['_`,_['_|->I_[''x.Sort
 
 *** Tried loading the Maude custom hook
 python3 -m maude_shell <path to hook> <path to language semantics file> <path to semantics transformer>
-python3 -m maude_shell ../../Symbolic_Execution_in_Maude/maudeSMTHook.py ../../Symbolic_Execution_in_Maude/language-semantics/while-semantics-concrete.maude ../../Symbolic_Execution_in_Maude/semantics-analysis-module-transformer.maude
+python3 -m maude_shell ../../Symbolic_Execution_in_Maude/maudeSMTHook.py ../../Symbolic_Execution_in_Maude/language-semantics/while-semantics-concrete.maude ../../Symbolic_Execution_in_Maude/semantics-analysis-tr.maude
 
 *** Concrete trying extra test
 op test : -> State .
