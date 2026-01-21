@@ -98,4 +98,20 @@ python3 semantics-analysis-ext.py
     --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" 
     --svars "(k, Integer)" --solN 0
 ```
-More usage examples can be found in the [test](test/README.md) directory
+
+Apart from the script, concolic testing can also be executed with [maude_shell](https://github.com/ningit/maude-shell) with an ordinary `search` command over the transformed module. One can load the SMT hook, the concrete semantics of the language, and the semantics transformer with
+```
+maude-shell maudeSMTHook.py language-semantics/while-semantics-concrete.maude semantics-analysis-tr.maude
+```
+Then, select the transformed concolic module
+```
+select VERIFICATION-COMMANDS .
+select transformModSymb(upModule('WHILE-MAUDE, true), 'State, conc) .
+```
+where `upModule('WHILE-MAUDE, true)` is the semantics module and `'State` is a `Qid` representing the sort for the state. Now, one can execute ordinary Maude commands over the transformed module and perform concolic testing. The previous script command is equivalent to
+
+```
+search startC(start(if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;}), ('k, k0S:Integer)) =>! C:ConcolicState .
+```
+
+More usage examples can be found in the [test](test/README.md) directory.

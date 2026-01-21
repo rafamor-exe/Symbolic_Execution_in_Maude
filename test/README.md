@@ -24,7 +24,20 @@ search < if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('
 
 ## Symbolic execution
 
-We can symbolically execute $P$ as shown in the main [Usage Section](../README.md#usage).
+We can symbolically execute $P$ as shown in the main [Usage Section](../README.md#usage). Moreover, we can check that the absolute value is always positive by searching for a state where the value of `'res` violates the search condition (is strictly less than $0$), and checking that there is no solution. We can execute the command
+```
+python3 semantics-analysis-ext.py 
+  --program "start(if (iv('k) >= val(0)) then { iv('res) := iv('k) ; } else {iv('res) := - iv('k) ;})" 
+  --pattern "'<_|_>['P:Program, '_|_|_['_\`,_['_|->Is_[''res.Sort, 'RES:Integer], 'IS:IStoreS], 'RS:RStoreS, 'BS:BStoreS]]" 
+  --file "language-semantics/while-semantics-concrete.maude" 
+  --analysis "maude-se" 
+  --sType "'*"
+  --modL "upModule('WHILE-MAUDE, true)" 
+  --stSort "'State" 
+  --svars "(k, Integer)" 
+  --sCond "'_<_['RES:Integer, '0.Integer] = 'true.Bool" 
+  --solN 0
+```
 
 A more complex example could be a program $P_1$ with loops:
 
@@ -90,24 +103,17 @@ python3 semantics-analysis-ext.py
 The function `concolicState` is provided by the framework and generates a concolic state from the concrete state sort and the target pattern as a Maude term. This execution finds the bug with the initial assignment $\texttt{'k} \mapsto 9, \texttt{'y} \mapsto 20$ and after $7$ iterations of the loop.
 
 
-We can use [maude_shell](https://github.com/ningit/maude-shell) to execute the same command over the transformed concolic module as
+We can use [maude_shell](https://github.com/ningit/maude-shell) to execute the same command over the transformed concolic module. First, we must select the transformed module with
 
 ```
-search [1] startC(start(
-                    while iv('k) < iv('y) do {
-                      if iv('k) > val(10) then {
-                          iv('x) := iv('k) * iv('y);
-                          iv('a) := iv('x) - iv('i);
-                          iv('z) := iv('y) / iv('a);
-                      }
-                      iv('k) := iv('k) + val(1); 
-                      iv('i) := iv('i) * val(2);
-                    }), 
-                  ('k, k0S:Integer) ('y, y0S:Integer)) 
-          =>* 
-          [< IV1:IVar := IExp1:IExp / iv(IV:Qid) ; Pf:Program | (IS:IStore, IV:Qid |->I 0) | RS:RStore | BS:BStore >]
-          [SMS:State {CST:Boolean}][SMSInit:State] .
+select VERIFICATION-COMMANDS .
+select transformModSymb(upModule('WHILE-MAUDE, true), 'State, conc) .
+```
 
+Then, we can use the ordinary Maude `search` command
+
+```
+search [1] startC(start(iv('i) := val(5); while iv('k) < iv('y) do { if iv('k) > val(10) then {iv('x) := iv('k) * iv('y) ; iv('a) := iv('x) - iv('i); iv('z) := iv('y) / iv('a) ;} iv('k) := iv('k) + val(1) ; iv('i) := iv('i) * val(2) ;}), ('k, k:Integer) ('y, y:Integer)) =>* [< IV1:IVar := IExp1:IExp / iv(IV:Qid) ; Pf:Program | (ISTRf:IStore, IV:Qid |->I 0) | RSTRf:RStore | BSTRf:BStore >][SMS:State {CST:Boolean}][SMSInit:State] .
 ```
 
 ## Symbolic execution via narrowing

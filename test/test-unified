@@ -228,6 +228,8 @@ python3 semantics-analysis-ext.py --program "start(if (iv('k) >= val(0)) then { 
  - Try to find a counterexample to RES >= 0 (no solution obv)
 python3 semantics-analysis-ext.py --program "start(if (iv('k) >= val(0)) then { iv('res) := iv('k) ; } else {iv('res) := - iv('k) ;})" --pattern "'<_|_>['nil.Program, '_|_|_['_\`,_['_|->Is_[''res.Sort, 'RES:Integer], 'ISTRSf:IStoreS], 'RSTRSf:RStoreS, 'BSTRSf:BStoreS]]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(k, Integer)" --sCond "'_<_['RES:Integer, '0.Integer] = 'true.Bool" --solN 0
 
+python3 semantics-analysis-ext.py --program "start(if (iv('k) >= val(0)) then { iv('res) := iv('k) ; } else {iv('res) := - iv('k) ;})" --pattern "'<_|_>['P:Program, '_|_|_['_\`,_['_|->Is_[''res.Sort, 'RES:Integer], 'ISTRSf:IStoreS], 'RSTRSf:RStoreS, 'BSTRSf:BStoreS]]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(k, Integer)" --sCond "'_<_['RES:Integer, '0.Integer] = 'true.Bool" --solN 0
+
 *** Division by 0 error capture
 python3 semantics-analysis-ext.py --program "start(iv('var2) := val(3) ; if iv('var1) < iv('var2) then{iv('var3) := iv('var2) / val(0) ; })" --pattern "'<_|_>['__['_:=_;['Var:Var, '_/_['IExp1:IExp, 'val['0.Zero]]], 'Prest:Program], 'STRend:Stores]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --logic "'QF_LRA" --fold "false" --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(var1, Integer)" --symbCond "var1 < 5" --sType "'*" --solN 0
 
@@ -493,6 +495,8 @@ search startC(start(iv('i) := val(0) ; iv('x) := val(0) ; iv('y) := iv('n) ; whi
 
 *** Absolute value
 search startC(start(if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;}), ('k, k0S:Integer)) =>! C:ConcolicState .
+
+search startC(start(if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;}), ('k, k0S:Integer)) =>* < P:Program | ((IS:IStore, 'res |->I RES:Int) | empty | empty) > s.t. (RES:Int < 0) .
 
 *** Division by 0 *** CHECK
 *** Bound search to 1 solution

@@ -528,6 +528,8 @@ fmod MODULE-TRANSFORMER is
     *** Transform a module to include the symbolic/concolic execution requirements. 
     op transformModSymb : Qid Qid Qid TrType -> Module .
     eq transformModSymb(ModId, StateOp, ValOp, TrId) = transformModSymb(upModule(ModId, true), StateOp, ValOp, TrId) .
+    op transformModSymb : Module Qid TrType -> Module .
+    eq transformModSymb(M, StateOp, TrId) = transformModSymb(M, StateOp, 'placeholderVal, TrId) .
     op transformModSymb : Module Qid Qid TrType -> Module .
     eq transformModSymb(M, StateOp, ValOp, TrId) = fuseMods(trMod(M, StateOp, ValOp, TrId), upModule('SMT-CONNECTION, true)) .
 
