@@ -4,11 +4,6 @@ search start(var('var2) := val(1/1) ; if (var('var1) < var('var2)) then { var('v
 
 *****************
 *** Unified system
-'WHILE-MAUDE 'CONCRETE-VARSTATE-MOD 'CONCRETE-FW 'CONCRETE-VAR-MOD 'WHILE-LANG-BLOCK-MOD 'WHILE-LANG-INSTS-MOD
-
-'CONCRETE-VARSTATE-MOD 'CONCRETE-VAR-MOD 'CONCRETE-FW
-
-load language-semantics/while-semantics-concrete.maude
 
 red in VERIFICATION-COMMANDS : searchSymb(upModule('WHILE-MAUDE, true), 'State, 'val, "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) > {p:Real < (5/1).Real} < {nil}", 'FinalState:SEState, nil, '!, unbounded, 0) .
 red in VERIFICATION-COMMANDS : searchSymb(upModule('WHILE-MAUDE, true), 'State, 'val, "< var('var2) := val((1/1).Real) ; if (var('var1) < var('var2)) then { var('var3) := val((0/1).Real) ; } | var('var1) |-> val(p:Real) > {p:Real < (5/1).Real} < {nil}", 'FinalState:SEState, nil, '!, unbounded, 1) .
@@ -576,3 +571,16 @@ red downTerm('<_|_|_>['_*_['recVal['s_['0.Zero]], 'recVal['s_['0.Zero]], 'recVal
 
 select VERIFICATION-COMMANDS .
 select transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, maudeSE) .
+
+
+--------------------------------
+**************************
+*** WITH DEFAULT STATE ***
+**************************
+--- Concolic testing
+python3 semantics-analysis-ext.py --program "makeState(if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;}, emptyStores)" --pattern "concolicState('StDefault)" --file "language-semantics/while-semantics-default-setting.maude" --analysis "concolic" --mod "upModule('WHILE-MAUDE, true)" --stSort "'StDefault" --svars "(k, Integer)" --symbCond "true" --solN 0
+python3 semantics-analysis-ext.py --program "makeState(if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;}, emptyStores)" --pattern "concolicState('StDefault)" --file "language-semantics/while-semantics-default-setting.maude" --analysis "concolic" --mod "upModule('WHILE-MAUDE, true)" --stSort "'StDefault" --svars "(k, Integer)" --symbCond "true" --solN 1
+
+--- Symbolic execution with MaudeSE
+python3 semantics-analysis-ext.py --program "makeState(if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;}, emptyStores)" --pattern "'\`[_|_\`]['nil.Program, 'STR:Stores]" --file "language-semantics/while-semantics-default-setting.maude" --analysis "maude-se" --mod "upModule('WHILE-MAUDE, true)" --stSort "'StDefault" --svars "(k, Integer)" --sType "'*" --solN 0
+python3 semantics-analysis-ext.py --program "makeState(if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;}, emptyStores)" --pattern "'\`[_|_\`]['nil.Program, 'STR:Stores]" --file "language-semantics/while-semantics-default-setting.maude" --analysis "maude-se" --mod "upModule('WHILE-MAUDE, true)" --stSort "'StDefault" --svars "(k, Integer)" --sType "'*" --solN 1

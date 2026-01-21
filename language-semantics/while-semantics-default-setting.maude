@@ -1,0 +1,102 @@
+*** This definition of the While language semantics uses the default state (StDeault) provided by the framework
+*** It extends the definition of Program to adapt the syntax and specified the semantic rules
+
+load ../semantics-basics/semantics-basics-maudeTypes.maude
+
+fmod WHILE-LANG-INSTS-MOD is
+
+    protecting CONCRETE-FW .
+
+    sort Inst .
+
+    op skip ; : -> Inst [ctor prec 20] .
+    op _ := _ ; : IVar IExp -> Inst [ctor prec 20] .
+    op _ := _ ; : RVar RExp -> Inst [ctor prec 20] .
+    op _ := _ ; : BVar BExp -> Inst [ctor prec 20] .
+
+endfm
+
+view Inst from TRIV to WHILE-LANG-INSTS-MOD is
+  sort Elt to Inst .
+endv
+
+fmod WHILE-BASICS is
+
+    protecting WHILE-LANG-INSTS-MOD .
+    protecting LIST{Inst} * (sort List{Inst} to Program) .
+
+    op if _ then {_} else {_} : BExp Program Program -> Inst [ctor prec 20] .
+    op if _ then {_} : BExp Program -> Inst [prec 20] .
+
+    op while _ do {_} : BExp Program -> Inst [ctor prec 20] .
+
+    var B : BExp .
+    var P1 : Program .
+
+    eq if B then {P1} = if B then {P1} else {nil} .
+
+endfm
+
+mod WHILE-MAUDE is
+
+    protecting WHILE-BASICS .
+
+    vars Var Var1 Var2 : Var .
+    var IVar : IVar .
+    var RVar : RVar .
+    var BVar : BVar .
+    var BExp : BExp .
+    vars P P1 P2 : Program .
+    vars STR STR2 : Stores .
+    var ISTR : IStore .
+    var RSTR : RStore .
+    var BSTR : BStore .
+    var IExp : IExp .
+    var RExp : RExp .
+    var Q : Qid .
+
+    rl [skip] : 
+        [ skip ; P | STR ]
+        =>
+        [ P | STR ] .
+
+    rl [assign-I] : 
+        [ iv(Q) := IExp ; P | (ISTR | RSTR | BSTR) ]
+        =>
+        [ P | insert(Q, eval(IExp, ISTR), ISTR) | RSTR | BSTR ] .
+    
+    rl [assign-R] : 
+        [ rv(Q) := RExp ; P | (ISTR | RSTR | BSTR) ]
+        =>
+        [ P | ISTR | insert(Q, eval(RExp, RSTR), RSTR) | BSTR ] .
+
+    rl [assign-B] : 
+        [ bv(Q) := BExp ; P | (ISTR | RSTR | BSTR) ]
+        =>
+        [ P | ISTR | RSTR | insert(Q, eval(BExp, (ISTR | RSTR | BSTR)), BSTR) ] .
+
+    crl [if-then] : 
+        [ if BExp then { P1 } else { P2 } P | STR ]
+        =>
+        [ P1 P | STR ]
+        if eval(BExp, STR) .
+
+    crl [if-else] : 
+        [ if BExp then { P1 } else { P2 } P | STR ]
+        =>
+        [ P2 P | STR ]
+        if not eval(BExp, STR) .
+
+    crl [while-loop] : 
+        [ while BExp do { P1 } P | STR ]
+        =>
+        [ P1 while BExp do { P1 } P | STR ]
+        if eval(BExp, STR) .
+        
+    crl [while-exit] : 
+        [ while BExp do { P1 } P | STR ]
+        =>
+        [ P | STR ]
+        if not eval(BExp, STR) .
+
+endm

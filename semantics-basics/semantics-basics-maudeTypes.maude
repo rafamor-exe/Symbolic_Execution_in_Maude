@@ -233,6 +233,9 @@ fmod CONCRETE-AEXP-FW is
     op getBStore : Stores -> BStore .
     eq getBStore(ISTR | RSTR | BSTR) = BSTR .
 
+    op emptyStores : -> Stores [ctor] .
+    eq emptyStores = (empty | empty | empty) .
+
 endfm
 
 fmod CONCRETE-FW is
@@ -244,11 +247,13 @@ fmod CONCRETE-FW is
   op [_|_] : Program Stores -> StDefault [ctor] .
   *** Create a state from a default arrangement with an input program and a store
   op makeState : Program Stores -> StDefault .
+  op makeState : Program -> StDefault .
   op getStore : StDefault -> Stores .
   op updateStore : StDefault Stores -> StDefault .
 
   vars STR STR2 : Stores .
   var  P        : Program .
+  eq makeState(P) = makeState(P, emptyStores) .
   eq makeState(P, STR) = [ P | STR ] .
 
   eq getStore([ P | STR ]) = STR .
