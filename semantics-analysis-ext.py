@@ -13,13 +13,12 @@ def get_args():
     parser.add_argument("--pattern", action="store", help="Pattern to match", default='')
     parser.add_argument("--op", action="store", help="Maude operation", default="search")
     parser.add_argument("--file", action="store", help="File containing the semantics", default=ADHOC_CONCOLIC_IMPL)
-    parser.add_argument("--mod", action="store", help="Semantics module", default="WHILE-MAUDE")
+    parser.add_argument("--mod", action="store", help="Semantics module", default="upTerm('WHILE-MAUDE, true)")
     parser.add_argument("--path", action="store", help="Show execution path", default=False)
 
     parser.add_argument("--analysis", action="store", help="Type of analysis to perform (e.g.: maude-se, concolic)", default="")
-    parser.add_argument("--modL", action="store", help="List of Maude modules to transform to SMT", default="")
-    parser.add_argument("--stSort", action="store", help="State sort", default="'State")
-    parser.add_argument("--valOp", action="store", help="Value operator", default="'altVal")
+    parser.add_argument("--stSort", action="store", help="State sort", default="'StDefault")
+    parser.add_argument("--valOp", action="store", help="Internal value operator in semantics (different from syntax 'val)", default="'placeholderVal")
     parser.add_argument("--sCond", action="store", help="Search conditions", default="nil")
     parser.add_argument("--sType", action="store", help="Search type", default="'!")
     parser.add_argument("--bound", action="store", help="Search bound", default="unbounded")
@@ -76,7 +75,7 @@ if __name__ == '__main__':
         svPairs, symbCond = getSymbVarCond(args)
 
         t = f"""searchMaudeSE(
-                       {args.modL},
+                       {args.mod},
                        {args.stSort},
                        {args.valOp},
                        "{args.program}",
@@ -94,7 +93,7 @@ if __name__ == '__main__':
         print("---------")
         print("With path:")
         path = f"""searchPathMaudeSE(" \
-                                 {args.modL},
+                                 {args.mod},
                                  {args.stSort},
                                  {args.valOp},
                                  "{args.program}",
@@ -139,7 +138,7 @@ if __name__ == '__main__':
             if args.analysis == "concolic":
                 svPairs, symbCond = getSymbVarCond(args)
                 t = f"""searchConcolic(
-                                   {args.modL},
+                                   {args.mod},
                                    {args.stSort},
                                    {args.valOp},
                                    "{args.program}",
@@ -157,7 +156,7 @@ if __name__ == '__main__':
                     print("---------")
                     print("With path:")
                     path = f"""searchPathConcolic(
-                                           {args.modL},
+                                           {args.mod},
                                            {args.stSort},
                                            {args.valOp},
                                            "{args.program}",
@@ -173,7 +172,7 @@ if __name__ == '__main__':
                     print(path)
             else:
                 t = f"""transformModSymb(
-                                   {args.modL},
+                                   {args.mod},
                                    {args.stSort},
                                    {args.valOp},
                                    conc)"""

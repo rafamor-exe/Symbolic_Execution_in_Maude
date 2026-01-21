@@ -32,7 +32,7 @@ python3 semantics-analysis-ext.py
   --file "language-semantics/while-semantics-concrete.maude" 
   --analysis "maude-se" 
   --sType "'*"
-  --modL "upModule('WHILE-MAUDE, true)" 
+  --mod "upModule('WHILE-MAUDE, true)" 
   --stSort "'State" 
   --svars "(k, Integer)" 
   --sCond "'_<_['RES:Integer, '0.Integer] = 'true.Bool" 
@@ -60,7 +60,7 @@ python3 semantics-analysis-ext.py
     --pattern "'<_|_>['__['_:=_;['RV1:RVar, '_/_['RExp1:RExp, 'rv[''i.Sort]]], 'Prest:Program], '_|_|_['ISTRSf:IStoreS, '_\`,_['_|->Rs_[''i.Sort, '0/1.Real], 'RSTRSf:RStoreS], 'BSTRSf:BStoreS]]" 
     --file "language-semantics/while-semantics-concrete.maude" 
     --analysis "maude-se" 
-    --modL "upModule('WHILE-MAUDE, true)" 
+    --mod "upModule('WHILE-MAUDE, true)" 
     --stSort "'State" 
     --svars "(k, Real)"
     --sType "'*" --solN 0
@@ -95,7 +95,7 @@ python3 semantics-analysis-ext.py
   --pattern "concolicState('State, '<_|_>['__['_:=_;['IV1:IVar, '_/_['IExp1:IExp, 'iv['IV:Qid]]], 'Prest:Program], '_|_|_['_\`,_['_|->I_['IV:Qid, '0.Zero], 'ISTRf:IStore], 'RSTRf:RStore, 'BSTRf:BStore]])" 
   --file "language-semantics/while-semantics-concrete.maude" 
   --analysis "concolic" 
-  --modL "upModule('WHILE-MAUDE, true)" 
+  --mod "upModule('WHILE-MAUDE, true)" 
   --stSort "'State" 
   --svars "(k, Integer) ; (y, Integer)" 
   --sType "'*" --solN 0

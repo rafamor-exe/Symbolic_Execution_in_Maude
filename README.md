@@ -83,7 +83,7 @@ python3 semantics-analysis-ext.py
     --file "language-semantics/while-semantics-concrete.maude" 
     --analysis "maude-se" 
     --sType "'*" 
-    --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" 
+    --mod "upModule('WHILE-MAUDE, true)" --stSort "'State" 
     --svars "(k, Integer)" --solN 0
 ```
 To perform concolic testing, simply change the `analysis` flag to `"concolic"` and the pattern to a concolic state. A concolic state constructor is provided given the state sort and a concrete state as a term, for example: `concolicState('State, '<_|_>['nil.Program, 'STR:Stores])`
@@ -95,7 +95,7 @@ python3 semantics-analysis-ext.py
     --file "language-semantics/while-semantics-concrete.maude" 
     --analysis "concolic" 
     --sType "'*" 
-    --modL "upModule('WHILE-MAUDE, true)" --stSort "'State" 
+    --mod "upModule('WHILE-MAUDE, true)" --stSort "'State" 
     --svars "(k, Integer)" --solN 0
 ```
 

@@ -128,7 +128,7 @@ view BVar from TRIV to CONCRETE-VAR-MOD is
   sort Elt to BVar .
 endv
 
-fmod CONCRETE-FW is
+fmod CONCRETE-AEXP-FW is
 
     protecting CONCRETE-VAR-MOD .
     protecting MAP{Qid, Int} * (sort Map{Qid, Int} to IStore) * (op _|->_ to _|->I_ ) .
@@ -232,5 +232,26 @@ fmod CONCRETE-FW is
 
     op getBStore : Stores -> BStore .
     eq getBStore(ISTR | RSTR | BSTR) = BSTR .
+
+endfm
+
+fmod CONCRETE-FW is
+
+  protecting CONCRETE-AEXP-FW .
+
+  sorts Program StDefault .
+  
+  op [_|_] : Program Stores -> StDefault [ctor] .
+  *** Create a state from a default arrangement with an input program and a store
+  op makeState : Program Stores -> StDefault .
+  op getStore : StDefault -> Stores .
+  op updateStore : StDefault Stores -> StDefault .
+
+  vars STR STR2 : Stores .
+  var  P        : Program .
+  eq makeState(P, STR) = [ P | STR ] .
+
+  eq getStore([ P | STR ]) = STR .
+  eq updateStore([ P | STR ], STR2) = [ P | STR2 ] .
 
 endfm
