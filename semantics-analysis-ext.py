@@ -17,7 +17,7 @@ def get_args():
     parser.add_argument("--path", action="store", help="Show execution path", default=False)
 
     parser.add_argument("--analysis", action="store", help="Type of analysis to perform (e.g.: maude-se, concolic)", default="")
-    parser.add_argument("--stSort", action="store", help="State sort", default="'StDefault")
+    parser.add_argument("--stSort", action="store", help="State sort", default="'State")
     parser.add_argument("--valOp", action="store", help="Internal value operator in semantics (different from syntax 'val)", default="'placeholderVal")
     parser.add_argument("--sCond", action="store", help="Search conditions", default="nil")
     parser.add_argument("--sType", action="store", help="Search type", default="'!")
