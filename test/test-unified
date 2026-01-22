@@ -491,7 +491,13 @@ search startC(start(iv('i) := val(0) ; iv('x) := val(0) ; iv('y) := iv('n) ; whi
 *** Absolute value
 search startC(start(if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;}), ('k, k0S:Integer)) =>! C:ConcolicState .
 
-search startC(start(if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;}), ('k, k0S:Integer)) =>* < P:Program | ((IS:IStore, 'res |->I RES:Int) | empty | empty) > s.t. (RES:Int < 0) .
+
+select VERIFICATION-COMMANDS .
+select concTr(upModule('WHILE-MAUDE, true), 'State) .
+
+search startC(start(if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;}), ('k, k0S:Integer)) =>* [< P:Program | ((IS:IStore, 'res |->I RES:Int) | empty | empty) >][SMS:State {CST:Boolean}][SMSInit:State] s.t. (RES:Int < 0) .
+
+search startC(start(if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;}), ('k, k0S:Integer)) =>* [< P:Program | ((IS:IStore, 'res |->I RES:Int) | empty | empty) >][SMS:State {CST:Boolean}][SMSInit:State] s.t. (RES:Int >= 0) .
 
 *** Division by 0 *** CHECK
 *** Bound search to 1 solution

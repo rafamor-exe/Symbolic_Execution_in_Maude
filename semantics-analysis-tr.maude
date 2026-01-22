@@ -532,6 +532,10 @@ fmod MODULE-TRANSFORMER is
     eq transformModSymb(M, StateOp, TrId) = transformModSymb(M, StateOp, 'placeholderVal, TrId) .
     op transformModSymb : Module Qid Qid TrType -> Module .
     eq transformModSymb(M, StateOp, ValOp, TrId) = fuseMods(trMod(M, StateOp, ValOp, TrId), upModule('SMT-CONNECTION, true)) .
+    
+    *** Transform module to concolic
+    op concTr : Module Qid -> Module .
+    eq concTr(M, StateOp) = transformModSymb(M, StateOp, conc) .
 
 endfm
 
