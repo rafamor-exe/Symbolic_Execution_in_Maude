@@ -1,0 +1,89 @@
+*** The moules BOOL-FVP and NAT-FVP are taken from Santiago Escobar's 
+*** "Extensions of Logic Programming in Maude", ALP.
+***
+*** BOOL-FVP, NAT-FVP, and INT-FVP specify Booleans, natural numbers and
+*** integers while satisfying the finite variant property (FVP).
+
+set include BOOL off .
+
+fmod BOOL-FVP is
+	sort Bool .
+
+	ops true false : -> Bool [ctor] .
+
+	op _and_ : Bool Bool -> Bool [assoc comm] .
+	op _xor_ : Bool Bool -> Bool [assoc comm] .
+	op not_ : Bool -> Bool .
+	op _or_ : Bool Bool -> Bool .
+	op _<=>_ : Bool Bool -> Bool .
+
+	vars X Y Z W : Bool .
+
+	eq X and true = X [variant] .
+	eq X and false = false [variant] .
+	eq X and X = X [variant] .
+	eq X and X and Y = X and Y [variant] .  *** AC extension
+	eq X xor false = X [variant] .
+	eq X xor X = false [variant] .
+	eq X xor X xor Y = Y [variant] .  *** AC extension
+	eq not X = X xor true [variant] .
+	eq X or Y = (X and Y) xor X xor Y [variant] .
+	eq X <=> Y = true xor X xor Y [variant] .
+endfm
+
+*** NAT-FVP specifies the decidable theory of Presburger arithmetic,
+*** with only addition and order. Its numbers are not s s s N
+*** like in Peano arithmetic but 1 + 1 + 1 + N. INT-FVP extends it
+*** with negative numbers and subtraction.
+
+fmod NAT-FVP is
+	protecting BOOL-FVP .
+
+	sorts Nat NzNat .
+	subsort NzNat < Nat . *** Non-zero naturals
+
+	op 0 : -> Nat [ctor] .
+	op 1 : -> NzNat [ctor] .
+	op _+_ : NzNat Nat -> NzNat [ctor assoc comm id: 0] .
+	op _+_ : Nat Nat -> Nat [ctor assoc comm id: 0] .
+
+	vars X Y : Nat . var Z : NzNat .
+
+	op _>_ : Nat Nat -> Bool .
+	eq X + Z > X = true [variant] .
+	eq X > X + Y = false [variant] .
+endfm
+
+fmod INT-FVP is
+	extending NAT-FVP .
+
+	sort Int .
+	subsort Nat < Int .
+
+	op -_ : NzNat -> Int [ctor] .  *** negative numbers
+
+	*** Extended operations and subtraction
+	op -_ : Int -> Int [ditto] .
+	op _+_ : Int Int -> Int [ditto] .
+	op _>_ : Int Int -> Bool [ditto] .
+	op _-_ : Int Int -> Int .
+
+	vars N M : Nat .
+	vars X Y : Int .
+	vars Z P : NzNat .
+
+	eq - (- Z) = Z [variant] .
+	eq - 0 = 0 [variant] .
+
+	eq (- Z) + (- P) = - (Z + P) [variant] .
+	eq (P + N) + (- P) = N [variant] .
+	eq P + (- (P + Z)) = - Z [variant] .
+
+	eq (- Z) > N = false [variant] .
+	eq N > (- Z) = true [variant] .
+	eq (- Z) > (- P) = P > Z [variant] .
+
+	eq X - Y = X + (- Y) [variant] .
+endfm
+
+set include BOOL on .

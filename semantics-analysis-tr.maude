@@ -1,4 +1,5 @@
 load semantics-basics/smt-conversion.maude
+load semantics-basics/semantics-basics-narrowing.maude
 
 *** Test transformer with while language module
 ***load language-semantics/while-semantics-concrete.maude
@@ -48,14 +49,41 @@ fmod SMT-CONNECTION is
     op __ : PairSVarL PairSVarL -> PairSVarL [ctor assoc id: nil prec 25] .
 endfm
 
+fmod NARROWING-BASICS is
+    protecting INT-FVP * (
+        sort Bool to BoolFVP,
+        sort Int to IntFVP,
+        sort Nat to NatFVP,
+        sort NzNat to NzNatFVP,
+        op true to tt,
+        op false to ff
+      ) .
+endfm
+
+*** Create views for FVP types
+view IntFVP from TRIV to NARROWING-BASICS is
+  sort Elt to IntFVP .
+endv
+view BoolFVP from TRIV to NARROWING-BASICS is
+  sort Elt to BoolFVP .
+endv
+
+fmod NARROWING-FMOD is
+    pr NARROWING-BASICS .
+    *** Import stores as map structures that map variables to FVP types
+    protecting MAP{Qid, IntFVP}  * (sort Map{Qid, IntFVP}  to IStoreN) * (op _|->_ to _|->In_ ) .
+    protecting MAP{Qid, BoolFVP} * (sort Map{Qid, BoolFVP} to BStoreN) * (op _|->_ to _|->Bn_ ) .
+
+endfm
+
 fmod MODULE-TRANSFORMER is
     pr STRING-OPS .
     pr SMT-CONNECTION .
-
+    pr NARROWING-FMOD .
     sort TrType .
     
     *** Define the transformation types
-    ops symb conc maudeSE : -> TrType [ctor] . ***clconc
+    ops symb conc maudeSE narrowing : -> TrType [ctor] . ***clconc
 
     vars InstId StateOp PrOp OpId ModId Q ValOp X Y EvalQ : Qid .
     vars Trm T1 T2 Tcond Tmod TSTR TIL                    : Term .
@@ -308,7 +336,11 @@ fmod MODULE-TRANSFORMER is
                             *** Initialize the concolic state
                             (op '$startC : StateOp 'PairSVarL 'Stores 'Boolean -> 'ConcolicState [none] .)
                             *** Create a symbolic state for MaudeSE execution
-                            (op 'startSE : StateOp 'PairSVarL 'Stores -> StateOp [none] .) .
+                            (op 'startSE : StateOp 'PairSVarL 'Stores -> StateOp [none] .)
+                            *** Create a narrowing state from the concrete state, and the symbolic variable-value pairs
+                            (op 'startN : StateOp 'PairSVarL -> 'NarrowingState [none] .)
+                            *** Initialize the narrowing state
+                            (op '$startN : StateOp 'PairSVarL 'Stores -> 'NarrowingState [none] .) .
 
     *** Transform operator declarations depending on the transformation type
     op modSEOps : OpDeclSet Qid Qid TrType -> OpDeclSet .
@@ -544,17 +576,18 @@ mod VERIFICATION-COMMANDS is
     pr MODULE-TRANSFORMER .
     pr LEXICAL .
 
-    vars ModId StateOp PrOp SearchType ValOp TargetSt : Qid .
-    var  TrId                                         : TrType .
-    var  PatternSEState                               : Term .
-    var  InitSEState                                  : String . 
-    var  SearchCond                                   : Condition .
-    var  Bound                                        : Bound .
-    var  SolN                                         : Nat .
-    var  NeModIdList                                  : NeQidList .
-    var  M                                            : Module .
-    var  SVDeclL                                      : PairSVarL .
-    var  SymbCond                                     : Boolean .
+    vars ModId StateOp PrOp SearchType ValOp TargetSt FoldQ : Qid .
+    var  TrId                                               : TrType .
+    var  PatternSEState                                     : Term .
+    var  InitSEState                                        : String . 
+    var  SearchCond                                         : Condition .
+    var  Bound                                              : Bound .
+    var  SolN                                               : Nat .
+    var  NeModIdList                                        : NeQidList .
+    var  M                                                  : Module .
+    var  SVDeclL                                            : PairSVarL .
+    var  SymbCond                                           : Boolean .
+    var  VariantOpSet                                       : VariantOptionSet .
 
     op searchTr : Module Qid Qid TrType Qid String Term Condition Qid Bound Nat PairSVarL Boolean -> ResultTriple .
     eq searchTr(M, StateOp, ValOp, TrId, TargetSt,
@@ -662,6 +695,49 @@ mod VERIFICATION-COMMANDS is
                                          SVDeclL,
                                          SymbCond) .
 
+    op searchNarrowing : Module Qid Qid String Term Qid Bound Qid VariantOptionSet Nat PairSVarL -> NarrowingSearchResult? .
+    eq searchNarrowing(M, StateOp, ValOp,
+                        InitSEState,
+                        PatternSEState,
+                        SearchType,
+                        Bound,
+                        FoldQ,
+                        VariantOpSet,
+                        SolN,
+                        SVDeclL)
+                        = metaNarrowingSearch(transformModSymb(M, StateOp, ValOp, narrowing),
+                                              'startN[getTerm(metaParse(M,
+                                                                        tokenize(InitSEState),
+                                                                        StateOp)),
+                                                      searchSubVarConst(upTerm(SVDeclL))],
+                                              PatternSEState,
+                                              SearchType,
+                                              Bound,
+                                              FoldQ,
+                                              VariantOpSet,
+                                              SolN) .
+
+    op searchPathNarrowing : Module Qid Qid String Term Qid Bound Qid VariantOptionSet Nat PairSVarL -> NarrowingSearchPathResult? .
+    eq searchPathNarrowing(M, StateOp, ValOp,
+                            InitSEState,
+                            PatternSEState,
+                            SearchType,
+                            Bound,
+                            FoldQ,
+                            VariantOpSet,
+                            SolN,
+                            SVDeclL)
+                            = metaNarrowingSearchPath(transformModSymb(M, StateOp, ValOp, narrowing),
+                                                      'startN[getTerm(metaParse(M,
+                                                                                tokenize(InitSEState),
+                                                                                StateOp)),
+                                                              searchSubVarConst(upTerm(SVDeclL))],
+                                                      PatternSEState,
+                                                      SearchType,
+                                                      Bound,
+                                                      FoldQ,
+                                                      VariantOpSet,
+                                                      SolN) .
 endm
 
 mod MAUDE-SE-EXT is
