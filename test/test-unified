@@ -590,3 +590,11 @@ python3 semantics-analysis-ext.py --program "makeState(if iv('k) >= val(0) then{
 --- Symbolic execution with MaudeSE
 python3 semantics-analysis-ext.py --program "makeState(if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;}, emptyStores)" --pattern "'\`[_|_\`]['nil.Program, 'STR:Stores]" --file "language-semantics/while-semantics-default-setting.maude" --analysis "maude-se" --mod "upModule('WHILE-MAUDE, true)" --stSort "'StDefault" --svars "(k, Integer)" --sType "'*" --solN 0
 python3 semantics-analysis-ext.py --program "makeState(if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;}, emptyStores)" --pattern "'\`[_|_\`]['nil.Program, 'STR:Stores]" --file "language-semantics/while-semantics-default-setting.maude" --analysis "maude-se" --mod "upModule('WHILE-MAUDE, true)" --stSort "'StDefault" --svars "(k, Integer)" --sType "'*" --solN 1
+
+
+**************
+*** NARROWING
+**************
+
+red in VERIFICATION-COMMANDS : transformModSymb(upModule('WHILE-MAUDE, true), 'State, narrowing) .
+red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'State, 'noVal, "start(iv('var2) := val(3) ; if iv('var1) < iv('var2) then{iv('var3) := iv('var2) / val(0) ; })", '<_|_>['__['_:=_;['Var:Var, '_/_['IExp1:IExp, 'val['0.Zero]]], 'Prest:Program], 'STRend:Stores], '*, unbounded, 'match, none, 0, ('var1, var10:IntFVP)) .

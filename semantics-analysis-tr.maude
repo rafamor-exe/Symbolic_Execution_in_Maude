@@ -92,10 +92,13 @@ endfm
 fmod MODULE-TRANSFORMER is
     pr STRING-OPS .
     pr SMT-AND-NARROWING .
-    sort TrType .
+
+    sorts TrType NonNrw .
+    subsort NonNrw < TrType .
     
     *** Define the transformation types
-    ops symb conc maudeSE narrowing : -> TrType [ctor] . ***clconc
+    ops symb conc maudeSE : -> NonNrw [ctor] . ***clconc
+    op narrowing : -> TrType [ctor] .
 
     vars InstId StateOp PrOp OpId ModId Q ValOp X Y EvalQ : Qid .
     vars Trm T1 T2 Tcond Tmod TSTR TIL                    : Term .
@@ -110,6 +113,7 @@ fmod MODULE-TRANSFORMER is
     var  OpDecl                                           : OpDecl .
     var  EquationSet                                      : EquationSet .
     var  TrId                                             : TrType .
+    var  NonNrwTrId                                       : NonNrw .
     var  Eq                                               : Equation .
     var  M                                                : Module .
     var  FM                                               : FModule .
@@ -216,7 +220,7 @@ fmod MODULE-TRANSFORMER is
     ***eq rlToConcolic(Rule RlSet, StateOp) = Rule rlToConcolic(RlSet, StateOp) [owise] .
 
     *** Transform the rules for an analysis with MaudeSE or narrowing
-    *** - Transform the terms and conditions to use symbolic eval functions and symbolic stores
+    *** - Transform the terms and conditions to use symbolic/FVP eval functions and symbolic/FVP stores
     op rlToSE : RuleSet TrType -> RuleSet .
     eq rlToSE(none, TrId) = none .
     eq rlToSE(rl T1 => T2 [label(InstId) AttrSet] . RlSet, TrId) = (rl modOpStoreRec(T1, TrId) => modOpStoreRec(T2, TrId) 
@@ -300,7 +304,6 @@ fmod MODULE-TRANSFORMER is
     eq toNRWSorts('Int TL)    = 'IntFVP toNRWSorts(TL) .
     eq toNRWSorts('Zero TL)   = 'IntFVP toNRWSorts(TL) .
     eq toNRWSorts('IStore TL) = 'IStoreN toNRWSorts(TL) .
-    eq toNRWSorts('RStore TL) = 'RStoreN toNRWSorts(TL) .
     eq toNRWSorts('BStore TL) = 'BStoreN toNRWSorts(TL) .
     eq toNRWSorts(T TL) = T toNRWSorts(TL) [owise] .
 
@@ -374,7 +377,8 @@ fmod MODULE-TRANSFORMER is
     op modSEOps : OpDeclSet Qid Qid TrType -> OpDeclSet .
     eq modSEOps(OpDeclSet, StateOp, ValOp, conc) = modOpSigConc(OpDeclSet, ValOp, conc)
                                                    inclSEOps(StateOp) .
-    eq modSEOps(OpDeclSet, StateOp, ValOp, TrId) = modOpSigSE(OpDeclSet, ValOp, TrId)
+    *** NOTE: modified to keep concrete definitions when added narrowing to maintain old unchanged definitions
+    eq modSEOps(OpDeclSet, StateOp, ValOp, TrId) = modOpSigConc(OpDeclSet, ValOp, TrId)
                                                    inclSEOps(StateOp) [owise] .
 
     *** Transform operator ids to their symbolic representation
@@ -405,15 +409,16 @@ fmod MODULE-TRANSFORMER is
     ***eq subSEVarSorts(MVar) = qid(string(getName(MVar)) + ":" + string(toSMTSorts(getType(MVar)))) .
 
     *** Transform a constant's type to SMT
-    op subSEConstSortsT : Constant Type -> Constant .
-    eq subSEConstSortsT(MConst, 'Stores) = qid(string(toSymb(getName(MConst))) + "." + string('Stores)) .
-    eq subSEConstSortsT(MConst, 'IStore) = qid(string(toSymb(getName(MConst))) + "." + string(toSMTSorts('IStore))) .
-    eq subSEConstSortsT(MConst, 'RStore) = qid(string(toSymb(getName(MConst))) + "." + string(toSMTSorts('RStore))) .
-    eq subSEConstSortsT(MConst, 'BStore) = qid(string(toSymb(getName(MConst))) + "." + string(toSMTSorts('BStore))) .
-    eq subSEConstSortsT(MConst, 'Int) = qid(string(getName(MConst)) + "." + string(toSMTSorts('Int))) .
-    eq subSEConstSortsT(MConst, 'Rat) = qid(string(getName(MConst)) + "." + string(toSMTSorts('Rat))) .
-    eq subSEConstSortsT(MConst, 'Bool) = qid(string(getName(MConst)) + "." + string(toSMTSorts('Bool))) .
-    eq subSEConstSortsT(MConst, T) = MConst [owise] .
+    op subSEConstSortsT : Constant Type TrType -> Constant .
+    eq subSEConstSortsT(MConst, 'Stores, TrId) = qid(string(toSymb(getName(MConst))) + "." + string('Stores)) .
+    eq subSEConstSortsT(MConst, 'IStore, TrId) = qid(string(toSymb(getName(MConst))) + "." + string(trSorts('IStore, TrId))) .
+    eq subSEConstSortsT(MConst, 'RStore, TrId) = qid(string(toSymb(getName(MConst))) + "." + string(trSorts('RStore, TrId))) .
+    eq subSEConstSortsT(MConst, 'BStore, TrId) = qid(string(toSymb(getName(MConst))) + "." + string(trSorts('BStore, TrId))) .
+    eq subSEConstSortsT(MConst, 'Int, TrId) = qid(string(getName(MConst)) + "." + string(trSorts('Int, TrId))) .
+    eq subSEConstSortsT(MConst, 'Rat, TrId) = qid(string(getName(MConst)) + "." + string(trSorts('Rat, TrId))) .
+    eq subSEConstSortsT(MConst, 'Bool, TrId) = qid(string(getName(MConst)) + "." + string(trSorts('Bool, TrId))) .
+    eq subSEConstSortsT(MConst, T, TrId) = MConst [owise] .
+    ***eq subSEConstSortsT(MConst, TrId) = qid(string(getName(MConst)) + "." + string(trSorts(getType(MConst), TrId))) .
 
     *** Substitute all variables in a TermList with the corresponding term with SMT types
     ***op searchSubVar : TermList -> TermList .
@@ -424,26 +429,27 @@ fmod MODULE-TRANSFORMER is
     ***eq searchSubVar((T1, NeTL))      = searchSubVar(T1), searchSubVar(NeTL) .
 
     *** Substitute all variables and constants in a TermList with the corresponding term with SMT types
-    op searchSubVarConst : TermList -> TermList .
-    eq searchSubVarConst(empty)           = empty .
-    eq searchSubVarConst(MConst)          = subSEConstSortsT(MConst, getType(MConst)) .
-    eq searchSubVarConst(MVar)            = subSEVarSorts(MVar, getType(MVar)) .
-    eq searchSubVarConst('val[T1])        = 'val[T1] .
-    eq searchSubVarConst('s_['0.Zero])    = '1.Integer .
-    ceq searchSubVarConst(Q['0.Zero])     = qid(string(rat(substr(Str, 3, sd(length(Str), 3)), 10), 10) + ".Integer")
+    op searchSubVarConst : TermList TrType -> TermList .
+    eq searchSubVarConst(empty, TrId)           = empty .
+    eq searchSubVarConst(MConst, TrId)          = subSEConstSortsT(MConst, getType(MConst), TrId) .
+    eq searchSubVarConst(MVar, TrId)            = subSEVarSorts(MVar, getType(MVar), TrId) .
+    eq searchSubVarConst('val[T1], TrId)        = 'val[T1] .
+    eq searchSubVarConst('s_['0.Zero], TrId)    = '1.Integer .
+    ceq searchSubVarConst(Q['0.Zero], TrId)     = qid(string(rat(substr(Str, 3, sd(length(Str), 3)), 10), 10) + ".Integer")
       if Str := string(Q)
       /\ substr(Str, 0, 3) = "s_^" .
+    eq searchSubVarConst('_*_[NeTL], narrowing) = '_*_[NeTL] .
+    eq searchSubVarConst('_/_[NeTL], narrowing) = '_/_[NeTL] .
     eq searchSubVarConst(OpId[NeTL], TrId)      = modSEOpIds(OpId)[searchSubVarConst(NeTL, TrId)] [owise] .
     eq searchSubVarConst((T1, NeTL), TrId)      = searchSubVarConst(T1, TrId), searchSubVarConst(NeTL, TrId) .
 
-
     op convert : Constant Type TrType -> Constant .
     eq convert(MConst, T, narrowing) = convertNarrowing(MConst, T) .
-    eq convert(MConst, T, TrId) = convertSMT(MConst, T) .
+    eq convert(MConst, T, TrId) = convertSMT(MConst, T) [owise] .
 
     op convert : Variable Type TrType -> Variable .
     eq convert(MVar, T, narrowing) = convertNarrowing(MVar, T) .
-    eq convert(MVar, T, TrId) = convertSMT(MVar, T) .
+    eq convert(MVar, T, TrId) = convertSMT(MVar, T) [owise] .
 
     *** Convert constant with Maude type to the corresponding SMT type
     op convertSMT : Constant Type -> Constant .
@@ -471,38 +477,40 @@ fmod MODULE-TRANSFORMER is
     ceq subSETermSTR(Q['0.Zero], TrId)     = qid(string(rat(substr(Str, 3, sd(length(Str), 3)), 10), 10) + ".Integer")
       if Str := string(Q)
       /\ substr(Str, 0, 3) = "s_^" .
-    eq subSETermSTR(OpId[NeTL])      = modSEOpIds(OpId)[modOpStoreRec(NeTL)] [owise] .
-  
-    op modStoreT : Constant Type -> Term .
-    op modStoreT : Variable Type -> Term .
-    op modStoreT : Term -> Term .
-    eq modStoreT(MConst)          = modStoreT(MConst, getType(MConst)) .
-    eq modStoreT(MConst, 'Stores) = subSEConstSortsT(MConst, 'Stores) .
-    eq modStoreT(MConst, 'IStore) = subSEConstSortsT(MConst, 'IStore) .
-    eq modStoreT(MConst, 'RStore) = subSEConstSortsT(MConst, 'RStore) .
-    eq modStoreT(MConst, 'BStore) = subSEConstSortsT(MConst, 'BStore) .
-    eq modStoreT(MConst, T)       = MConst [owise] .
-    eq modStoreT(MVar)            = modStoreT(MVar, getType(MVar)) .
-    eq modStoreT(MVar, 'Stores)   = subSEVarSorts(MVar, 'Stores) .
-    eq modStoreT(MVar, 'IStore)   = subSEVarSorts(MVar, 'IStore) .
-    eq modStoreT(MVar, 'RStore)   = subSEVarSorts(MVar, 'RStore) .
-    eq modStoreT(MVar, 'BStore)   = subSEVarSorts(MVar, 'BStore) .
-    eq modStoreT(MVar, T)         = MVar [owise] .
-    eq modStoreT('_|->I_[T1, T2]) = toSymb('_|->I_)[T1, searchSubVarConst(T2)] .
-    eq modStoreT('_|->R_[T1, T2]) = toSymb('_|->R_)[T1, searchSubVarConst(T2)] .
-    eq modStoreT('_|->B_[T1, T2]) = toSymb('_|->B_)[T1, searchSubVarConst(T2)] .
-    eq modStoreT('_`,_[T1, T2])   = '_`,_[modStoreT(T1), modStoreT(T2)] .
-    eq modStoreT(OpId[NeTL])      = modSEOpIds(OpId)[modOpStoreRec(NeTL)] [owise] .
+    eq subSETermSTR('_*_[NeTL], narrowing) = '_*_[NeTL] .
+    eq subSETermSTR(OpId[NeTL], TrId)      = modSEOpIds(OpId)[modOpStoreRec(NeTL, TrId)] [owise] .
+
+    op modStoreT : Constant Type TrType -> Term .
+    op modStoreT : Variable Type TrType -> Term .
+    op modStoreT : Term TrType -> Term .
+    eq modStoreT(MConst, 'Stores, TrId) = subSEConstSortsT(MConst, 'Stores, TrId) .
+    eq modStoreT(MConst, 'IStore, TrId) = subSEConstSortsT(MConst, 'IStore, TrId) .
+    eq modStoreT(MConst, 'RStore, TrId) = subSEConstSortsT(MConst, 'RStore, TrId) .
+    eq modStoreT(MConst, 'BStore, TrId) = subSEConstSortsT(MConst, 'BStore, TrId) .
+    eq modStoreT(MConst, T, TrId) = MConst [owise] .
+    eq modStoreT(MVar, 'Stores, TrId)   = subSEVarSorts(MVar, 'Stores, TrId) .
+    eq modStoreT(MVar, 'IStore, TrId)   = subSEVarSorts(MVar, 'IStore, TrId) .
+    eq modStoreT(MVar, 'RStore, TrId)   = subSEVarSorts(MVar, 'RStore, TrId) .
+    eq modStoreT(MVar, 'BStore, TrId)   = subSEVarSorts(MVar, 'BStore, TrId) .
+    eq modStoreT(MVar, T, TrId) = MVar [owise] .
+    eq modStoreT(MConst, TrId)          = modStoreT(MConst, getType(MConst), TrId) .
+    eq modStoreT(MVar, TrId)            = modStoreT(MVar, getType(MVar), TrId) .
+    eq modStoreT('_|->I_[T1, T2], TrId) = toSymb('_|->I_)[T1, searchSubVarConst(T2, TrId)] .
+    eq modStoreT('_|->R_[T1, T2], TrId) = toSymb('_|->R_)[T1, searchSubVarConst(T2, TrId)] .
+    eq modStoreT('_|->B_[T1, T2], TrId) = toSymb('_|->B_)[T1, searchSubVarConst(T2, TrId)] .
+    eq modStoreT('_`,_[T1, T2], TrId)   = '_`,_[modStoreT(T1, TrId), modStoreT(T2, TrId)] .
+    eq modStoreT(OpId[NeTL], TrId)   = modSEOpIds(OpId)[modOpStoreRec(NeTL, TrId)] [owise] .
+
 
     *** Transform terms in a list to use symbolic stores
-    op modOpStoreRec : TermList -> TermList .
-    eq modOpStoreRec(empty)       = empty .
-    eq modOpStoreRec((T1, TermL)) = modStoreT(T1), modOpStoreRec(TermL) .
+    op modOpStoreRec : TermList TrType -> TermList .
+    eq modOpStoreRec(empty, TrId)       = empty .
+    eq modOpStoreRec((T1, TermL), TrId)     = modStoreT(T1, TrId), modOpStoreRec(TermL, TrId) .
 
     *** Transform variables and constants within conditions to use SMT types
-    op modCond : Condition -> Condition .
-    eq modCond(T1 = T2)        = (modOpStoreRec(T1) = searchSubVarConst(T2)) .
-    eq modCond(T1 := T2)       = (T1 := T2) .
+    op modCond : Condition TrType -> Condition .
+    eq modCond(T1 = T2, TrId)        = (modOpStoreRec(T1, TrId) = searchSubVarConst(T2, TrId)) .
+    eq modCond(T1 := T2, TrId)       = (T1 := T2) .
     ***eq modCond(T1 => T2)       = (T1 => T2) .
     eq modCond(EqC /\ EqC2, TrId)    = modCond(EqC, TrId) /\ modCond(EqC2, TrId) .
     eq modCond(Cond1 /\ Cond2, TrId) = modCond(Cond1, TrId) /\ modCond(Cond2, TrId) .
