@@ -72,8 +72,30 @@ view BoolFVP from TRIV to NARROWING-BASICS is
   sort Elt to BoolFVP .
 endv
 
-fmod NARROWING-FMOD is
+fmod NARROWING-CONVERSION is
     pr NARROWING-BASICS .
+    pr META-LEVEL .
+    pr LEXICAL .
+    pr CONVERSION .
+
+    op toIntFVP : Int -> IntFVP .
+    op toBoolFVP : Bool -> BoolFVP .
+    op errIntFVP : -> IntFVP [ctor] .
+
+    var I : Int .
+
+    eq toIntFVP(I) = downTerm(getTerm(metaParse(['NARROWING-BASICS], tokenize(string(I, 10)), 'IntFVP)), errIntFVP) .
+    eq toBoolFVP(true) = tt .
+    eq toBoolFVP(false) = ff .
+
+    op trBool : Qid -> Qid .
+    eq trBool('true) = 'tt .
+    eq trBool('false) = 'ff .
+endfm
+
+fmod NARROWING-FMOD is
+    
+    pr NARROWING-CONVERSION .
     pr PAIRSVAR .
     *** Import stores as map structures that map variables to FVP types
     protecting MAP{Qid, IntFVP}  * (sort Map{Qid, IntFVP}  to IStoreN) * (op _|->_ to _|->In_ ) .
@@ -219,6 +241,7 @@ fmod MODULE-TRANSFORMER is
           rlToConcolic(RlSet, StateOp) [owise] .
     ***eq rlToConcolic(Rule RlSet, StateOp) = Rule rlToConcolic(RlSet, StateOp) [owise] .
 
+    *** TODO: Add rule transformation for NARROWING
     *** Transform the rules for an analysis with MaudeSE or narrowing
     *** - Transform the terms and conditions to use symbolic/FVP eval functions and symbolic/FVP stores
     op rlToSE : RuleSet TrType -> RuleSet .
@@ -346,6 +369,7 @@ fmod MODULE-TRANSFORMER is
                             (op '`[_`]`[_`]`[_`] : StateOp 'SEState StateOp -> 'ConcolicState [ctor] .)
                             *** Construct the symbolic Stores structure with the three symbolic stores
                             (op '_|_|_ : 'IStoreS 'RStoreS 'BStoreS -> 'Stores [ctor] .)
+                            (op '_|_ : 'IStoreS 'BStoreS -> 'Stores [ctor] .)
                             *** Construct the FVP-typed store Stores structure for narrowing
                             (op '_|_ : 'IStoreN 'BStoreN -> 'Stores [ctor] .)
                             *** Initialize the input concrete stores with the symbolic stores and
@@ -416,7 +440,8 @@ fmod MODULE-TRANSFORMER is
     eq subSEConstSortsT(MConst, 'BStore, TrId) = qid(string(toSymb(getName(MConst))) + "." + string(trSorts('BStore, TrId))) .
     eq subSEConstSortsT(MConst, 'Int, TrId) = qid(string(getName(MConst)) + "." + string(trSorts('Int, TrId))) .
     eq subSEConstSortsT(MConst, 'Rat, TrId) = qid(string(getName(MConst)) + "." + string(trSorts('Rat, TrId))) .
-    eq subSEConstSortsT(MConst, 'Bool, TrId) = qid(string(getName(MConst)) + "." + string(trSorts('Bool, TrId))) .
+    eq subSEConstSortsT(MConst, 'Bool, NonNrwTrId) = qid(string(getName(MConst)) + "." + string(trSorts('Bool, NonNrwTrId))) .
+    eq subSEConstSortsT(MConst, 'Bool, narrowing) = qid(string(trBool(getName(MConst))) + "." + string(trSorts('Bool, narrowing))) .
     eq subSEConstSortsT(MConst, T, TrId) = MConst [owise] .
     ***eq subSEConstSortsT(MConst, TrId) = qid(string(getName(MConst)) + "." + string(trSorts(getType(MConst), TrId))) .
 
@@ -466,19 +491,26 @@ fmod MODULE-TRANSFORMER is
     eq convertSMT(MVar, T) = MVar [owise] .
 
     op convertNarrowing : Constant Type -> Constant .
+    eq convertNarrowing(MConst, 'Int)  = 'toIntFVP[MConst] .
+    eq convertNarrowing(MConst, 'Bool) = 'toBoolFVP[MConst] .
+    eq convertNarrowing(MConst, T) = MConst [owise] .
+
     op convertNarrowing : Variable Type -> Variable .
+    eq convertNarrowing(MVar, 'Int)  = 'toIntFVP[MVar] .
+    eq convertNarrowing(MVar, 'Bool) = 'toBoolFVP[MVar] .
+    eq convertNarrowing(MVar, T) = MVar [owise] .
 
     *** Recursively transform terms to use symbolic stores and convert constants to SMT values
-    op subSETermSTR : Term TrType -> Term .
-    eq subSETermSTR(MConst, TrId)          = convert(MConst, getType(MConst), TrId) .
-    eq subSETermSTR(MVar, TrId)            = subSEVarSorts(MVar, getType(MVar), TrId) .
-    eq subSETermSTR('val[T1], TrId)        = 'val[T1] .
-    eq subSETermSTR('s_['0.Zero], TrId)    = '1.Integer .
-    ceq subSETermSTR(Q['0.Zero], TrId)     = qid(string(rat(substr(Str, 3, sd(length(Str), 3)), 10), 10) + ".Integer")
-      if Str := string(Q)
-      /\ substr(Str, 0, 3) = "s_^" .
-    eq subSETermSTR('_*_[NeTL], narrowing) = '_*_[NeTL] .
-    eq subSETermSTR(OpId[NeTL], TrId)      = modSEOpIds(OpId)[modOpStoreRec(NeTL, TrId)] [owise] .
+    ***op subSETermSTR : Term TrType -> Term .
+    ***eq subSETermSTR(MConst, TrId)          = convert(MConst, getType(MConst), TrId) .
+    ***eq subSETermSTR(MVar, TrId)            = subSEVarSorts(MVar, getType(MVar), TrId) .
+    ***eq subSETermSTR('val[T1], TrId)        = 'val[T1] .
+    ***eq subSETermSTR('s_['0.Zero], TrId)    = '1.Integer .
+    ***ceq subSETermSTR(Q['0.Zero], TrId)     = qid(string(rat(substr(Str, 3, sd(length(Str), 3)), 10), 10) + ".Integer")
+    ***  if Str := string(Q)
+    ***  /\ substr(Str, 0, 3) = "s_^" .
+    ***eq subSETermSTR('_*_[NeTL], narrowing) = '_*_[NeTL] .
+    ***eq subSETermSTR(OpId[NeTL], TrId)      = modSEOpIds(OpId)[modOpStoreRec(NeTL, TrId)] [owise] .
 
     op modStoreT : Constant Type TrType -> Term .
     op modStoreT : Variable Type TrType -> Term .
@@ -649,6 +681,9 @@ fmod MODULE-TRANSFORMER is
     *** Transform module to concolic
     op concTr : Module Qid -> Module .
     eq concTr(M, StateOp) = transformModSymb(M, StateOp, conc) .
+
+    op narrowingTr : Module Qid -> Module .
+    eq narrowingTr(M, StateOp) = transformModSymb(M, StateOp, narrowing) .
 
 endfm
 

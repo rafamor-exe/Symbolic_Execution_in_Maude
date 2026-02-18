@@ -596,5 +596,17 @@ python3 semantics-analysis-ext.py --program "makeState(if iv('k) >= val(0) then{
 *** NARROWING
 **************
 
-red in VERIFICATION-COMMANDS : transformModSymb(upModule('WHILE-MAUDE, true), 'State, narrowing) .
-red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'State, 'noVal, "start(iv('var2) := val(3) ; if iv('var1) < iv('var2) then{iv('var3) := iv('var2) / val(0) ; })", '<_|_>['__['_:=_;['Var:Var, '_/_['IExp1:IExp, 'val['0.Zero]]], 'Prest:Program], 'STRend:Stores], '*, unbounded, 'match, none, 0, ('var1, var10:IntFVP)) .
+*** TODO: FIX NARROWING SEARCH
+
+select VERIFICATION-COMMANDS
+select narrowingTr(upModule('WHILE-MAUDE, true), 'State) .
+
+red in VERIFICATION-COMMANDS : narrowingTr(upModule('WHILE-MAUDE, true), 'State) .
+*** NOTE: Original was with <, but changed to > for testing it works
+red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'State, 'noVal, "start(iv('var2) := val(3) ; if iv('var1) > iv('var2) then{iv('var3) := iv('var2) / val(0) ; })", '<_|_>['__['_:=_;['Var:Var, '_/_['IExp1:IExp, 'val['0.Zero]]], 'Prest:Program], 'STRend:Stores], '*, unbounded, 'match, none, 0, ('var1, var10:IntFVP)) .
+
+red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'State, 'noVal, "start(if iv('x) > val(0) then{iv('x) := iv('x) ; } else { iv('x) := - iv('x) ; })", 'SESf:State, '*, unbounded, 'match, none, 0, ('x, x0:IntFVP)) .
+
+red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'State, 'noVal, "start(if iv('x) > val(0) then{iv('x) := iv('x) ; } else { iv('x) := - iv('x) ; })", 'SESf:State, '+, unbounded, 'match, none, 0, ('x, x0:IntFVP)) .
+
+red in VERIFICATION-COMMANDS : metaReduce(narrowingTr(upModule('WHILE-MAUDE, true), 'State), '0.Zero) .

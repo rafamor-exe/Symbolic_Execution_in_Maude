@@ -1,16 +1,15 @@
-fmod CONCRETE-VARSTATE-MOD is
+load semantics-basics.maude
 
+fmod CONCRETE-VARSTATE-EXT is
+
+    protecting CONCRETE-FW-NORAT .
     protecting CONVERSION .
 
-    sorts IVal RVal BVal IExp RExp BExp .
-    subsort BVal < BExp .
-    subsort IVal < RVal IExp .
-    subsort RVal < RExp .
+    sorts RVal RExp .
+    subsort IVal < RVal < RExp .
     ***subsort IExp < RExp < BExp . 
 
     op val : Rat -> RVal [ctor] .
-    op val : Int -> IVal [ctor] .
-    op val : Bool -> BVal [ctor] .
     op val : Float -> RVal .
 
     vars R R1 R2 : Rat .
@@ -22,24 +21,16 @@ fmod CONCRETE-VARSTATE-MOD is
 
     eq val(F) = val(rat(F)) .
 
-    op -_ : IVal -> IVal [prec 30] .
     op -_ : RVal -> RVal [prec 30] .
-    op _+_ : IVal IVal -> IVal [gather (E e) prec 33] .
     op _+_ : RVal RVal -> RVal [gather (E e) prec 33] .
     op _*_ : IVal IVal -> IVal [gather (E e) prec 31] .
     op _*_ : RVal RVal -> RVal [gather (E e) prec 31] .
-    op _-_ : IVal IVal -> IVal [gather (E e) prec 33] .
     op _-_ : RVal RVal -> RVal [gather (E e) prec 33] .
     op _quo_ : IVal IVal -> IVal [gather (E e) prec 31] .
     op _/_ : RVal RVal -> RVal [gather (E e) prec 31] .
 
     op _===_ : BVal BVal -> BVal [gather (e E) prec 51] .
     op _=/==_ : BVal BVal -> BVal [gather (e E) prec 51] .
-    op not_ : BVal -> BVal [prec 53] .
-    op _and_ : BVal BVal -> BVal [gather (e E) prec 55] .
-    op _or_ : BVal BVal -> BVal [gather (e E) prec 57] .
-    op _xor_ : BVal BVal -> BVal [gather (e E) prec 59] .
-    op _implies_ : BVal BVal -> BVal [gather (e E) prec 61] .
 
     op _===_ : IVal IVal -> BVal [gather (e E) prec 51] .
     op _===_ : RVal RVal -> BVal [gather (e E) prec 51] .
@@ -49,37 +40,33 @@ fmod CONCRETE-VARSTATE-MOD is
     op _<_ : RVal RVal -> BVal [prec 37] .
     op _<=_ : IVal IVal -> BVal [prec 37] .
     op _<=_ : RVal RVal -> BVal [prec 37] .
-    op _>_ : IVal IVal -> BVal [prec 37] .
+    
     op _>_ : RVal RVal -> BVal [prec 37] .
     op _>=_ : IVal IVal -> BVal [prec 37] .
     op _>=_ : RVal RVal -> BVal [prec 37] .
 
 endfm
 
-view IVal from TRIV to CONCRETE-VARSTATE-MOD is
+view IVal from TRIV to CONCRETE-VARSTATE-EXT is
   sort Elt to IVal .
 endv
-view RVal from TRIV to CONCRETE-VARSTATE-MOD is
+view RVal from TRIV to CONCRETE-VARSTATE-EXT is
   sort Elt to RVal .
 endv
-view BVal from TRIV to CONCRETE-VARSTATE-MOD is
+view BVal from TRIV to CONCRETE-VARSTATE-EXT is
   sort Elt to BVal .
 endv
 
-fmod CONCRETE-VAR-MOD is
+fmod CONCRETE-VAR-EXT is
 
     protecting QID .
-    protecting CONCRETE-VARSTATE-MOD .
+    protecting CONCRETE-VARSTATE-EXT .
 
-    sorts Var IVar RVar BVar .
-    subsort IVar RVar BVar < Var .
-    subsort IVar < IExp .
+    sorts RVar .
+    subsort RVar < Var .
     subsort RVar < RExp .
-    subsort BVar < BExp .
 
-    op iv : Qid -> IVar [ctor] .
     op rv : Qid -> RVar [ctor] .
-    op bv : Qid -> BVar [ctor] .
 
     op _===_ : IExp IExp -> BExp [gather (e E) prec 51] .
     op _===_ : RExp RExp -> BExp [gather (e E) prec 51] .
@@ -93,18 +80,13 @@ fmod CONCRETE-VAR-MOD is
     op _<=_ : IExp IExp -> BExp [prec 37] .
     op _<=_ : RExp RExp -> BExp [prec 37] .
     op _<=_ : Var Var -> BExp [prec 37] .
-    op _>_ : IExp IExp -> BExp [prec 37] .
     op _>_ : RExp RExp -> BExp [prec 37] .
-    op _>_ : Var Var -> BExp [prec 37] .
     op _>=_ : IExp IExp -> BExp [prec 37] .
     op _>=_ : RExp RExp -> BExp [prec 37] .
     op _>=_ : Var Var -> BExp [prec 37] .
 
-    op -_ : IExp -> IExp [prec 30] .
     op -_ : RExp -> RExp [prec 30] .
-    op _+_ : IExp IExp -> IExp [gather (E e) prec 33] .
     op _+_ : RExp RExp -> RExp [gather (E e) prec 33] .
-    op _-_ : IExp IExp -> IExp [gather (E e) prec 33] .
     op _-_ : RExp RExp -> RExp [gather (E e) prec 33] .
     op _*_ : IExp IExp -> IExp [gather (E e) prec 31] .
     op _*_ : RExp RExp -> RExp [gather (E e) prec 31] .
@@ -115,49 +97,30 @@ fmod CONCRETE-VAR-MOD is
 
 endfm
 
-view Var from TRIV to CONCRETE-VAR-MOD is
+view Var from TRIV to CONCRETE-VAR-EXT is
   sort Elt to Var .
 endv
-view IVar from TRIV to CONCRETE-VAR-MOD is
+view IVar from TRIV to CONCRETE-VAR-EXT is
   sort Elt to IVar .
 endv
-view RVar from TRIV to CONCRETE-VAR-MOD is
+view RVar from TRIV to CONCRETE-VAR-EXT is
   sort Elt to RVar .
 endv
-view BVar from TRIV to CONCRETE-VAR-MOD is
+view BVar from TRIV to CONCRETE-VAR-EXT is
   sort Elt to BVar .
 endv
 
 fmod CONCRETE-FW is
 
-    protecting CONCRETE-VAR-MOD .
-    protecting MAP{Qid, Int} * (sort Map{Qid, Int} to IStore) * (op _|->_ to _|->I_ ) .
-    protecting MAP{Qid, Rat} * (sort Map{Qid, Rat} to RStore) * (op _|->_ to _|->R_ ) .
-    protecting MAP{Qid, Bool} * (sort Map{Qid, Bool} to BStore) * (op _|->_ to _|->B_ ) .
+    protecting CONCRETE-VAR-EXT .
+    ***protecting MAP{Qid, Rat} * (sort Map{Qid, Rat} to RStore) * (op _|->_ to _|->R_ ) .
 
-    sorts Stores .
+    ***op _|_|_ : IStore RStore BStore -> Stores [ctor] .
 
-    op _|_|_ : IStore RStore BStore -> Stores [ctor] .
-
-    op _/\_ : BExp BExp -> BExp [ctor assoc] .
-
-    op _/_ : IVal IVal -> IVal [gather (E e) prec 31] .
-    op _/_ : IExp IExp -> IExp [gather (E e) prec 31] .
     op _/_ : RExp RExp -> RExp [gather (E e) prec 31] .
 
-    ***op evalB : BVal -> Bool .
-    op evalI : IExp IStore -> Int .
     op evalR : RExp RStore -> Rat .
-    ***op evalB : BExp BStore -> Bool .
-    op eval : IExp IStore -> Int .
     op eval : RExp RStore -> Rat .
-    ***op eval : BExp BStore -> Bool .
-    op eval : BExp Stores -> Bool .
-    ***op eval : IExp Stores -> Int .
-    ***op eval : RExp Stores -> Rat .
-    ***op eval : IVal -> Int .
-    ***op eval : RVal -> Rat .
-    ***op eval : BVal -> Bool .
 
     vars IExp IExp1 IExp2 : IExp .
     vars RExp RExp1 RExp2 : RExp .
@@ -178,13 +141,9 @@ fmod CONCRETE-FW is
     vars B B1 B2 : Bool .
     var Q : Qid .
 
-    eq eval(IExp, ISTR) = evalI(IExp, ISTR) .
     eq eval(RExp, RSTR) = evalR(RExp, RSTR) .
     ***eq eval(BExp, BSTR) = evalB(BExp, BSTR) .
-
-    eq eval(BExp1 /\ BExp2, STR) = eval(BExp1, STR) and eval(BExp2, STR) .
-    eq eval(not BExp, STR) = not eval(BExp, STR) .
-    
+  
     eq eval(IExp1 === IExp2, (ISTR | RSTR | BSTR)) = evalI(IExp1, ISTR) == evalI(IExp2, ISTR) .
     eq eval(IExp1 =/== IExp2, (ISTR | RSTR | BSTR)) = evalI(IExp1, ISTR) =/= evalI(IExp2, ISTR) .
     eq eval(IExp1 < IExp2, (ISTR | RSTR | BSTR)) = evalI(IExp1, ISTR) < evalI(IExp2, ISTR) .
@@ -200,12 +159,8 @@ fmod CONCRETE-FW is
     eq eval(BExp1 === BExp2, STR) = eval(BExp1, STR) == eval(BExp2, STR) .
     eq eval(BExp1 =/== BExp2, STR) = eval(BExp1, STR) =/= eval(BExp2, STR) .
     eq eval(bv(Q), (ISTR | RSTR | BSTR)) = BSTR[Q] .
-    eq eval(val(B), STR) = B .
-    
-    eq evalI(- IExp1, ISTR) = - evalI(IExp1, ISTR) .
-    eq evalI(IExp1 + IExp2, ISTR) = evalI(IExp1, ISTR) + evalI(IExp2, ISTR) .
     eq evalI(IExp1 * IExp2, ISTR) = evalI(IExp1, ISTR) * evalI(IExp2, ISTR) .
-    eq evalI(IExp1 - IExp2, ISTR) = evalI(IExp1, ISTR) - evalI(IExp2, ISTR) .
+
     eq evalI(IExp1 / IExp2, ISTR) = evalI(IExp1, ISTR) quo evalI(IExp2, ISTR) .
 
     eq evalR(- RExp1, RSTR) = - evalR(RExp1, RSTR) .
@@ -216,9 +171,8 @@ fmod CONCRETE-FW is
 
     ***eq evalB(BExp1 /\ BExp2, BSTR) = evalB(BExp1, BSTR) and evalB(BExp2, BSTR) .
 
-    eq evalI(iv(Q), ISTR) = ISTR[Q] .
     eq evalR(rv(Q), RSTR) = RSTR[Q] .
-    eq evalI(val(I), ISTR) = I .
+
     eq evalR(val(R), RSTR) = R .
     ***eq evalB(val(B), BSTR) = B .
 

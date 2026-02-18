@@ -1,0 +1,130 @@
+fmod CONCRETE-VARSTATE-MOD is
+
+    protecting CONVERSION .
+
+    sorts IVal BVal IExp BExp .
+    subsort BVal < BExp .
+    subsort IVal < IExp .
+
+    op val : Int -> IVal [ctor] .
+    op val : Bool -> BVal [ctor] .
+
+    vars B B1 B2 : Bool .
+    vars I I1 I2 : Int .
+
+    op -_ : IVal -> IVal [prec 30] .
+    op _+_ : IVal IVal -> IVal [gather (E e) prec 33] .
+    op _-_ : IVal IVal -> IVal [gather (E e) prec 33] .
+
+    op not_ : BVal -> BVal [prec 53] .
+    op _and_ : BVal BVal -> BVal [gather (e E) prec 55] .
+    op _or_ : BVal BVal -> BVal [gather (e E) prec 57] .
+    op _xor_ : BVal BVal -> BVal [gather (e E) prec 59] .
+    op _implies_ : BVal BVal -> BVal [gather (e E) prec 61] .
+
+    op _>_ : IVal IVal -> BVal [prec 37] .
+
+endfm
+
+view IVal from TRIV to CONCRETE-VARSTATE-MOD is
+  sort Elt to IVal .
+endv
+view BVal from TRIV to CONCRETE-VARSTATE-MOD is
+  sort Elt to BVal .
+endv
+
+fmod CONCRETE-VAR-MOD is
+
+    protecting QID .
+    protecting CONCRETE-VARSTATE-MOD .
+
+    sorts Var IVar BVar .
+    subsort IVar BVar < Var .
+    subsort IVar < IExp .
+    subsort BVar < BExp .
+
+    op iv : Qid -> IVar [ctor] .
+    op bv : Qid -> BVar [ctor] .
+
+    op _>_ : IExp IExp -> BExp [prec 37] .
+    op _>_ : Var Var -> BExp [prec 37] .
+
+    op -_ : IExp -> IExp [prec 30] .
+    op _+_ : IExp IExp -> IExp [gather (E e) prec 33] .
+    op _-_ : IExp IExp -> IExp [gather (E e) prec 33] .
+
+endfm
+
+view Var from TRIV to CONCRETE-VAR-MOD is
+  sort Elt to Var .
+endv
+view IVar from TRIV to CONCRETE-VAR-MOD is
+  sort Elt to IVar .
+endv
+view BVar from TRIV to CONCRETE-VAR-MOD is
+  sort Elt to BVar .
+endv
+
+fmod CONCRETE-FW-NORAT is
+
+    protecting CONCRETE-VAR-MOD .
+    protecting MAP{Qid, Int} * (sort Map{Qid, Int} to IStore) * (op _|->_ to _|->I_ ) .
+    protecting MAP{Qid, Rat} * (sort Map{Qid, Rat} to RStore) * (op _|->_ to _|->R_ ) .
+    protecting MAP{Qid, Bool} * (sort Map{Qid, Bool} to BStore) * (op _|->_ to _|->B_ ) .
+
+    sorts Stores .
+
+    op _|_|_ : IStore RStore BStore -> Stores [ctor] .
+    op _|_ : IStore BStore -> Stores [ctor] .
+
+    op _/\_ : BExp BExp -> BExp [ctor assoc] .
+
+    op _/_ : IVal IVal -> IVal [gather (E e) prec 31] .
+    op _/_ : IExp IExp -> IExp [gather (E e) prec 31] .
+
+    op evalI : IExp IStore -> Int .
+    op eval : IExp IStore -> Int .
+    op eval : BExp Stores -> Bool .
+
+    vars IExp IExp1 IExp2 : IExp .
+    vars BExp1 BExp2 BExp : BExp .
+    var ISTR : IStore .
+    var BSTR : BStore .
+    var STR : Stores .
+    vars Var Var' : Var .
+    vars IVar IVar' : IVar .
+    vars BVar BVar' : BVar .
+    vars IV IV1 IV2 : IVal .
+    vars BV BV1 BV2 : BVal .
+    vars I I1 I2 : Int .
+    vars B B1 B2 : Bool .
+    var Q : Qid .
+
+    eq eval(IExp, ISTR) = evalI(IExp, ISTR) .
+
+    eq eval(BExp1 /\ BExp2, STR) = eval(BExp1, STR) and eval(BExp2, STR) .
+    eq eval(not BExp, STR) = not eval(BExp, STR) .
+    
+    eq eval(IExp1 > IExp2, (ISTR | BSTR)) = evalI(IExp1, ISTR) > evalI(IExp2, ISTR) .
+    eq eval(bv(Q), (ISTR | BSTR)) = BSTR[Q] .
+    eq eval(val(B), STR) = B .
+    
+    eq evalI(- IExp1, ISTR) = - evalI(IExp1, ISTR) .
+    eq evalI(IExp1 + IExp2, ISTR) = evalI(IExp1, ISTR) + evalI(IExp2, ISTR) .
+    eq evalI(IExp1 - IExp2, ISTR) = evalI(IExp1, ISTR) - evalI(IExp2, ISTR) .
+
+    eq evalI(iv(Q), ISTR) = ISTR[Q] .
+    eq evalI(val(I), ISTR) = I .
+
+    eq not not BExp = BExp .
+
+    op getIStore : Stores -> IStore .
+    eq getIStore(ISTR | BSTR) = ISTR .
+
+    op getBStore : Stores -> BStore .
+    eq getBStore(ISTR | BSTR) = BSTR .
+
+    op emptyStores : -> Stores [ctor] .
+    eq emptyStores = (empty | empty) .
+
+endfm
