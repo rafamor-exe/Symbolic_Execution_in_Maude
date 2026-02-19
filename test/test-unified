@@ -607,9 +607,14 @@ red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'St
 
 red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'State, 'noVal, "start(if iv('x) > val(0) then{iv('x) := iv('x) ; } else { iv('x) := - iv('x) ; })", 'SESf:State, '*, unbounded, 'match, none, 0, ('x, x0:IntFVP)) .
 
-*** TODO: Check below (this works but it may also work without constraints in the final state ('_>_['%1:IntFVP, '0.NatFVP] should reduce))
+*** TODO: 
+    - Check below (this works but it may also work without constraints in the final state)
+    - Solve infite state search when no solution should be found...
 
 *** Same as example:
+red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'State, 'noVal, "start(if iv('x) > val(0) then{iv('x) := iv('x) ; } else { iv('x) := - iv('x) ; })", '_`[_`]['<_|_>['nil.Program, '_|_['_|->In_[''x.Sort, 'Y:NzNatFVP], 'BSTRf:BStoreN]], 'B:BoolFVP], '+, unbounded, 'match, delay filter, 0, ('x, x0:IntFVP)) .
+red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'State, 'noVal, "start(if iv('x) > val(0) then{iv('x) := iv('x) ; } else { iv('x) := - iv('x) ; })", '_`[_`]['<_|_>['nil.Program, '_|_['_|->In_[''x.Sort, 'Y:NzNatFVP], 'BSTRf:BStoreN]], 'B:BoolFVP], '+, unbounded, 'match, delay filter, 1, ('x, x0:IntFVP)) .
+
 red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'State, 'noVal, "start(if iv('x) > val(0) then{iv('x) := iv('x) ; } else { iv('x) := - iv('x) ; })", '_`[_`]['<_|_>['nil.Program, '_|_['_|->In_[''x.Sort, '-_['Y:NzNatFVP]], 'BSTRf:BStoreN]], 'B:BoolFVP], '+, unbounded, 'match, delay filter, 0, ('x, x0:IntFVP)) .
 red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'State, 'noVal, "start(if iv('x) > val(0) then{iv('x) := iv('x) ; } else { iv('x) := - iv('x) ; })", '_`[_`]['<_|_>['nil.Program, '_|_['_|->In_[''x.Sort, '-_['Y:NzNatFVP]], 'BSTRf:BStoreN]], 'B:BoolFVP], '+, unbounded, 'match, delay filter, 1, ('x, x0:IntFVP)) .
 

@@ -243,7 +243,6 @@ fmod MODULE-TRANSFORMER is
           rlToConcolic(RlSet, StateOp) [owise] .
     ***eq rlToConcolic(Rule RlSet, StateOp) = Rule rlToConcolic(RlSet, StateOp) [owise] .
 
-    *** TODO: Add rule transformation for NARROWING
     *** Transform the rules for an analysis with MaudeSE or narrowing
     *** - Transform the terms and conditions to use symbolic/FVP eval functions and symbolic/FVP stores
     op rlToSE : RuleSet TrType -> RuleSet .
@@ -257,16 +256,15 @@ fmod MODULE-TRANSFORMER is
                                                                             rlToSE(RlSet, TrId) .
     eq rlToSE(Rule RlSet, TrId) = Rule rlToSE(RlSet, TrId) [owise] .
 
-    *** TODO: Remove duplicate pre rules for conditionals
     op rlToNarrowing : RuleSet -> RuleSet .
     eq rlToNarrowing(none) = none .
     eq rlToNarrowing(rl T1 => T2 [AttrSet] . RlSet) = rlToSE(rl T1 => T2 [AttrSet narrowing] ., narrowing) rlToNarrowing(RlSet) .
     eq rlToNarrowing(crl T1 => T2 if ('eval[NeTL:NeTermList] = 'true.Bool) [label(InstId) AttrSet] . RlSet) =
-                      (rl modOpStoreRec(T1, narrowing) => '_`[_`][modOpStoreRec(T2, narrowing), modOpStoreRec('eval[NeTL:NeTermList], narrowing)] [label(qid(string(InstId) + "-pre")) narrowing AttrSet] .)
+                      (rl modOpStoreRec(T1, narrowing) => '_`[_`][modOpStoreRec(T1, narrowing), modOpStoreRec('eval[NeTL:NeTermList], narrowing)] [narrowing AttrSet] .)
                       (rl '_`[_`][modOpStoreRec(T1, narrowing), trBool('true.Bool)] => modOpStoreRec(T2, narrowing) [label(toSymb(InstId)) narrowing AttrSet] .)
                     rlToNarrowing(RlSet) .
     eq rlToNarrowing(crl T1 => T2 if ('eval[NeTL:NeTermList] = 'false.Bool) [label(InstId) AttrSet] . RlSet) =
-                      (rl modOpStoreRec(T1, narrowing) => '_`[_`][modOpStoreRec(T2, narrowing), modOpStoreRec('eval[NeTL:NeTermList], narrowing)] [label(qid(string(InstId) + "-pre")) narrowing AttrSet] .)
+                      (rl modOpStoreRec(T1, narrowing) => '_`[_`][modOpStoreRec(T1, narrowing), modOpStoreRec('eval[NeTL:NeTermList], narrowing)] [narrowing AttrSet] .)
                       (rl '_`[_`][modOpStoreRec(T1, narrowing), trBool('false.Bool)] => modOpStoreRec(T2, narrowing) [label(toSymb(InstId)) narrowing AttrSet] .)
                     rlToNarrowing(RlSet) .
     eq rlToNarrowing(crl T1 => T2 if 'not_['eval[NeTL:NeTermList]] = 'true.Bool [AttrSet] . RlSet) = rlToNarrowing(crl T1 => T2 if ('eval[NeTL:NeTermList] = 'false.Bool) [AttrSet] . RlSet) .
