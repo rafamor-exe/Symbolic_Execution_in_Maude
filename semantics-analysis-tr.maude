@@ -142,6 +142,7 @@ fmod MODULE-TRANSFORMER is
     var  M                                                : Module .
     var  FM                                               : FModule .
     var  TL                                               : TypeList .
+    var  NeTypeL                                          : NeTypeList .
     var  T                                                : Type .
     var  Import                                           : Import .
     var  TermL                                            : TermList .
@@ -260,12 +261,12 @@ fmod MODULE-TRANSFORMER is
     eq rlToNarrowing(none) = none .
     eq rlToNarrowing(rl T1 => T2 [AttrSet] . RlSet) = rlToSE(rl T1 => T2 [AttrSet narrowing] ., narrowing) rlToNarrowing(RlSet) .
     eq rlToNarrowing(crl T1 => T2 if ('eval[NeTL:NeTermList] = 'true.Bool) [label(InstId) AttrSet] . RlSet) =
-                      (rl modOpStoreRec(T1, narrowing) => '_`[_`][modOpStoreRec(T1, narrowing), modOpStoreRec('eval[NeTL:NeTermList], narrowing)] [narrowing AttrSet] .)
-                      (rl '_`[_`][modOpStoreRec(T1, narrowing), trBool('true.Bool)] => modOpStoreRec(T2, narrowing) [label(toSymb(InstId)) narrowing AttrSet] .)
+                      (rl modOpStoreRec(T1, narrowing) => extNrwSt(modOpStoreRec(T1, narrowing), modOpStoreRec('eval[NeTL:NeTermList], narrowing)) [narrowing AttrSet] .)
+                      (rl extNrwSt(modOpStoreRec(T1, narrowing), trBool('true.Bool)) => modOpStoreRec(T2, narrowing) [label(toSymb(InstId)) narrowing AttrSet] .)
                     rlToNarrowing(RlSet) .
     eq rlToNarrowing(crl T1 => T2 if ('eval[NeTL:NeTermList] = 'false.Bool) [label(InstId) AttrSet] . RlSet) =
-                      (rl modOpStoreRec(T1, narrowing) => '_`[_`][modOpStoreRec(T1, narrowing), modOpStoreRec('eval[NeTL:NeTermList], narrowing)] [narrowing AttrSet] .)
-                      (rl '_`[_`][modOpStoreRec(T1, narrowing), trBool('false.Bool)] => modOpStoreRec(T2, narrowing) [label(toSymb(InstId)) narrowing AttrSet] .)
+                      (rl modOpStoreRec(T1, narrowing) => extNrwSt(modOpStoreRec(T1, narrowing), modOpStoreRec('eval[NeTL:NeTermList], narrowing)) [narrowing AttrSet] .)
+                      (rl extNrwSt(modOpStoreRec(T1, narrowing), trBool('false.Bool)) => modOpStoreRec(T2, narrowing) [label(toSymb(InstId)) narrowing AttrSet] .)
                     rlToNarrowing(RlSet) .
     eq rlToNarrowing(crl T1 => T2 if 'not_['eval[NeTL:NeTermList]] = 'true.Bool [AttrSet] . RlSet) = rlToNarrowing(crl T1 => T2 if ('eval[NeTL:NeTermList] = 'false.Bool) [AttrSet] . RlSet) .
     eq rlToNarrowing(Rule RlSet) = Rule rlToNarrowing(RlSet) [owise] .
@@ -347,30 +348,41 @@ fmod MODULE-TRANSFORMER is
     op toSymb : Qid -> Qid .
     eq toSymb(OpId) = qid(string(OpId) + "S") .
 
+    *** Extend states using the modified state constructor for narrowing.
+    *** If the term is a constant or a variable, leave it as is
+    op extNrwSt : Qid -> Qid .
+    op extNrwSt : Term Term -> Term .
+    eq extNrwSt(Q) = qid(string(Q) + "[_]") .
+    eq extNrwSt(OpId[NeTL], T2) = extNrwSt(OpId)[NeTL, T2] .
+    eq extNrwSt(T1, T2) = T1 [owise] .
+
     *** Transform an operator signature to use SMT types
     op trOps : OpDecl TrType -> OpDecl .
     eq trOps((op Q : TL -> T [AttrSet] .), TrId) = (op Q : trSorts(TL, TrId) -> trSorts(T, TrId) [AttrSet] .) .
 
-    *** The transformation for symbolic execution transforms teh eval functions and the semantic value wrapper to use SMT types and changes the function names
-    op modOpSigSE : OpDeclSet Qid TrType -> OpDeclSet .
-    eq modOpSigSE(none, ValOp, TrId) = none .
+    *** The transformation for symbolic execution transforms the eval functions and the semantic value wrapper to use SMT types and changes the function names
+    op modOpSigSE : OpDeclSet Qid Qid TrType -> OpDeclSet .
+    eq modOpSigSE(none, StateOp, ValOp, TrId) = none .
     *** NOTE: ValOp represents a wrapper for a semantically-relevant value, not syntax 'val
-    eq modOpSigSE((op ValOp : TL -> T [AttrSet] .) OpDeclSet, ValOp, TrId)  = trOps(op ValOp : TL -> T [AttrSet] ., TrId)
-                                                                              modOpSigSE(OpDeclSet, ValOp, TrId) . 
-    eq modOpSigSE((op 'eval : TL -> T [AttrSet] .) OpDeclSet, ValOp, TrId)  = trOps(op toSymb('eval) : TL -> T [AttrSet] ., TrId)
-                                                                              modOpSigSE(OpDeclSet, ValOp, TrId) . 
-    eq modOpSigSE((op 'evalI : TL -> T [AttrSet] .) OpDeclSet, ValOp, TrId) = trOps(op toSymb('evalI) : TL -> T [AttrSet] ., TrId)
-                                                                              modOpSigSE(OpDeclSet, ValOp, TrId) . 
-    eq modOpSigSE((op 'evalR : TL -> T [AttrSet] .) OpDeclSet, ValOp, TrId) = trOps(op toSymb('evalR) : TL -> T [AttrSet] ., TrId)
-                                                                              modOpSigSE(OpDeclSet, ValOp, TrId) . 
-    eq modOpSigSE((op 'evalB : TL -> T [AttrSet] .) OpDeclSet, ValOp, TrId) = trOps(op toSymb('evalB) : TL -> T [AttrSet] ., TrId)
-                                                                              modOpSigSE(OpDeclSet, ValOp, TrId) .
-    eq modOpSigSE(OpDecl OpDeclSet, ValOp, TrId) = OpDecl modOpSigSE(OpDeclSet, ValOp, TrId) [owise] .
+    eq modOpSigSE((op Q : NeTypeL -> StateOp [ctor AttrSet] .) OpDeclSet, StateOp, ValOp, narrowing) = (op Q : NeTypeL -> StateOp [ctor AttrSet] .)
+                                                                                                        (op extNrwSt(Q) : NeTypeL 'BoolFVP -> StateOp [ctor AttrSet] .)
+                                                                                                        modOpSigSE(OpDeclSet, StateOp, ValOp, narrowing) . 
+    eq modOpSigSE((op ValOp : TL -> T [AttrSet] .) OpDeclSet, StateOp, ValOp, TrId)   = trOps(op ValOp : TL -> T [AttrSet] ., TrId)
+                                                                                modOpSigSE(OpDeclSet, StateOp, ValOp, TrId) . 
+    eq modOpSigSE((op 'eval : TL -> T [AttrSet] .) OpDeclSet, StateOp, ValOp, TrId)   = trOps(op toSymb('eval) : TL -> T [AttrSet] ., TrId)
+                                                                                modOpSigSE(OpDeclSet, StateOp, ValOp, TrId) . 
+    eq modOpSigSE((op 'evalI : TL -> T [AttrSet] .) OpDeclSet, StateOp, ValOp, TrId)  = trOps(op toSymb('evalI) : TL -> T [AttrSet] ., TrId)
+                                                                                modOpSigSE(OpDeclSet, StateOp, ValOp, TrId) . 
+    eq modOpSigSE((op 'evalR : TL -> T [AttrSet] .) OpDeclSet, StateOp, ValOp, TrId)  = trOps(op toSymb('evalR) : TL -> T [AttrSet] ., TrId)
+                                                                                modOpSigSE(OpDeclSet, StateOp, ValOp, TrId) . 
+    eq modOpSigSE((op 'evalB : TL -> T [AttrSet] .) OpDeclSet, StateOp, ValOp, TrId)  = trOps(op toSymb('evalB) : TL -> T [AttrSet] ., TrId)
+                                                                                modOpSigSE(OpDeclSet, StateOp, ValOp, TrId) .
+    eq modOpSigSE(OpDecl OpDeclSet, StateOp, ValOp, TrId) = OpDecl modOpSigSE(OpDeclSet, StateOp, ValOp, TrId) [owise] .
 
     *** The transformation for concolic execution duplicates the operator declarations and 
     *** transforms one of the copies to use symbolic evaluation functions and symbolic semantic value wrapper (using the symbolic execution transformation)
-    op modOpSigConc : OpDeclSet Qid TrType -> OpDeclSet .
-    eq modOpSigConc(OpDeclSet, ValOp, TrId) = OpDeclSet modOpSigSE(OpDeclSet, ValOp, TrId) .
+    op modOpSigConc : OpDeclSet Qid Qid TrType -> OpDeclSet .
+    eq modOpSigConc(OpDeclSet, StateOp, ValOp, TrId) = OpDeclSet modOpSigSE(OpDeclSet, StateOp, ValOp, TrId) .
 
     *** Include constructors symbolic/concolic state constructors depending on original state and functional operators
     op inclSEOps : Qid -> OpDeclSet .
@@ -380,7 +392,9 @@ fmod MODULE-TRANSFORMER is
                             (op '_where_ : StateOp 'Boolean -> 'ConstrainedStart [ctor] .)
                             *** Define the concolic dual state core constructor and its extension to keep track of initial programs
                             (op '`[_`]`[_`]`[_`] : StateOp 'SEState StateOp -> 'ConcolicState [ctor] .)
-                            (op '_`[_`] : StateOp 'BoolFVP -> StateOp [ctor] .)                            
+                            *** TODO: This should not "contain" a State, it should "extend" it (at the same term level)
+                            ***   - Do it at modOp level
+                            *** (op '_`[_`] : StateOp 'BoolFVP -> StateOp [ctor] .)                            
                             *** Construct the symbolic Stores structure with the three symbolic stores
                             (op '_|_|_ : 'IStoreS 'RStoreS 'BStoreS -> 'Stores [ctor] .)
                             (op '_|_ : 'IStoreS 'BStoreS -> 'Stores [ctor] .)
@@ -413,10 +427,10 @@ fmod MODULE-TRANSFORMER is
 
     *** Transform operator declarations depending on the transformation type
     op modSEOps : OpDeclSet Qid Qid TrType -> OpDeclSet .
-    eq modSEOps(OpDeclSet, StateOp, ValOp, conc) = modOpSigConc(OpDeclSet, ValOp, conc)
+    eq modSEOps(OpDeclSet, StateOp, ValOp, conc) = modOpSigConc(OpDeclSet, StateOp, ValOp, conc)
                                                    inclSEOps(StateOp) .
     *** NOTE: modified to keep concrete definitions when added narrowing to maintain old unchanged definitions
-    eq modSEOps(OpDeclSet, StateOp, ValOp, TrId) = modOpSigConc(OpDeclSet, ValOp, TrId)
+    eq modSEOps(OpDeclSet, StateOp, ValOp, TrId) = modOpSigConc(OpDeclSet, StateOp, ValOp, TrId)
                                                    inclSEOps(StateOp) [owise] .
 
     *** Transform operator ids to their symbolic representation
