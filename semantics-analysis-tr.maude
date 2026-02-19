@@ -82,15 +82,17 @@ fmod NARROWING-CONVERSION is
     op toBoolFVP : Bool -> BoolFVP .
     op errIntFVP : -> IntFVP [ctor] .
 
-    var I : Int .
+    var I      : Int .
+    var MConst : Constant .
 
     eq toIntFVP(I) = downTerm(getTerm(metaParse(['NARROWING-BASICS], tokenize(string(I, 10)), 'IntFVP)), errIntFVP) .
     eq toBoolFVP(true) = tt .
     eq toBoolFVP(false) = ff .
 
-    op trBool : Qid -> Qid .
-    eq trBool('true) = 'tt .
-    eq trBool('false) = 'ff .
+    op trBool : Constant -> Constant .
+    eq trBool('true.Bool) = 'tt.BoolFVP .
+    eq trBool('false.Bool) = 'ff.BoolFVP .
+    eq trBool(MConst) = MConst [owise] .
 endfm
 
 fmod NARROWING-FMOD is
@@ -255,7 +257,20 @@ fmod MODULE-TRANSFORMER is
                                                                             rlToSE(RlSet, TrId) .
     eq rlToSE(Rule RlSet, TrId) = Rule rlToSE(RlSet, TrId) [owise] .
 
-    ***op rlToNarrowing : RuleSet -> RuleSet .
+    *** TODO: Remove duplicate pre rules for conditionals
+    op rlToNarrowing : RuleSet -> RuleSet .
+    eq rlToNarrowing(none) = none .
+    eq rlToNarrowing(rl T1 => T2 [AttrSet] . RlSet) = rlToSE(rl T1 => T2 [AttrSet narrowing] ., narrowing) rlToNarrowing(RlSet) .
+    eq rlToNarrowing(crl T1 => T2 if ('eval[NeTL:NeTermList] = 'true.Bool) [label(InstId) AttrSet] . RlSet) =
+                      (rl modOpStoreRec(T1, narrowing) => '_`[_`][modOpStoreRec(T2, narrowing), modOpStoreRec('eval[NeTL:NeTermList], narrowing)] [label(qid(string(InstId) + "-pre")) narrowing AttrSet] .)
+                      (rl '_`[_`][modOpStoreRec(T1, narrowing), trBool('true.Bool)] => modOpStoreRec(T2, narrowing) [label(toSymb(InstId)) narrowing AttrSet] .)
+                    rlToNarrowing(RlSet) .
+    eq rlToNarrowing(crl T1 => T2 if ('eval[NeTL:NeTermList] = 'false.Bool) [label(InstId) AttrSet] . RlSet) =
+                      (rl modOpStoreRec(T1, narrowing) => '_`[_`][modOpStoreRec(T2, narrowing), modOpStoreRec('eval[NeTL:NeTermList], narrowing)] [label(qid(string(InstId) + "-pre")) narrowing AttrSet] .)
+                      (rl '_`[_`][modOpStoreRec(T1, narrowing), trBool('false.Bool)] => modOpStoreRec(T2, narrowing) [label(toSymb(InstId)) narrowing AttrSet] .)
+                    rlToNarrowing(RlSet) .
+    eq rlToNarrowing(crl T1 => T2 if 'not_['eval[NeTL:NeTermList]] = 'true.Bool [AttrSet] . RlSet) = rlToNarrowing(crl T1 => T2 if ('eval[NeTL:NeTermList] = 'false.Bool) [AttrSet] . RlSet) .
+    eq rlToNarrowing(Rule RlSet) = Rule rlToNarrowing(RlSet) [owise] .
 
     ***op rlToClConcolic : RuleSet Qid -> RuleSet .
     ***eq rlToClConcolic(none, StateOp) = none .
@@ -367,6 +382,7 @@ fmod MODULE-TRANSFORMER is
                             (op '_where_ : StateOp 'Boolean -> 'ConstrainedStart [ctor] .)
                             *** Define the concolic dual state core constructor and its extension to keep track of initial programs
                             (op '`[_`]`[_`]`[_`] : StateOp 'SEState StateOp -> 'ConcolicState [ctor] .)
+                            (op '_`[_`] : StateOp 'BoolFVP -> StateOp [ctor] .)                            
                             *** Construct the symbolic Stores structure with the three symbolic stores
                             (op '_|_|_ : 'IStoreS 'RStoreS 'BStoreS -> 'Stores [ctor] .)
                             (op '_|_ : 'IStoreS 'BStoreS -> 'Stores [ctor] .)
@@ -441,7 +457,7 @@ fmod MODULE-TRANSFORMER is
     eq subSEConstSortsT(MConst, 'Int, TrId) = qid(string(getName(MConst)) + "." + string(trSorts('Int, TrId))) .
     eq subSEConstSortsT(MConst, 'Rat, TrId) = qid(string(getName(MConst)) + "." + string(trSorts('Rat, TrId))) .
     eq subSEConstSortsT(MConst, 'Bool, NonNrwTrId) = qid(string(getName(MConst)) + "." + string(trSorts('Bool, NonNrwTrId))) .
-    eq subSEConstSortsT(MConst, 'Bool, narrowing) = qid(string(trBool(getName(MConst))) + "." + string(trSorts('Bool, narrowing))) .
+    eq subSEConstSortsT(MConst, 'Bool, narrowing) = trBool(MConst) .
     eq subSEConstSortsT(MConst, T, TrId) = MConst [owise] .
     ***eq subSEConstSortsT(MConst, TrId) = qid(string(getName(MConst)) + "." + string(trSorts(getType(MConst), TrId))) .
 
@@ -636,7 +652,7 @@ fmod MODULE-TRANSFORMER is
     eq modRl(RlSet, StateOp, symb) = rlToSymbolic(RlSet) .
     eq modRl(RlSet, StateOp, conc) = rlToConcolic(RlSet, StateOp) .
     eq modRl(RlSet, StateOp, maudeSE) = rlToSE(RlSet, maudeSE) .
-    eq modRl(RlSet, StateOp, narrowing) = rlToSE(RlSet, narrowing) .
+    eq modRl(RlSet, StateOp, narrowing) = rlToNarrowing(RlSet) .
     ***eq modRl(RlSet, clconc) = rlToClConcolic(RlSet, StateOp) inclClConcCrl(StateOp) .
 
     *** NOTE: MaudeSE does not work with smod
