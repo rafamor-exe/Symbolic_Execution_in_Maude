@@ -124,7 +124,7 @@ fmod CONCRETE-FW-NORAT is
     op getBStore : Stores -> BStore .
     eq getBStore(ISTR | BSTR) = BSTR .
 
-    op emptyStores : -> Stores [ctor] .
-    eq emptyStores = (empty | empty) .
+    op emptyStoresN : -> Stores [ctor] .
+    eq emptyStoresN = (empty | empty) .
 
 endfm

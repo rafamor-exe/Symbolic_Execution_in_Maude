@@ -45,6 +45,10 @@ fmod CONCRETE-VARSTATE-EXT is
     op _>=_ : IVal IVal -> BVal [prec 37] .
     op _>=_ : RVal RVal -> BVal [prec 37] .
 
+    op _?_:_ : BVal IVal IVal -> IVal [gather (e e e) prec 71] .
+    op _?_:_ : BVal RVal RVal -> RVal [gather (e e e) prec 71] .
+    op _?_:_ : BVal BVal BVal -> BVal [gather (e e e) prec 71] .
+
 endfm
 
 view IVal from TRIV to CONCRETE-VARSTATE-EXT is
