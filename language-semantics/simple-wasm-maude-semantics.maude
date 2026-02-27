@@ -1,0 +1,2387 @@
+*** Simplified and adapted version of WebAssembly semantics in Maude to the framework based on previous work (Master Thesis):
+***   https://github.com/rafamor-exe/wasm-maude 
+
+*** Simplifications (WIP adaptations):
+*** - Only local environments
+*** - Only i32 data type
+*** - Small subset of supported instructions
+
+load ../semantics-basics/semantics-basics-maudeTypes.maude
+
+view Stores from TRIV to CONCRETE-FW is
+  sort Elt to Stores .
+endv
+
+fmod WASM-TYPETOKEN-MOD is
+
+  protecting CONCRETE-FW .
+  protecting NAT .
+
+  sorts TypeToken IntTypeToken FloatTypeToken UnkTypeToken .
+  sorts VecTypeToken VecShapeToken IntVecShapeToken FloatVecShapeToken .
+  subsorts FloatTypeToken IntTypeToken VecTypeToken UnkTypeToken < TypeToken .
+  subsorts FloatVecShapeToken IntVecShapeToken < VecShapeToken < VecTypeToken .
+  ***subsorts IntVecShapeToken < IntTypeToken .
+  ***subsorts FloatVecShapeToken < FloatTypeToken .
+
+  ops i32 i64 : -> IntTypeToken [ctor] .
+  ops f32 f64 : -> FloatTypeToken [ctor] .
+  ops v128 : -> VecTypeToken [ctor] .
+
+  op Unknown : -> UnkTypeToken [ctor] .
+
+  ops i8x16 i16x8 i32x4 i64x2 : -> IntVecShapeToken [ctor] .
+  ops f32x4 f64x2 : -> FloatVecShapeToken [ctor] .
+
+  var T : TypeToken .
+  var VecT : VecTypeToken .
+  var VecShapeT : VecShapeToken .
+
+  op bit-width : TypeToken -> Nat .
+  eq bit-width(VecT) = 128 .
+  eq bit-width(i32) = 32 .
+  eq bit-width(f32) = 32 .
+  eq bit-width(T) = 64 [owise] .
+
+  op unpacked : VecShapeToken -> TypeToken .
+  eq unpacked(i8x16) = i32 .
+  eq unpacked(i16x8) = i32 .
+  eq unpacked(i32x4) = i32 .
+  eq unpacked(i64x2) = i64 .
+  eq unpacked(f32x4) = f32 .
+  eq unpacked(f64x2) = f64 .
+
+  op dim : VecShapeToken -> Nat .
+  eq dim(i8x16) = 16 .
+  eq dim(i16x8) = 8 .
+  eq dim(i32x4) = 4 .
+  eq dim(i64x2) = 2 .
+  eq dim(f32x4) = 4 .
+  eq dim(f64x2) = 2 .
+  
+
+endfm
+
+view TypeToken from TRIV to WASM-TYPETOKEN-MOD is
+  sort Elt to TypeToken .
+endv
+
+fmod WASM-BIT-MOD is
+
+  sorts Bit .
+
+  ops 0 1 : -> Bit [ctor] .
+
+endfm
+
+view Bit from TRIV to WASM-BIT-MOD is
+  sort Elt to Bit .
+endv
+
+
+fmod WASM-FUNCTYPE-MOD is
+
+  protecting WASM-TYPETOKEN-MOD .
+  protecting LIST{TypeToken} .
+
+  sorts ParamType ResultType .
+
+  op (param _) : List{TypeToken} -> ParamType [ctor prec 50] .
+  op (result _) : List{TypeToken} -> ResultType [ctor prec 50] .
+
+  var T : TypeToken .
+  var TList1 TList2 : List{TypeToken} .
+
+endfm
+
+view ParamType from TRIV to WASM-FUNCTYPE-MOD is
+  sort Elt to ParamType .
+endv
+view ResultType from TRIV to WASM-FUNCTYPE-MOD is
+  sort Elt to ResultType .
+endv
+
+fmod WASM-PARRESTYPE-MOD is
+
+  protecting WASM-FUNCTYPE-MOD .
+  ***protecting LIST{ParamType} .
+  ***protecting LIST{ResultType} .
+
+  sorts ParamResultType ResultTypeList EmptyResultTypeList .
+  subsorts ParamType ResultType < ParamResultType .
+  subsorts EmptyResultTypeList ResultType < ResultTypeList .
+
+  var ParamType : ParamType .
+  var ResultType : ResultType .
+  var TList1 TList2 : List{TypeToken} .
+
+  op _ _ : ParamType ResultType -> ParamResultType [ctor] .
+  eq (param TList1) (param TList2) = (param (TList1 TList2)) .
+  eq (result TList1) (result TList2) = (result (TList1 TList2)) .
+
+  op getParamType : ParamResultType -> ParamType .
+  eq getParamType((param TList1) (result TList2)) = (param TList1) .
+  eq getParamType((param TList1)) = (param TList1) .
+  eq getParamType((result TList2)) = (param nil) .
+
+  op getResultType : ParamResultType -> ResultType .
+  eq getResultType((param TList1) (result TList2)) = (result TList2) .
+  eq getResultType((result TList2)) = (result TList2) .
+  eq getResultType((param TList1)) = (result nil) .
+
+  op EmptyResultTypeList : -> EmptyResultTypeList [ctor] .
+  op _,_ : ResultTypeList ResultTypeList -> ResultTypeList [ctor assoc id: EmptyResultTypeList] .
+
+endfm
+
+fmod WASM-TYPEDEF-MOD is
+
+  protecting STRING .
+  protecting WASM-PARRESTYPE-MOD .
+
+  sorts TypeDef TypeRef Id FuncType ParamResultFuncType .
+  subsorts Nat < Id .
+
+  op (type _) : Id -> TypeRef [ctor] .
+  op (type _) : String -> TypeRef [ctor] .
+
+  op (func _) : ParamResultType -> FuncType [ctor prec 50] .
+
+  op (type _ _) : Id FuncType -> TypeDef [ctor] .
+  op (type _ _) : String FuncType -> TypeDef [ctor] .
+
+  var Id : Id .
+  var Str : String .
+  var ParamResultType : ParamResultType .
+
+  op get-functype-typedef : TypeDef -> ParamResultType .
+  eq get-functype-typedef(type Id (func ParamResultType)) = ParamResultType .
+  eq get-functype-typedef(type Str (func ParamResultType)) = ParamResultType .
+
+endfm
+
+view TypeDef from TRIV to WASM-TYPEDEF-MOD is
+  sort Elt to TypeDef .
+endv
+
+fmod WASM-BLOCKTYPE-MOD is
+
+  protecting WASM-TYPEDEF-MOD .
+
+  sorts BlockType .
+  subsorts TypeRef ResultType < BlockType .
+
+endfm
+
+fmod WASM-VALREF-MOD is
+
+  protecting NAT .
+
+  sorts ValRef Addr .
+
+  subsorts Nat < ValRef .
+  subsorts Nat < Addr .
+
+endfm
+
+view Addr from TRIV to WASM-VALREF-MOD is
+  sort Elt to Addr .
+endv
+
+--- fmod WASM-SIGN-MOD is
+--- 
+---   sorts Sign .
+--- 
+---   ops pos neg : -> Sign [ctor] .
+--- 
+--- endfm
+--- 
+--- fmod WASM-NANS-MOD is
+--- 
+---   protecting WASM-SIGN-MOD .
+---   protecting FLOAT .
+--- 
+---   sorts NaN NaNFloat NFloat .
+---   subsorts NaN NFloat < NaNFloat .
+--- 
+---   op nanF : Float -> NFloat [ctor] .
+---   *** TODO: To be more exact, NaN values include the value of the mantissa in the binary representation
+---   *** TODO: Take into account canon NaNs
+---   op nan : Sign -> NaN [ctor] .
+--- 
+--- endfm
+--- 
+--- view NaNFloat from TRIV to WASM-NANS-MOD is
+---   sort Elt to NaNFloat .
+--- endv
+--- 
+--- fmod WASM-FLOAT-MOD is
+--- 
+---   protecting WASM-NANS-MOD .
+---   protecting LIST{NaNFloat} .
+---   protecting INT .
+--- 
+---   sorts NaNs InfF ZeroF .
+--- 
+---   var F1 F2 : Float .
+--- 
+---   *** Proposition for wrapper for sign-carrying floats
+---   ***op wasmF : Sign Float -> WASMFloat .
+---   ***op _+_ : WASMFloat WASMFloat -> WASMFloat [ctor] .
+---   ***eq wasmF(pos, F1) + wasmF(pos, F2) = wasmF(pos, F1 + F2) .
+---   ***eq wasmF(pos, F1) + wasmF(neg, F2) = wasmF(pos, F1) - wasmF(pos, F2) .
+---   ***eq wasmF(neg, F1) + wasmF(pos, F2) = wasmF(pos, F2) - wasmF(neg, F1) .
+---   ***eq wasmF(neg, F1) + wasmF(neg, F2) = wasmF(neg, F1 + F2) .
+---   ***op _-_ : WASMFloat WASMFloat -> WASMFloat [ctor] .
+---   ***eq wasmF(pos, F1) - wasmF(pos, F2) = wasmF(pos, F1 - F2) if F1 >= F2 .
+---   ***eq wasmF(pos, F1) - wasmF(pos, F2) = wasmF(neg, F1 - F2) if F1 < F2 .
+---   ***eq wasmF(F1) - wasmF(F2) = wasmF(F1 - F2) .
+---   ***op _*_ : WASMFloat WASMFloat -> WASMFloat [ctor] .
+---   ***eq wasmF(F1) * wasmF(F2) = wasmF(F1 * F2) .
+---   ***op _rem_ : WASMFloat WASMFloat -> WASMFloat [ctor] .
+---   ***eq wasmF(F1) rem wasmF(F2) = wasmF(F1 rem F2) .
+--- 
+---   op get-sign : Float -> Sign .
+---   eq get-sign(F1) = 
+---     if F1 > 0.0 then
+---       pos
+---     else
+---       neg
+---     fi .
+--- 
+---   op opposite : Sign -> Sign [ctor] .
+---   eq opposite(pos) = neg .
+---   eq opposite(neg) = pos .
+--- 
+---   op nans : List{NaNFloat} -> NaNs [ctor] .
+---   op inf : Sign -> InfF [ctor] .
+---   op zero : Sign -> ZeroF [ctor] .
+---   
+---   var N : Nat .
+--- 
+---   op expon : Nat -> Nat .
+---   eq expon(32) = 8 .
+---   eq expon(64) = 11 .
+---   op signif : Nat -> Nat .
+---   eq signif(32) = 23 .
+---   eq signif(64) = 52 .
+--- 
+---   op limitF : Nat -> Nat .
+---   eq limitF(N) = (2 ^ ((2 ^ expon(N)) - 1)) .
+--- 
+--- endfm
+--- 
+fmod WASM-VALUE-MOD is
+  
+  protecting WASM-TYPETOKEN-MOD .
+  --- protecting WASM-FLOAT-MOD .
+  protecting CONVERSION .
+
+  sorts Value IntValue Int32Value Int64Value UInt SInt FloatValue ValWrapper Und .
+
+  subsorts IntValue < Value .
+  subsorts FloatValue < Value .
+  subsorts Und < Value .
+  ***subsorts Int32Value Int64Value < IntValue .
+  subsort IVal < ValWrapper .
+
+  op und : -> Und [ctor] .
+
+  var T : TypeToken .
+  var IntT : IntTypeToken .
+  --- var FloatT : FloatTypeToken .
+  var ValWrapper VW1 ValW1 VW2 ValW2 : ValWrapper .
+  var I1 I2 : Int .
+  vars V1 V2 : Value .
+  --- var F1 F2 : Float .
+  --- var FType : FloatTypeToken .
+  --- var FVal : FloatValue .
+  --- var Sg1 : Sign .
+
+  *** Wrapper for values
+  op wval : Int -> ValWrapper [ctor] .
+  --- op wval : Float -> ValWrapper [ctor] .
+  --- op wval : NaN -> ValWrapper [ctor] .
+  --- op wval : NaNs -> ValWrapper [ctor] .
+  --- op wval : InfF -> ValWrapper [ctor] .
+  --- op wval : ZeroF -> ValWrapper [ctor] .
+
+  op get-type : Value -> TypeToken .
+  eq get-type(const(IntT, ValW1)) = IntT .
+  --- eq get-type(const(FloatT, ValW1)) = FloatT .
+
+  op get-valW : Value -> ValWrapper .
+  eq get-valW(const(IntT, ValW1)) = ValW1 .
+  --- eq get-valW(const(FloatT, ValW1)) = ValW1 .
+
+  --- op correctFloat : FloatValue -> FloatValue [ctor] .
+  --- ceq correctFloat(const(FType, wval(F1))) = const(FType, wval(inf(pos))) if F1 >= float(limitF(bit-width(FType))) .
+  --- ceq correctFloat(const(FType, wval(F1))) = const(FType, wval(inf(neg))) if F1 <= - float(limitF(bit-width(FType))) .
+  --- eq correctFloat(const(FType, wval(0))) = const(FType, wval(zero(pos))) .
+  --- eq correctFloat(FVal) = FVal [owise] .
+
+  --- op -_ : ValWrapper -> ValWrapper [ctor] .
+  --- eq - wval(inf(Sg1)) = wval(inf(opposite(Sg1))) .
+  --- eq - wval(zero(Sg1)) = wval(zero(opposite(Sg1))) .
+  --- eq - wval(F1) = wval(- F1) .
+  --- op _+_ : ValWrapper ValWrapper -> ValWrapper [ctor] .
+  --- eq wval(I1) + wval(I2) = wval(I1 + I2) .
+  --- eq wval(F1) + wval(F2) = wval(F1 + F2) .
+  --- op _-_ : ValWrapper ValWrapper -> ValWrapper [ctor] .
+  --- eq wval(I1) - wval(I2) = wval(I1 - I2) .
+  --- eq wval(F1) - wval(F2) = wval(F1 - F2) .
+  --- op _*_ : ValWrapper ValWrapper -> ValWrapper [ctor] .
+  --- eq wval(I1) * wval(I2) = wval(I1 * I2) .
+  --- eq wval(F1) * wval(F2) = wval(F1 * F2) .
+  --- op _quo_ : ValWrapper ValWrapper -> ValWrapper [ctor] .
+  --- eq wval(I1) quo wval(I2) = wval(I1 quo I2) .
+  ***eq wval(F1) quo wval(F2) = wval(F1 quo F2) .
+  --- op _rem_ : ValWrapper ValWrapper -> ValWrapper [ctor] .
+  --- eq wval(I1) rem wval(I2) = wval(I1 rem I2) .
+  --- eq wval(F1) rem wval(F2) = wval(F1 rem F2) .
+  op abs : ValWrapper -> ValWrapper [ctor] .
+  eq abs(wval(I1)) = wval(abs(I1)) .
+  --- eq abs(wval(F1)) = wval(abs(F1)) .
+  op _<_ : ValWrapper ValWrapper -> BVal [ditto] .
+  eq wval(I1) < wval(I2) = val(I1 < I2) .
+  --- eq wval(F1) < wval(F2) = F1 < F2 .
+  --- op _>_ : ValWrapper ValWrapper -> Bool [ctor] .
+  --- eq wval(I1) > wval(I2) = I1 > I2 .
+  --- eq wval(F1) > wval(F2) = F1 > F2 .
+  --- op _<=_ : ValWrapper ValWrapper -> Bool [ctor] .
+  --- eq wval(I1) <= wval(I2) = I1 <= I2 .
+  --- eq wval(F1) <= wval(F2) = F1 <= F2 .
+  --- op _>=_ : ValWrapper ValWrapper -> Bool [ctor] .
+  --- eq wval(I1) >= wval(I2) = I1 >= I2 .
+  --- eq wval(F1) >= wval(F2) = F1 >= F2 .
+  ***op _==_ : ValWrapper ValWrapper -> Bool [ctor] .
+  ***eq wval(I1) == wval(I2) = (I1 == I2) .
+  ***eq wval(F1) == wval(F2) = (F1 == F2) .
+  ***op _=/=_ : ValWrapper ValWrapper -> Bool [ctor] .
+  ***eq wval(I1) =/= wval(I2) = (I1 =/= I2) .
+  ***eq wval(F1) =/= wval(F2) = (F1 =/= F2) .
+  ***op _===_ : Value Value -> Bool [ctor] .
+  ***eq V1 === V1 = (I1 == I2) .
+  ***eq V1 === V2 = false [owise] .
+  ***op _=/==_ : Value Value -> Bool [ctor] .
+  ***eq wval(I1) =/== wval(I2) = (I1 =/= I2) .
+  ***eq V1 =/== V2 = false [owise] .
+
+  op _+_ : ValWrapper Int -> ValWrapper [ctor] .
+  eq wval(I1) + I2 = wval(I1 + I2) .
+  ***eq wval(F1) + I2 = wval(F1 + I2) .  
+  op _rem_ : ValWrapper Int -> ValWrapper [ctor] .
+  eq wval(I1) rem I2 = wval(I1 rem I2) .
+  ***eq wval(F1) rem I2 = wval(F1 rem I2) .
+
+  *** Represent values "(type).const (value)" pushed to stack
+  op const : TypeToken ValWrapper -> Value [ctor] .
+
+  op get-type : Value -> TypeToken .
+  eq get-type(const(T, ValWrapper)) = T .
+
+  op get-wval : Value -> ValWrapper .
+  eq get-wval(const(T, ValWrapper)) = ValWrapper .
+  
+  op defaultVal : TypeToken -> Value [ctor] .
+  eq defaultVal(IntT) = const(IntT, wval(0)) .
+  --- eq defaultVal(FloatT) = const(FloatT, wval(0.0)) .
+
+  *** Memberships of different types
+  mb const(IntT, ValWrapper) : IntValue . 
+  --- mb const(FloatT, ValWrapper) : FloatValue . 
+
+endfm
+
+fmod WASM-BITVAL-MOD is
+
+  protecting WASM-BIT-MOD .
+  protecting WASM-VALUE-MOD .
+  protecting LIST{Bit} .
+  ***protecting STRING-OPS .
+
+  sorts Bini Bini32 Bini64 BitStringSize BitVal .
+  sorts IEEE754Components IEEE754Type .
+  ***sorts Binf Binf32 Binf64 ..
+  ***subsorts Binf32 Binf64 < Binf < String .
+  ***subsort BitStringSize < Int .
+
+  var I I2 Int : Int .
+  --- var F F1 F2 : Float . 
+  var N : Nat .
+  var B B1 B2 : Bit .
+  var TypeToken : TypeToken .
+  var BitList BS BS1 BS2 DecRep : List{Bit} .
+  --- var Sg : Sign .
+  --- var IEEE754Type : IEEE754Type .
+  var Str char0? : String .
+  ***var F : Float .
+  ***var BitStringSize : BitStringSize .
+  vars IV1 IV2 : IVal .
+
+  *** BitVal representation (valid for int and float): contains typetoken for type-checking and bitstring. 
+  op {valtype _, bitstring _} : TypeToken List{Bit} -> BitVal [ctor] .
+
+  *** Auxliary functions for getting BitVal propperty values
+  op get-type-bitwval : BitVal -> TypeToken .
+  eq get-type-bitwval({valtype TypeToken, bitstring BitList}) = TypeToken .
+  op get-bitstring-bitwval : BitVal -> List{Bit} .
+  eq get-bitstring-bitwval({valtype TypeToken, bitstring BitList}) = BitList .
+  
+  op get-bitstring-length : List{Bit} -> Nat .
+  eq get-bitstring-length(nil) = 0 .
+  eq get-bitstring-length(B BS) = 1 + get-bitstring-length(BS) .
+
+  *** Convert Maude Int to i32 bitstring
+  op int-to-i32 : Int -> BitVal [ctor] .
+  eq int-to-i32(I) = {valtype i32 , bitstring int-to-bitstring(I, 32)} .
+
+  *** Convert Maude Int to i64 bitstring  
+  op int-to-i64 : Int -> BitVal [ctor] .
+  eq int-to-i64(I) = {valtype i64, bitstring int-to-bitstring(I, 64)} .
+
+  *** Auxiliary op to convert int to bitstring of certain size (ibits)
+  *** TODO: Manage overflow
+  op int-to-bitstring : Int Nat -> List{Bit} [ctor] .
+  eq int-to-bitstring(0, 1) = 0 .
+  eq int-to-bitstring(0, I2) = padding(I2) 0 [owise] .
+  eq int-to-bitstring(1, 1) = 1 .
+  eq int-to-bitstring(1, I2) = padding(I2) 1 [owise] .
+  ceq int-to-bitstring(I, I2) = int-to-bitstring(I quo 2, I2 - 1) 0 if I rem 2 == 0 and I2 > 1 .
+  ceq int-to-bitstring(I, I2) = int-to-bitstring(I quo 2, I2 - 1) 1 if I rem 2 =/= 0 and I2 > 1 .
+
+  op int-to-bitstring-nopad : Int -> List{Bit} [ctor] .
+  eq int-to-bitstring-nopad(0) = 0 .
+  eq int-to-bitstring-nopad(1) = 1 .
+  ceq int-to-bitstring-nopad(I) = int-to-bitstring-nopad(I quo 2) 0 if I rem 2 == 0 .
+  ceq int-to-bitstring-nopad(I) = int-to-bitstring-nopad(I quo 2) 1 if I rem 2 =/= 0 .
+
+  ***op float-to-bitstring : ValWrapper Nat -> List{Bit} [ctor] .
+  ***ceq float-to-bitstring(wval(F1), N) = fsign(get-sign(F1)) int-to-bitstring(e + fbias(N), expon(N)) int-to-bitstring(m, signif(N))
+  ***  if ((1 + m * 2 ^ (- signif(N))) * 2 ^ (e)) := abs(F1) .
+  ***eq float-to-bitstring(wval(inf(Sg)), N) = fsign(Sg) genNbits(1, expon(N)) genNbits(0, signif(N)) .
+
+  *** Front padding for bitstrings
+  op padding : Nat -> List{Bit} .
+  eq padding(0) = nil .
+  eq padding(1) = 0 .
+  eq padding(N) = padding(N - 1) 0 .
+
+  *** Generate a bitstring of length N with bits of value B
+  op genNbits : Bit Nat -> List{Bit} .
+  eq genNbits(B, 1) = B .
+  eq genNbits(B, N) = B genNbits(B, N - 1) .
+
+  --- *** Bit representation for signs
+  --- op fsign : Sign -> Bit .
+  --- eq fsign(pos) = 0 .
+  --- eq fsign(neg) = 1 .
+--- 
+  --- *** Float exponent bias
+  --- op fbias : Nat -> Nat .
+  --- eq fbias(N) = (2 ^ (expon(N) - 1)) - 1 .
+
+  ***op get-ieeerep : Float Nat -> List{Bit} . *** TODO: Take into account 0 sign and 0 rep as exp 0 and mantissa 0 + FIX numbers like 1.2 (precision is 64bits...)
+  ***ceq get-ieeerep(F1, N) = fsign(get-sign(F1)) int-to-bitstring(fbias(N) + I2, expon(N)) int-to-bitstring(correct-mantissa(Str, I2), signif(N)) *** Re-consider that rat...in the spec of nopad is Int
+  ***  if < I, Str, I2 > := decFloat(F1, signif(N)) . *** <sign(-1,0,1), "<n>", exp>
+  ******ceq get-ieeerep(F1, N) = fsign(get-sign(F1)) BS2 BS1
+  ***  ***if { m: BS1 , e: BS2 } := get-ieeerep-components(get-ieeerep-type(abs(F1)), int-to-bitstring-nopad(rat(floor(abs(F1)))), get-fraction(abs(F1) - floor(abs(F1)), signif(N), nil), 0, N) .
+  ***
+  ***op correct-mantissa : String Int -> Rat .
+  ***ceq correct-mantissa(Str, I) = 
+  ***    if I < length(Str) then
+  ***      correct-mantissa(substr(Str, 0, length(Str) - 1), I)
+  ***    else
+  ***      rat(Str, 10)
+  ***    fi
+  ***  if substr(Str, length(Str) - 1, length(Str) - 1) == "0" . ***rfind(Str, "0", length(Str)) .
+  ***eq correct-mantissa(Str, I) = rat(Str, 10) [owise] .
+
+  ***op get-fraction : Float Nat List{Bit} -> List{Bit} .
+  ***eq get-fraction(F1, N, BS) = 
+  ***  if F1 == 0.0 or N == 0 then 
+  ***    BS
+  ***  else
+  ***    if (F1 * 2.0) >= 1.0 then
+  ***      get-fraction((F1 * 2.0) - 1.0, N - 1, BS 1)
+  ***    else
+  ***      get-fraction((F1 * 2.0), N - 1, BS 0)
+  ***    fi
+  ***  fi .
+  ***
+  ***op { m: _, e: _} : List{Bit} List{Bit} -> IEEE754Components [ctor] .
+  ***ops norm subnorm : -> IEEE754Type [ctor] .
+
+  ***op get-ieeerep-type : Float -> IEEE754Type .
+  ****** NOTE: Wrong definition
+  ***eq get-ieeerep-type(F1) =
+  ***  if F1 >= 1.0 then
+  ***    norm
+  ***  else
+  ***    subnorm
+  ***  fi .
+  ***
+  ***op get-ieeerep-components : IEEE754Type List{Bit} List{Bit} Int Nat -> IEEE754Components .
+  ****** TODO: FIX definition for normalised and subnormal numbers
+  ***eq get-ieeerep-components(norm, 1, BS2, I, N) = { m: BS2 padding(signif(N) - get-bitstring-length(BS2)) , e: int-to-bitstring(fbias(N) + I, expon(N)) } .
+  ***eq get-ieeerep-components(norm, BS1 B, BS2, I, N) = get-ieeerep-components(norm, BS1, B BS2, I + 1, N) .
+  ***eq get-ieeerep-components(subnorm, 1, BS2, I, N) = { m: BS2 padding(signif(N) - get-bitstring-length(BS2)), e: int-to-bitstring(fbias(N) + I, expon(N)) } .
+  ***eq get-ieeerep-components(subnorm, 0, 0 BS2, I, N) = 
+  ***  if fbias(N) + I == 1 then 
+  ***    { m: BS2 padding(signif(N) - get-bitstring-length(BS2)), e: int-to-bitstring(fbias(N) + I, expon(N)) }
+  ***  else
+  ***    get-ieeerep-components(subnorm, 0, BS2, I - 1, N)
+  ***  fi .
+  ***eq get-ieeerep-components(subnorm, 0, 1 BS2, I, N) = get-ieeerep-components(subnorm, 1, BS2, I - 1, N) .
+
+  ***op get-mantissa : IEEE754Components -> List{Bit} .
+  ***eq get-mantissa({ m: BS1 , e: BS2 }) = BS1 .
+  ***
+  ***op get-exp : IEEE754Components -> List{Bit} .
+  ***eq get-exp({ m: BS1 , e: BS2 }) = BS2 .
+
+  *** Convert i32 bitstring to Maude Int
+  op i32-to-int : BitVal -> Int [ctor] .
+  eq i32-to-int({valtype i32 , bitstring BitList}) = bitstring-to-int(BitList, 32) .
+
+  *** Convert i64 bitstring to Maude Int
+  op i64-to-int : BitVal -> Int [ctor] .
+  eq i64-to-int({valtype i64 , bitstring BitList}) = bitstring-to-int(BitList, 64) .
+
+  *** Convert bitstring to int (ibits^(-1))
+  op bitstring-to-int : List{Bit} Nat -> Int .
+  eq bitstring-to-int(0 BitList, 1) = 0 .
+  eq bitstring-to-int(1 BitList, 1) = 1 .
+  ceq bitstring-to-int(0 BitList, I) = bitstring-to-int(BitList, I - 1) if I > 1 .
+  ceq bitstring-to-int(1 BitList, I) = ((2 ^ (I - 1)) * 1) + bitstring-to-int(BitList, I - 1) if I > 1 .
+
+  *** Logic operations
+  op not _ : List{Bit} -> List{Bit} [ctor] .
+  eq not (0) = 1 .
+  eq not (1) = 0 .
+  eq not (BS 0) = not(BS) 1 .
+  eq not (BS 1) = not(BS) 0 .
+
+  op iand : List{Bit} List{Bit} -> List{Bit} [ctor] .
+  eq iand(B, 0) = 0 .
+  eq iand(0, B) = 0 .
+  eq iand(1, 1) = 1 .
+  eq iand(BS1 B1, BS2 B2) = iand(BS1, BS2) iand(B1, B2) .
+
+  op ior : List{Bit} List{Bit} -> List{Bit} [ctor] .
+  eq ior(B, 0) = B .
+  eq ior(0, B) = B .
+  eq ior(1, 1) = 1 .
+  eq ior(BS1 B1, BS2 B2) = ior(BS1, BS2) ior(B1, B2) .
+
+  op ixor : List{Bit} List{Bit} -> List{Bit} [ctor] .
+  eq ixor(0, 0) = 0 .
+  eq ixor(0, 1) = 1 .
+  eq ixor(1, 0) = 1 .
+  eq ixor(1, 1) = 0 .
+  eq ixor(BS1 B1, BS2 B2) = ixor(BS1, BS2) ixor(B1, B2) .
+
+  op ishl : List{Bit} Int -> List{Bit} .
+  eq ishl(nil, Int) = nil .
+  eq ishl(B BS, 0) = B BS .
+  eq ishl(B BS, Int) = ishl(BS 0, Int - 1) .
+  
+  op ishru : List{Bit} Int -> List{Bit} .
+  eq ishru(nil, Int) = nil .
+  eq ishru(BS B, 0) = BS B .
+  eq ishru(BS B, Int) = ishru(0 BS, Int - 1) .
+
+  op ishrs : List{Bit} Int -> List{Bit} .
+  eq ishrs(nil, Int) = nil .
+  eq ishrs(B1 BS B, 0) = B1 BS B .
+  eq ishrs(B1 BS B, Int) = ishrs(B1 0 BS, Int - 1) .
+
+  *** string() conversion allows to modify the base of the representation
+  ***eq int-to-bitstring(I, BitStringSize) = string(I , 2) .
+  ***eq int-to-bitstring(I, BitStringSize) = 
+  
+  ***op float-to-bitstring : Float BitStringSize -> Binf [ctor] .
+  ***eq float-to-bitstring(F, BitStringSize) = string(F) .
+
+endfm
+
+fmod WASM-IOPS-MOD is
+
+  protecting WASM-VALUE-MOD .
+
+  var N : Nat .
+  var Int Int1 Int2 : Int .
+  var ValW1 ValW2 : ValWrapper .
+  var IntT : IntTypeToken .
+  vars IV1 IV2 : IVal .
+
+  *** Auxiliary op for arithmetic instructions
+  *** signed op : integer operators can be interpreted as if they had sign by some instructions.
+  *** signed takes the number and the number of bits in its representation (32/64) 
+  op signed : ValWrapper Nat -> ValWrapper .
+  ceq signed(wval(Int1), N) = wval(Int1) if 0 <= Int1 and Int1 < (2 ^ (N - 1)) .
+  ceq signed(wval(Int1), N) = wval(Int1 - (2 ^ (N))) if (2 ^ (N - 1)) <= Int1 and Int1 < (2 ^ (N)) .
+
+  *** inverted function from signed
+  op unsigned : ValWrapper Nat -> ValWrapper .
+  ceq unsigned(wval(Int1), N) = wval(Int1) if 0 <= Int1 and Int1 < (2 ^ (N - 1)) .
+  ceq unsigned(wval(Int1), N) = wval(Int1 + (2 ^ (N))) if ((2 ^ (N - 1)) - (2 ^ (N))) <= Int1 or Int1 < 0 .
+
+  eq signed(unsigned(wval(Int1), N), N) = wval(Int1) .
+  eq unsigned(signed(wval(Int1), N), N) = wval(Int1) .
+
+  *** Auxiliary op for ibinop
+  op iadd : Nat ValWrapper ValWrapper -> ValWrapper .
+  eq iadd(N, ValW1, ValW2) = (ValW1 + ValW2) rem 2 ^ (N) .
+
+  op isub : Nat ValWrapper ValWrapper -> ValWrapper .
+  eq isub(N, ValW1, ValW2) = ((ValW1 - ValW2) + (2 ^ (N))) rem (2 ^ (N)) .
+
+  op imul : Nat ValWrapper ValWrapper -> ValWrapper .
+  eq imul(N, ValW1, ValW2) = (ValW1 * ValW2) rem 2 ^ (N) .
+
+  op idivu : IntTypeToken Nat ValWrapper ValWrapper -> Value .
+  eq idivu(IntT, N, wval(Int1), wval(0)) = und .
+  eq idivu(IntT, N, wval(Int1), wval(Int2)) = const(IntT, wval(Int1 quo Int2)) [owise] .
+
+  op idivs : IntTypeToken Nat ValWrapper ValWrapper -> Value .
+  eq idivs(IntT, N, wval(Int1), wval(0)) = und .
+  ceq idivs(IntT, N, wval(Int1), wval(Int2)) = und if (signed(wval(Int1), N) quo signed(wval(Int2), N)) == wval(2 ^ (N - 1)) .
+  eq idivs(IntT, N, ValW1, ValW2) = const(IntT, unsigned(signed(ValW1, N) quo signed(ValW2, N), N)) [owise] .
+
+  op iremu : IntTypeToken Nat ValWrapper ValWrapper -> Value .
+  eq iremu(IntT, N, wval(Int1), wval(0)) = und .
+  eq iremu(IntT, N, wval(Int1), wval(Int2)) = const(IntT, wval(Int1 rem Int2)) [owise] .
+
+  *** By specification: return the rem of dividing the signed representations of j1/j2 w/ the sign of j1 (design decision: compute sign of j1 as (Int1 quo abs(Int1)))
+  op irems : IntTypeToken Nat ValWrapper ValWrapper -> Value .
+  eq irems(IntT, N, wval(Int1), wval(0)) = und .
+  eq irems(IntT, N, ValW1, ValW2) = const(IntT, unsigned(signed(ValW1, N) - (signed(ValW2, N) * (signed(ValW1, N) quo signed(ValW2, N))), N)) [owise] .
+
+  *** NOTE: Modified for symbolic framework
+  *** Auxiliary op for logic instructions
+  op ieq : IVal IVal -> IVal .
+  eq ieq(IV1, IV2) = IV1 === IV2 .
+  
+  op ine : IVal IVal -> IVal .
+  eq ine(IV1, IV2) = IV1 =/== IV2 .
+  
+  *** TODO: How to evaluate absolute value of symbolic value?? Add/lift up EXTRA CONSTRAINT??
+  ***       - Use "_?_:_" ? Transform "if_then_else_fi" to "_?_:_" (only with unwrapped values) via eval?
+  op ilt~u : IVal IVal -> IVal .
+  eq ilt~u(IV1, IV2) = (abs(IV1) < abs(IV1)) ? val(1) : val(0) .
+  --- eq ilt~u(IV1, IV2) = wval(0) [owise] .
+  
+  op ilt~s : IVal IVal -> IVal .
+  eq ilt~s(IV1, IV2) = (IV1 < IV2) ? val(1) : val(0) .
+  --- eq ilt~s(IV1, IV2) = wval(0) [owise] .
+  
+  op igt~u : IVal IVal -> IVal .
+  eq igt~u(IV1, IV2) = (abs(IV1) > abs(IV2)) ? val(1) : val(0) .
+  --- eq igt~u(IV1, IV2) = wval(0) [owise] .
+  
+  op igt~s : IVal IVal -> IVal .
+  eq igt~s(IV1, IV2) = (IV1 > IV2) ? val(1) : val(0) .
+  --- eq igt~s(IV1, IV2) = wval(0) [owise] .
+
+  op ile~u : IVal IVal -> IVal .
+  eq ile~u(IV1, IV2) = (abs(IV1) <= abs(IV2)) ? val(1) : val(0) .
+  --- eq ile~u(IV1, IV2) = wval(0) [owise] .
+  
+  op ile~s : IVal IVal -> IVal .
+  eq ile~s(IV1, IV2) = (IV1 <= IV2) ? val(1) : val(0) .
+  --- eq ile~s(IV1, IV2) = wval(0) [owise] .
+  
+  op ige~u : IVal IVal -> IVal .
+  eq ige~u(IV1, IV2) = (abs(IV1) >= abs(IV2)) ? val(1) : val(0) .
+  --- eq ige~u(IV1, IV2) = wval(0) [owise] .
+  
+  op ige~s : IVal IVal -> IVal .
+  eq ige~s(IV1, IV2) = (IV1 >= IV2) ? val(1) : val(0) .
+  --- eq ige~s(IV1, IV2) = wval(0) [owise] .
+
+endfm
+
+--- fmod WASM-FOPS-MOD is
+--- 
+---   protecting WASM-VALUE-MOD .
+--- 
+---   var FloatN F1 F2 : Float .
+---   var ValW1 ValW2 : ValWrapper .
+---   var Sg Sg1 Sg2 : Sign .
+---   var InfF InfF1 InfF2 : InfF .
+---   var ZeroF ZeroF1 ZeroF2 : ZeroF .
+---   var NaN : NaN .
+--- 
+---   *** FLOAT Binops
+---   *** fadd
+---   op fadd : ValWrapper ValWrapper -> ValWrapper .
+---   eq fadd(wval(NaN), wval(F1)) = wval(nans(NaN nanF(F1))) .
+---   eq fadd(wval(F1), wval(NaN)) = wval(nans(NaN nanF(F1))) .
+---   ceq fadd(wval(inf(Sg1)), wval(inf(Sg2))) = wval(nans(nil)) if Sg1 =/= Sg2 .
+---   eq fadd(wval(inf(Sg1)), wval(inf(Sg1))) = wval(inf(Sg1)) .
+---   eq fadd(wval(InfF), wval(F1)) = wval(InfF) .
+---   eq fadd(wval(F1), wval(InfF)) = wval(InfF) .
+---   ceq fadd(wval(zero(Sg1)), wval(zero(Sg2))) = wval(zero(pos)) if Sg1 =/= Sg2 .
+---   eq fadd(wval(zero(Sg1)), wval(zero(Sg1))) = wval(zero(Sg1)) .
+---   eq fadd(wval(ZeroF), wval(F1)) = wval(F1) .
+---   eq fadd(wval(F1), wval(ZeroF)) = wval(F1) .
+---   *** TODO: Take into account "rounded to the nearest representable value"??
+---   eq fadd(wval(F1), wval(F2)) = wval(F1 + F2) .
+--- 
+---   ***fsub
+---   op fsub : ValWrapper ValWrapper -> ValWrapper .
+---   eq fsub(wval(NaN), wval(F1)) = wval(nans(NaN nanF(F1))) .
+---   eq fsub(wval(F1), wval(NaN)) = wval(nans(NaN nanF(F1))) .
+---   eq fsub(wval(InfF), wval(ZeroF)) = wval(nans(nil)) .
+---   eq fsub(wval(ZeroF), wval(InfF)) = wval(nans(nil)) .
+---   eq fsub(wval(InfF), wval(InfF)) = wval(inf(pos)) .
+---   ceq fsub(wval(inf(Sg1)), wval(inf(Sg2))) = wval(inf(neg)) if Sg1 =/= Sg2 .
+---   eq fsub(wval(F1), wval(inf(Sg1))) = wval(inf(opposite(Sg1))) .
+---   eq fsub(wval(InfF), wval(F1)) = wval(InfF) .
+---   eq fsub(wval(zero(Sg1)), wval(zero(Sg1))) = wval(zero(pos)) .
+---   ceq fsub(wval(zero(Sg1)), wval(zero(Sg2))) = wval(zero(Sg1)) if Sg1 =/= Sg2 .
+---   eq fsub(wval(F1), wval(ZeroF)) = wval(F1) .
+---   eq fsub(wval(ZeroF), wval(F1)) = wval(- F1) .
+---   *** TODO: Take into account "rounded to the nearest representable value"??
+---   eq fsub(wval(F1), wval(F2)) = wval(F1 - F2) .
+--- 
+---   ***fmul
+---   op fmul : ValWrapper ValWrapper -> ValWrapper .
+---   eq fmul(wval(NaN), wval(F1)) = wval(nans(NaN nanF(F1))) .
+---   eq fmul(wval(F1), wval(NaN)) = wval(nans(NaN nanF(F1))) .
+---   eq fmul(wval(inf(Sg1)), wval(inf(Sg1))) = wval(nans(nil)) .
+---   ceq fmul(wval(inf(Sg1)), wval(inf(Sg2))) = wval(inf(neg)) if Sg1 =/= Sg2 .
+---   ceq fmul(wval(F1), wval(inf(Sg1))) = wval(inf(pos)) if get-sign(F1) == Sg1 .
+---   ceq fmul(wval(F1), wval(inf(Sg1))) = wval(inf(neg)) if get-sign(F1) =/= Sg1 .
+---   ceq fmul(wval(inf(Sg1)), wval(F1)) = wval(inf(pos)) if get-sign(F1) == Sg1 .
+---   ceq fmul(wval(inf(Sg1)), wval(F1)) = wval(inf(neg)) if get-sign(F1) =/= Sg1 .
+---   eq fmul(wval(zero(Sg1)), wval(zero(Sg1))) = wval(zero(pos)) .
+---   ceq fmul(wval(zero(Sg1)), wval(zero(Sg2))) = wval(zero(neg)) if Sg1 =/= Sg2 .
+---   ceq fmul(wval(F1), wval(zero(Sg2))) = wval(zero(pos)) if get-sign(F1) == Sg2 .
+---   ceq fmul(wval(F1), wval(zero(Sg2))) = wval(zero(neg)) if get-sign(F1) =/= Sg2 .
+---   ceq fmul(wval(zero(Sg2)), wval(F1)) = wval(zero(pos)) if get-sign(F1) == Sg2 .
+---   ceq fmul(wval(zero(Sg2)), wval(F1)) = wval(zero(neg)) if get-sign(F1) =/= Sg2 .
+---   *** TODO: Take into account "rounded to the nearest representable value"??
+---   eq fmul(wval(F1), wval(F2)) = wval(F1 * F2) .
+--- 
+---   ***fdiv
+---   op fdiv : ValWrapper ValWrapper -> ValWrapper .
+---   eq fdiv(wval(NaN), wval(F1)) = wval(nans(NaN nanF(F1))) .
+---   eq fdiv(wval(F1), wval(NaN)) = wval(nans(NaN nanF(F1))) .
+---   eq fdiv(wval(InfF1), wval(InfF2)) = wval(nans(nil)) .
+---   eq fdiv(wval(ZeroF1), wval(ZeroF2)) = wval(nans(nil)) .
+---   ceq fdiv(wval(F1), wval(inf(Sg1))) = wval(zero(pos)) if get-sign(F1) == Sg1 .
+---   ceq fdiv(wval(F1), wval(inf(Sg1))) = wval(zero(neg)) if get-sign(F1) =/= Sg1 .
+---   ceq fdiv(wval(inf(Sg1)), wval(F1)) = wval(inf(pos)) if get-sign(F1) == Sg1 .
+---   ceq fdiv(wval(inf(Sg1)), wval(F1)) = wval(inf(neg)) if get-sign(F1) =/= Sg1 .
+---   ceq fdiv(wval(F1), wval(zero(Sg2))) = wval(inf(pos)) if get-sign(F1) == Sg2 .
+---   ceq fdiv(wval(F1), wval(zero(Sg2))) = wval(inf(neg)) if get-sign(F1) =/= Sg2 .
+---   ceq fdiv(wval(zero(Sg2)), wval(F1)) = wval(zero(pos)) if get-sign(F1) == Sg2 .
+---   ceq fdiv(wval(zero(Sg2)), wval(F1)) = wval(zero(neg)) if get-sign(F1) =/= Sg2 .
+---   *** TODO: Take into account "rounded to the nearest representable value"??
+---   eq fdiv(wval(F1), wval(F2)) = wval(F1 / F2) .
+--- 
+---   ***fmin
+---   op fmin : ValWrapper ValWrapper -> ValWrapper .
+---   eq fmin(wval(NaN), wval(F1)) = wval(nans(NaN nanF(F1))) .
+---   eq fmin(wval(F1), wval(NaN)) = wval(nans(NaN nanF(F1))) .
+---   eq fmin(wval(inf(pos)), wval(F2)) = wval(F2) .
+---   eq fmin(wval(inf(neg)), wval(F2)) = wval(inf(neg)) .
+---   eq fmin(wval(F1), wval(inf(pos))) = wval(F1) .
+---   eq fmin(wval(F1), wval(inf(neg))) = wval(inf(neg)) .
+---   ceq fmin(wval(zero(Sg1)), wval(zero(Sg2))) = wval(zero(neg)) if Sg1 =/= Sg2 .
+---   eq fmin(wval(F1), wval(F2)) = wval(min(F1, F2)) .
+--- 
+---   ***fmax
+---   op fmax : ValWrapper ValWrapper -> ValWrapper .
+---   eq fmax(wval(NaN), wval(F1)) = wval(nans(NaN nanF(F1))) .
+---   eq fmax(wval(F1), wval(NaN)) = wval(nans(NaN nanF(F1))) .
+---   eq fmax(wval(inf(pos)), wval(F2)) = wval(inf(pos)) .
+---   eq fmax(wval(inf(neg)), wval(F2)) = wval(F2) .
+---   eq fmax(wval(F1), wval(inf(pos))) = wval(inf(pos)) .
+---   eq fmax(wval(F1), wval(inf(neg))) = wval(F1) .
+---   ceq fmax(wval(zero(Sg1)), wval(zero(Sg2))) = wval(zero(pos)) if Sg1 =/= Sg2 .
+---   eq fmax(wval(F1), wval(F2)) = wval(max(F1, F2)) .
+--- 
+---   ***fcopysign
+---   op fcopysign : ValWrapper ValWrapper -> ValWrapper .
+---   eq fcopysign(wval(zero(Sg)), wval(zero(Sg))) = wval(zero(Sg)) .
+---   eq fcopysign(wval(inf(Sg)), wval(inf(Sg))) = wval(inf(Sg)) .
+---   ceq fcopysign(wval(F1), wval(F2)) = wval(F1) if get-sign(F1) == get-sign(F2) .
+---   eq fcopysign(ValW1, ValW2) = - ValW1 .
+--- 
+---   *** FUNOPS
+---   ***fabs
+---   op fabs : ValWrapper -> ValWrapper .
+---   eq fabs(wval(nan(Sg1))) = wval(nan(pos)) .
+---   eq fabs(wval(inf(Sg1))) = wval(inf(pos)) .
+---   eq fabs(wval(zero(Sg1))) = wval(zero(pos)) .
+---   eq fabs(wval(F1)) = wval(abs(F1)) .
+--- 
+---   ***fneg
+---   op fneg : ValWrapper -> ValWrapper .
+---   eq fneg(wval(nan(Sg1))) = wval(nan(opposite(Sg1))) .
+---   eq fneg(wval(inf(Sg1))) = wval(inf(opposite(Sg1))) .
+---   eq fneg(wval(zero(Sg1))) = wval(zero(opposite(Sg1))) .
+---   eq fneg(wval(F1)) = wval(- F1) .
+--- 
+---   ***fsqrt
+---   op fsqrt : ValWrapper -> ValWrapper .
+---   eq fsqrt(wval(NaN)) = wval(nans(NaN)) .
+---   eq fsqrt(wval(inf(neg))) = wval(nans(nil)) .
+---   eq fsqrt(wval(inf(pos))) = wval(inf(pos)) .
+---   eq fsqrt(wval(ZeroF)) = wval(ZeroF) .
+---   ceq fsqrt(wval(F1)) = wval(nans(nil)) if F1 < 0.0 .
+---   eq fsqrt(wval(F1)) = wval(sqrt(F1)) [owise] .
+--- 
+---   ***fceil
+---   op fceil : ValWrapper -> ValWrapper .
+---   eq fceil(wval(NaN)) = wval(nans(NaN)) .
+---   eq fceil(wval(InfF)) = wval(InfF) .
+---   eq fceil(wval(ZeroF)) = wval(ZeroF) .
+---   ceq fceil(wval(F1)) = wval(zero(neg)) if F1 < 0.0 and -1.0 < F1 .
+---   eq fceil(wval(F1)) = wval(ceiling(F1)) [owise] .
+--- 
+---   ***ffloor
+---   op ffloor : ValWrapper -> ValWrapper .
+---   eq ffloor(wval(NaN)) = wval(nans(NaN)) .
+---   eq ffloor(wval(InfF)) = wval(InfF) .
+---   eq ffloor(wval(ZeroF)) = wval(ZeroF) .
+---   ceq ffloor(wval(F1)) = wval(zero(pos)) if F1 > 0.0 and F1 < 1.0 .
+---   eq ffloor(wval(F1)) = wval(floor(F1)) [owise] .
+--- 
+---   *** COMPARISON FUNCTIONS
+---   ***feq
+---   op feq : ValWrapper ValWrapper -> ValWrapper .
+---   ceq feq(wval(zero(Sg1)), wval(zero(Sg2))) = wval(1) if Sg1 =/= Sg2 .
+---   eq feq(ValW1, ValW1) = wval(1) .
+---   eq feq(ValW1, ValW2) = wval(0) [owise] .
+--- 
+---   ***fne
+---   op fne : ValWrapper ValWrapper -> ValWrapper .
+---   eq fne(wval(NaN), ValW2) = wval(1) .
+---   eq fne(ValW1, wval(NaN)) = wval(1) .
+---   ceq fne(wval(zero(Sg1)), wval(zero(Sg2))) = wval(0) if Sg1 =/= Sg2 .
+---   ceq fne(ValW1, ValW2) = wval(1) if ValW1 =/= ValW2 .
+---   eq fne(ValW1, ValW2) = wval(0) [owise] .
+--- 
+---   ***flt
+---   op flt : ValWrapper ValWrapper -> ValWrapper .
+---   eq flt(wval(inf(neg)), wval(F2)) = wval(1) .
+---   eq flt(wval(F1), wval(inf(pos))) = wval(1) .
+---   ceq flt(wval(F1), wval(ZeroF2)) = wval(1) if F1 < 0.0 .
+---   ceq flt(wval(ZeroF1), wval(F2)) = wval(1) if F2 > 0.0 .
+---   ceq flt(wval(F1), wval(F2)) = wval(1) if F1 < F2 .
+---   eq flt(ValW1, ValW2) = wval(0) [owise] .
+--- 
+---   ***fgt
+---   op fgt : ValWrapper ValWrapper -> ValWrapper .
+---   eq fgt(wval(inf(pos)), wval(F2)) = wval(1) .
+---   eq fgt(wval(F1), wval(inf(neg))) = wval(1) .
+---   ceq fgt(wval(F1), wval(ZeroF2)) = wval(1) if F1 > 0.0 .
+---   ceq fgt(wval(ZeroF1), wval(F2)) = wval(1) if F2 < 0.0 .
+---   ceq fgt(wval(F1), wval(F2)) = wval(1) if F1 > F2 .
+---   eq fgt(ValW1, ValW2) = wval(0) [owise] .
+--- 
+---   ***fle
+---   op fle : ValWrapper ValWrapper -> ValWrapper .
+---   eq fle(wval(inf(neg)), wval(F2)) = wval(1) .
+---   eq fle(wval(F1), wval(inf(pos))) = wval(1) .
+---   eq fle(wval(ZeroF1), wval(ZeroF2)) = wval(1) .
+---   eq fle(ValW1, ValW1) = wval(1) .
+---   ceq fle(wval(F1), wval(ZeroF2)) = wval(1) if F1 < 0.0 .
+---   ceq fle(wval(ZeroF1), wval(F2)) = wval(1) if F2 > 0.0 .
+---   ceq fle(wval(F1), wval(F2)) = wval(1) if F1 < F2 .
+---   eq fle(ValW1, ValW2) = wval(0) [owise] .
+--- 
+---   ***fge
+---   op fge : ValWrapper ValWrapper -> ValWrapper .
+---   eq fge(wval(inf(pos)), wval(F2)) = wval(1) .
+---   eq fge(wval(F1), wval(inf(neg))) = wval(1) .
+---   eq fge(wval(ZeroF1), wval(ZeroF2)) = wval(1) .
+---   eq fge(ValW1, ValW1) = wval(1) .
+---   ceq fge(wval(F1), wval(ZeroF2)) = wval(1) if F1 > 0.0 .
+---   ceq fge(wval(ZeroF1), wval(F2)) = wval(1) if F2 < 0.0 .
+---   ceq fge(wval(F1), wval(F2)) = wval(1) if F1 > F2 .
+---   eq fge(ValW1, ValW2) = wval(0) [owise] .
+--- 
+--- endfm
+
+fmod WASM-CVOPS-MOD is
+
+  protecting WASM-VALUE-MOD .
+
+  var Int1 : Int .
+  --- var F1 : Float .
+  --- var NaN : NaN .
+  --- var InfF : InfF .
+  --- var ZeroF : ZeroF .
+  var ValW : ValWrapper .
+  var T1 T2 : TypeToken .
+
+  op wrap : IntTypeToken IntTypeToken ValWrapper -> ValWrapper .
+  eq wrap(i64, i32, wval(Int1)) = wval(Int1 rem (2 ^ (bit-width(i32)))) .
+
+  op demote : FloatTypeToken FloatTypeToken ValWrapper -> ValWrapper .
+  *** TODO: Take into account canon NaNs
+  --- eq demote(f64, f32, wval(NaN)) = wval(nans(nil)) .
+  --- eq demote(f64, f32, wval(InfF)) = wval(InfF) .
+  --- eq demote(f64, f32, wval(ZeroF)) = wval(ZeroF) .
+  --- eq demote(f64, f32, wval(F1)) = get-valW(correctFloat(const(f32, wval(F1)))) .
+
+  op promote : FloatTypeToken FloatTypeToken ValWrapper -> ValWrapper .
+  *** TODO: Take into account canon NaNs
+  --- eq promote(f32, f64, wval(NaN)) = wval(nans(nil)) .
+  --- eq promote(f32, f64, ValW) = ValW .
+
+endfm
+
+fmod WASM-GBINSTANCE-MOD is
+  protecting WASM-VALUE-MOD .
+
+  sorts GlobalInstance GlobalType MutGlobalType MutGlobalTypeIndicator .
+  subsorts TypeToken MutGlobalType < GlobalType .
+
+  *** Included mut because of emscripten-compiled example. Not included in the standard...
+  op const_ : TypeToken -> GlobalType [ctor] .
+  ops var mut : -> MutGlobalTypeIndicator .
+  op _ _ : MutGlobalTypeIndicator TypeToken -> MutGlobalType [ctor] .
+
+  op {type _, value _} : GlobalType Value -> GlobalInstance [ctor] .
+
+  var T : TypeToken .
+  var MutGlobalTypeIndicator : MutGlobalTypeIndicator .
+
+  op get-GlobalTypeToken : GlobalType -> TypeToken .
+  eq get-GlobalTypeToken(T) = T .
+  eq get-GlobalTypeToken(const T) = T .
+  eq get-GlobalTypeToken(MutGlobalTypeIndicator T) = T .
+endfm
+
+view GlobalInstance from TRIV to WASM-GBINSTANCE-MOD is
+  sort Elt to GlobalInstance .
+endv
+
+fmod WASM-INST-MOD is
+
+  protecting WASM-BITVAL-MOD .
+  protecting WASM-BLOCKTYPE-MOD .
+  --- protecting WASM-FOPS-MOD .
+  protecting WASM-IOPS-MOD .
+  protecting WASM-CVOPS-MOD .
+  protecting WASM-VALREF-MOD .
+
+  sorts Inst ConstInst .
+  sorts BinopToken IBinopToken FBinopToken UnopToken FUnopToken IUnopToken RelopToken IRelopToken FRelopToken TestopToken CvtopToken Trap .
+  subsorts IBinopToken FBinopToken < BinopToken .
+  subsorts IUnopToken FUnopToken < UnopToken .
+  subsorts IRelopToken FRelopToken < RelopToken .
+
+  subsorts ConstInst < Inst .
+  subsorts Trap < Inst .
+
+  op trap : String -> Trap [ctor] . 
+
+  *** Instruction ops declarations
+  op local.get _ : ValRef -> Inst [ctor prec 24 format (d d ni)] .
+  op local.set _ : ValRef -> Inst [ctor prec 24 format (d d ni)] .
+  op local.tee _ : ValRef -> Inst [ctor prec 24 format (d d ni)] .
+
+  *** global insts
+  op global.get _ : String -> Inst [ctor prec 24 format (d d ni)] .
+  op global.set _ : String -> Inst [ctor prec 24 format (d d ni)] .
+
+  ***op _.const _ : TypeToken Value -> Inst [ctor] .
+  --- op _.const_ : IntTypeToken Int -> ConstInst [ctor prec 24 format (d d d ni)] .
+  op _.const_ : IntTypeToken IVal -> ConstInst [ctor prec 24 format (d d d ni)] .
+  --- op _.const_ : FloatTypeToken Float -> ConstInst [ctor prec 24 format (d d d ni)] .
+
+
+  *** binop (Binary Operations)
+  *** ibinop (Integer binop) - add | sub | mul | div_sx | rem_sx | and | or | xor | shl | shr_sx | rotl | rotr
+  ops add sub mul : -> BinopToken [ctor] .
+  op _._ : TypeToken BinopToken -> Inst [ctor prec 24 format (d d d ni)] . *** Valid for ints and floats
+  *** Insts with underscores (_) need to be preprocessed so that Maude does not misinterpret the _ symbol
+  ops div~u div~s rem~u rem~s shl shr~s shr~u : -> IBinopToken [ctor] .
+  op _._ : IntTypeToken IBinopToken -> Inst [ctor prec 24 format (d d d ni)] .
+
+  *** bitstring representation ops
+  ops and or xor : -> IBinopToken [ctor] .
+  op _._ : IntTypeToken IBinopToken -> Inst [ctor prec 24 format (d d d ni)] .
+
+  --- ops div min max copysign : -> FBinopToken [ctor] .
+  --- op _._ : FloatTypeToken FBinopToken -> Inst [ctor prec 24 format (d d d ni)] .
+  
+  ops abs neg sqrt ceil floor : -> FUnopToken [ctor] .
+  op _._ : FloatTypeToken FUnopToken -> Inst [ctor prec 24 format (d d d ni)] .
+
+  var T T1 T2 : TypeToken .
+  var IntT IntT2 : IntTypeToken .
+  --- var FloatT FloatT2 : FloatTypeToken .
+  var ValW1 ValW2 : ValWrapper .
+  var Int1 Int2 : Int .
+  var cvtopT : CvtopToken .
+
+  op binop : TypeToken BinopToken ValWrapper ValWrapper -> Value .
+  *** Int instructions
+  eq binop(IntT, add, ValW1, ValW2) = const(IntT, iadd(bit-width(IntT), ValW1, ValW2)) .
+  eq binop(IntT, sub, ValW1, ValW2) = const(IntT, isub(bit-width(IntT), ValW1, ValW2)) .
+  eq binop(IntT, mul, ValW1, ValW2) = const(IntT, imul(bit-width(IntT), ValW1, ValW2)) .
+  eq binop(IntT, div~u, ValW1, ValW2) = idivu(IntT, bit-width(IntT), ValW1, ValW2) .
+  eq binop(IntT, div~s, ValW1, ValW2) = idivs(IntT, bit-width(IntT), ValW1, ValW2) .
+  eq binop(IntT, rem~s,ValW1, ValW2) = irems(IntT, bit-width(IntT), ValW1, ValW2) .
+  eq binop(IntT, rem~u, ValW1, ValW2) = iremu(IntT, bit-width(IntT), ValW1, ValW2) .
+  *** instructions with bitstring representation
+  eq binop(IntT, and, wval(Int1), wval(Int2)) = const(IntT, wval(bitstring-to-int((iand((int-to-bitstring(Int1, bit-width(IntT))), (int-to-bitstring(Int2, bit-width(IntT))))), bit-width(IntT)))) .
+  eq binop(IntT, or, wval(Int1), wval(Int2)) = const(IntT, wval(bitstring-to-int((ior((int-to-bitstring(Int1, bit-width(IntT))), (int-to-bitstring(Int2, bit-width(IntT))))), bit-width(IntT)))) .
+  eq binop(IntT, xor, wval(Int1), wval(Int2)) = const(IntT, wval(bitstring-to-int((ixor((int-to-bitstring(Int1, bit-width(IntT))), (int-to-bitstring(Int2, bit-width(IntT))))), bit-width(IntT)))) .
+  eq binop(IntT, shl, wval(Int1), wval(Int2)) = const(IntT, wval(bitstring-to-int(ishl((int-to-bitstring(Int1, bit-width(IntT))), Int2 rem bit-width(IntT)), bit-width(IntT)))) .
+  eq binop(IntT, shr~u, wval(Int1), wval(Int2)) = const(IntT, wval(bitstring-to-int(ishru((int-to-bitstring(Int1, bit-width(IntT))), Int2 rem bit-width(IntT)), bit-width(IntT)))) .
+  eq binop(IntT, shr~s, wval(Int1), wval(Int2)) = const(IntT, wval(bitstring-to-int(ishrs((int-to-bitstring(Int1, bit-width(IntT))), Int2 rem bit-width(IntT)), bit-width(IntT)))) .
+  *** Float instructions
+  --- eq binop(FloatT, add, ValW1, ValW2) = correctFloat(const(FloatT, fadd(ValW1, ValW2))) .
+  --- eq binop(FloatT, sub, ValW1, ValW2) = correctFloat(const(FloatT, fsub(ValW1, ValW2))) .
+  --- eq binop(FloatT, mul, ValW1, ValW2) = correctFloat(const(FloatT, fmul(ValW1, ValW2))) .
+  --- eq binop(FloatT, div, ValW1, ValW2) = correctFloat(const(FloatT, fdiv(ValW1, ValW2))) .
+  --- eq binop(FloatT, min, ValW1, ValW2) = correctFloat(const(FloatT, fmin(ValW1, ValW2))) .
+  --- eq binop(FloatT, max, ValW1, ValW2) = correctFloat(const(FloatT, fmax(ValW1, ValW2))) .
+  --- eq binop(FloatT, copysign, ValW1, ValW2) = correctFloat(const(FloatT, fcopysign(ValW1, ValW2))) .
+
+  op unop : TypeToken UnopToken ValWrapper -> Value .
+  --- eq unop(FloatT, abs, ValW1) = correctFloat(const(FloatT, fabs(ValW1))) .
+  --- eq unop(FloatT, neg, ValW1) = correctFloat(const(FloatT, fneg(ValW1))) .
+  --- eq unop(FloatT, sqrt, ValW1) = correctFloat(const(FloatT, fsqrt(ValW1))) .
+  --- eq unop(FloatT, ceil, ValW1) = correctFloat(const(FloatT, fceil(ValW1))) .
+  --- eq unop(FloatT, floor, ValW1) = correctFloat(const(FloatT, ffloor(ValW1))) .
+
+  *** relop
+  ops eq ne : -> RelopToken [ctor] .
+  op _._ : TypeToken RelopToken -> Inst [ctor prec 24 format (d d d ni)] .
+  
+  ops lt~s lt~u gt~s gt~u le~s le~u ge~s ge~u : -> IRelopToken [ctor] .
+  op _._ : IntTypeToken IRelopToken -> Inst [ctor prec 24 format (d d d ni)] .
+
+  ops lt gt le ge : -> FRelopToken [ctor] .
+  op _._ : FloatTypeToken FRelopToken -> Inst [ctor prec 24 format (d d d ni)] .
+
+  op relop : TypeToken RelopToken ValWrapper ValWrapper -> ValWrapper .
+  eq relop(IntT, eq, ValW1, ValW2) = ieq(ValW1, ValW2) .
+  eq relop(IntT, ne, ValW1, ValW2) = ine(ValW1, ValW2) .
+  eq relop(IntT, lt~s, ValW1, ValW2) = ilt~s(signed(ValW1, bit-width(IntT)), signed(ValW2, bit-width(IntT))) .
+  eq relop(IntT, lt~u, ValW1, ValW2) = ilt~u(ValW1, ValW2) .
+  eq relop(IntT, gt~s, ValW1, ValW2) = igt~s(signed(ValW1, bit-width(IntT)), signed(ValW2, bit-width(IntT))) .
+  eq relop(IntT, gt~u, ValW1, ValW2) = igt~u(ValW1, ValW2) .
+  eq relop(IntT, le~s, ValW1, ValW2) = ile~s(signed(ValW1, bit-width(IntT)), signed(ValW2, bit-width(IntT))) .
+  eq relop(IntT, le~u, ValW1, ValW2) = ile~u(ValW1, ValW2) .
+  eq relop(IntT, ge~s, ValW1, ValW2) = ige~s(signed(ValW1, bit-width(IntT)), signed(ValW2, bit-width(IntT))) .
+  eq relop(IntT, ge~u, ValW1, ValW2) = ige~u(ValW1, ValW2) .
+  --- eq relop(FloatT, eq, ValW1, ValW2) = feq(ValW1, ValW2) .
+  --- eq relop(FloatT, ne, ValW1, ValW2) = fne(ValW1, ValW2) .
+  --- eq relop(FloatT, lt, ValW1, ValW2) = flt(ValW1, ValW2) .
+  --- eq relop(FloatT, gt, ValW1, ValW2) = fgt(ValW1, ValW2) .
+  --- eq relop(FloatT, le, ValW1, ValW2) = fle(ValW1, ValW2) .
+  --- eq relop(FloatT, ge, ValW1, ValW2) = fge(ValW1, ValW2) .
+
+  *** testop
+  ops eqz : -> TestopToken [ctor] .
+  op _._ : IntTypeToken TestopToken -> Inst [ctor prec 24 format (d d d ni)] .
+
+  *** conversions
+  ops wrap~ demote~ promote~ : -> CvtopToken [ctor] .
+  op _._ _ : TypeToken CvtopToken TypeToken -> Inst [ctor prec 24 format (d d d d ni)] .
+
+  op cvtop : TypeToken TypeToken CvtopToken ValWrapper -> Value .
+  eq cvtop(i64, i32, wrap~, ValW1) = const(i32, wrap(i64, i32, ValW1)) .
+  eq cvtop(f64, f32, demote~, ValW1) = const(f32, demote(f64, f32, ValW1)) .
+  eq cvtop(f32, f64, promote~, ValW1) = const(f64, promote(f32, f64, ValW1)) .
+  eq cvtop(T1, T2, cvtopT, ValW1) = und [owise] .
+
+  *** Parametric instructions
+  ops drop select : -> Inst [ctor format (d ni)] .
+
+  *** Control Instructions
+  op nop : -> Inst [ctor format (d ni)] .
+  op unreachable : -> Inst [ctor format (d ni)] .
+  
+  op br _ : Nat -> Inst [ctor prec 24 format (d d ni)] .
+  op br~if _ : Nat -> Inst [ctor prec 24 format (d d ni)] .
+
+  op call _ : Addr -> Inst [ctor prec 24 format (d d ni)] .
+  op call _ : String -> Inst [ctor prec 24 format (d d ni)] .
+
+endfm
+
+view Inst from TRIV to WASM-INST-MOD is
+  sort Elt to Inst .
+endv
+
+view ValRef from TRIV to WASM-VALREF-MOD is
+  sort Elt to ValRef .
+endv
+
+view Value from TRIV to WASM-VALUE-MOD is
+  sort Elt to Value .
+endv
+
+fmod WASM-FUNCDEF-MOD is
+
+  protecting WASM-TYPEDEF-MOD .
+  protecting LIST{Inst} .
+
+  sorts FuncDef FuncTypeDef LocalsRef .
+  subsorts ParamResultType TypeRef < FuncTypeDef .
+
+  op (local _) : List{TypeToken} -> LocalsRef [ctor prec 50] .
+
+  op _ _ : TypeRef ParamResultType -> FuncTypeDef [ctor] .
+
+  op (func _ _ _ _ ) : Id FuncTypeDef LocalsRef List{Inst} -> FuncDef [ctor format (ni d d n++i n--i ni)] .
+  op (func _ _ _ _ ) : String FuncTypeDef LocalsRef List{Inst} -> FuncDef [ctor format (ni d d n++i n--i ni)] .
+  op (func _ _ _ ) : Id LocalsRef List{Inst} -> FuncDef [ctor format (ni d n++i n--i ni)] .
+  op (func _ _ _ ) : String LocalsRef List{Inst} -> FuncDef [ctor format (ni d n++i n--i ni)] .
+  op (func _ _ _ ) : Id FuncTypeDef List{Inst} -> FuncDef [ctor format (ni d n++i n--i ni)] .
+  op (func _ _ _ ) : String FuncTypeDef List{Inst} -> FuncDef [ctor format (ni d n++i n--i ni)] .
+  op (func _ _ ) : Id List{Inst} -> FuncDef [ctor format (ni n++i n--i ni)] .
+  op (func _ _ ) : String List{Inst} -> FuncDef [ctor format (ni n++i n--i ni)] .
+
+  var Id : Id .
+  var Str : String .
+  var LocalsRef : LocalsRef .
+  var FuncTypeDef : FuncTypeDef .
+  var IL : List{Inst} .
+
+  eq (func Id LocalsRef IL ) = (func Id ((param nil) (result nil)) LocalsRef IL ) .
+  eq (func Str LocalsRef IL ) = (func Str ((param nil) (result nil)) LocalsRef IL ) .
+  eq (func Id FuncTypeDef IL ) = (func Id FuncTypeDef (local nil) IL ) .
+  eq (func Str FuncTypeDef IL ) = (func Str FuncTypeDef (local nil) IL ) .
+  eq (func Id IL ) = (func Id ((param nil) (result nil)) (local nil) IL ) .
+  eq (func Str IL ) = (func Str ((param nil) (result nil)) (local nil) IL ) .
+
+endfm
+
+view FuncDef from TRIV to WASM-FUNCDEF-MOD is
+  sort Elt to FuncDef .
+endv
+
+fmod WASM-GLOBALDEF-MOD is
+
+  protecting WASM-GBINSTANCE-MOD .
+  protecting WASM-INST-MOD .
+
+  sorts GlobalDef .
+
+  op (global _ _ (_)) : String GlobalType ConstInst -> GlobalDef [ctor] .
+
+endfm
+
+view GlobalDef from TRIV to WASM-GLOBALDEF-MOD is
+  sort Elt to GlobalDef .
+endv
+
+fmod WASM-MODULECONTENT-MOD is
+
+  protecting WASM-FUNCDEF-MOD .
+  protecting WASM-GLOBALDEF-MOD .
+
+  sort ModuleContent EmptyMod FuncDefList EmptyFuncDefL ExportDef .
+  sort FuncRef GlobalRef ModRef .
+  subsort TypeDef FuncDef GlobalDef ExportDef EmptyMod < ModuleContent .
+  subsort EmptyFuncDefL FuncDef < FuncDefList .
+  subsort FuncRef GlobalRef < ModRef .
+
+  op EmptyMod : -> EmptyMod [ctor] .  
+  op _ _ : ModuleContent ModuleContent -> ModuleContent [ctor assoc prec 19 id: EmptyMod] .
+  op EmptyFuncDefL : -> EmptyFuncDefL [ctor] .
+  op _,_ : FuncDefList FuncDefList -> FuncDefList [ctor assoc prec 19 id: EmptyFuncDefL] .
+
+  op (func _) : Nat -> FuncRef .
+  op (global _) : Nat -> GlobalRef .
+  op (export _ _ ) : String ModRef -> ExportDef .
+
+endfm
+
+view ModuleContent from TRIV to WASM-MODULECONTENT-MOD is
+  sort Elt to ModuleContent .
+endv
+
+fmod WASM-VERIFYFUNCDEF-MOD is
+
+  protecting WASM-FUNCDEF-MOD .
+  protecting MAP{Addr, ModuleContent} .
+  protecting MAP{String, Addr} .
+
+  var FuncTypeDef : FuncTypeDef .
+  var TypeRef : TypeRef .
+  var ParamResultType : ParamResultType .
+  var TypeStore : Map{Addr, ModuleContent} .
+  var IndTypeCtxSTR : Map{String, Addr} .
+  var Id : Id .
+  var Str : String .
+  var LocalsRef : LocalsRef .
+  var IL : List{Inst} .
+
+
+  *** TODO: Check whether this should be simplified
+  op get-functype : FuncTypeDef Map{Addr, ModuleContent} Map{String, Addr} -> ParamResultType .
+  ceq get-functype(TypeRef ParamResultType, TypeStore, IndTypeCtxSTR) = ParamResultType if coherent-typedef(TypeRef, ParamResultType, TypeStore, IndTypeCtxSTR) .
+  eq get-functype((type Id), TypeStore, IndTypeCtxSTR) = get-functype-typedef(TypeStore[Id]) .
+  eq get-functype((type Str), TypeStore, IndTypeCtxSTR) = get-functype-typedef(TypeStore[IndTypeCtxSTR[Str]]) .
+  eq get-functype(ParamResultType, TypeStore, IndTypeCtxSTR) = ParamResultType .
+
+  op coherent-typedef : TypeRef ParamResultType Map{Addr, ModuleContent} Map{String, Addr} -> Bool .
+  eq coherent-typedef((type Id), ParamResultType, TypeStore, IndTypeCtxSTR) = ParamResultType == get-functype-typedef(TypeStore[Id]) .
+  eq coherent-typedef((type Str), ParamResultType, TypeStore, IndTypeCtxSTR) = ParamResultType == get-functype-typedef(TypeStore[IndTypeCtxSTR[Str]]) .
+  eq coherent-typedef(TypeRef, ParamResultType, TypeStore, IndTypeCtxSTR) = false [owise] .
+
+  op valid-functype : FuncTypeDef Map{Addr, ModuleContent} Map{String, Addr} -> Bool .
+  eq valid-functype(TypeRef ParamResultType, TypeStore, IndTypeCtxSTR) = coherent-typedef(TypeRef, ParamResultType, TypeStore, IndTypeCtxSTR) .
+  eq valid-functype(FuncTypeDef, TypeStore, IndTypeCtxSTR) = true [owise] .
+
+endfm
+
+mod WASMMOD is
+  *** RAFAEL MORALES PALACIOS - TFM - SEMANTICS OF WEBASSEMBLY IN MAUDE
+  
+  *** IMPORT DATATYPE MODULES TO BE USED
+  protecting WASM-MODULECONTENT-MOD .
+  protecting WASM-VERIFYFUNCDEF-MOD .
+  protecting MAP{ValRef, Value} .
+  protecting LIST{Stores} .
+  protecting MAP{String, Addr} .
+  protecting MAP{Addr, GlobalInstance} .
+  protecting QID .
+  
+  *** Declare sorts to be used and hierarchy between them.
+  sorts WASMEnv WasmTrigger WASMEnvTrigger WASMTypeFuncGlobalEnv WASMTypeFuncGlobalIndEnv WASMFuncGlobalEnv WASMFuncGlobalIndEnv GlobalInventory WASMGlobalEnv WASMGlobalIndEnv WASMLocalEnv WASMLocalIndEnv WASMModule Stack EmptyStack NeStack StackElem Label StackAndLabel FuncStore .
+  sort DecodedBlocktypes .
+  sorts IndCtx LocalIndCtx GlobalIndCtx FuncIndCtx TypeIndCtx .
+  sorts Starter .
+  sorts ComponentCtr .
+
+  *** Environment components
+  subsorts Stack List{Inst} < WASMLocalEnv .
+  subsorts EmptyStack NeStack < Stack .
+
+
+  subsorts Value < StackElem < NeStack .
+  subsorts Und < Label < StackElem .
+
+  subsorts LocalIndCtx GlobalIndCtx FuncIndCtx TypeIndCtx < IndCtx .
+  
+  op label : String List{Inst} Nat -> Label [ctor] .
+
+  *** Indices stores
+  *** TODO: Some are left
+  op {localIndCtx _} : Map{String, Addr} -> LocalIndCtx [ctor] .
+  ***op {globalIndCtx _} : Map{String, Addr} -> GlobalIndCtx [ctor] .
+  op {funcIndCtx _} : Map{String, Addr} -> FuncIndCtx [ctor] .
+  op {typeIndCtx _} : Map{String, Addr} -> TypeIndCtx [ctor] .
+
+  *** TODO: Change store to Stores!!
+  
+  *** Local environment
+  *** < List{Inst} | Stack | List{Map{ValRef, Value}} >
+  op <_|_|_> : List{Inst} Stack List{Stores} -> WASMLocalEnv [ctor format (ni d d d d d d d)] .
+
+  op _ _ : LocalIndCtx WASMLocalEnv -> WASMLocalIndEnv [ctor] .
+
+  *** Global environment
+  *** WASMLocalEnv # GlobalAddrs(Map{ValRef, Nat} <-> GlobalStore(Map{ValRef, Value})
+  op _ <-> _ : Map{String, Addr} Map{Addr, GlobalInstance} -> GlobalInventory [ctor] .
+  op _ # _ : WASMLocalEnv GlobalInventory -> WASMGlobalEnv [ctor format (d ni ni d)] .
+
+  ***op _ _ : GlobalIndCtx WASMGlobalEnv -> WASMGlobalIndEnv [ctor] .
+
+  *** Functions + Global enviroment
+  op _ # _ : WASMGlobalEnv Map{Addr, ModuleContent} -> WASMFuncGlobalEnv [ctor format (d ni ni d)] .
+
+  op _ _ : FuncIndCtx WASMFuncGlobalEnv -> WASMFuncGlobalIndEnv [ctor] .
+
+  *** Types + Functions + Global enviroment
+  op _ # _ : WASMFuncGlobalIndEnv Map{Addr, ModuleContent} -> WASMTypeFuncGlobalEnv [ctor format (d ni ni d)] .
+
+  op _ _ : TypeIndCtx WASMTypeFuncGlobalEnv -> WASMTypeFuncGlobalIndEnv [ctor] .
+
+  *** WASM Environment
+  *** # WASMModule # WASMGlobalEnv # FuncStore #
+  op # _ # _ # : WASMModule WASMTypeFuncGlobalIndEnv -> WASMEnv [ctor format (ni ni ni ni ni ni)] .
+
+  op start _ : Nat -> Starter [ctor] .
+  op start _ : String -> Starter [ctor] .
+
+  op [_, _, _] : Nat Nat Nat -> ComponentCtr [ctor] .
+
+  op {_, indctr _, initIL _} : Starter ComponentCtr List{Inst} -> WasmTrigger [ctor] .
+
+  op _ _ : WasmTrigger WASMEnv -> WASMEnvTrigger [ctor format (ni ni ni)] .
+  op Fail : String -> WASMEnv [ctor] .
+
+  *** Module sections
+
+  op (module _) : ModuleContent -> WASMModule [ctor prec 20] .
+
+  *** Stack definition
+  op EmptyStack : -> EmptyStack [ctor] .
+  op _$_ : StackElem Stack -> NeStack [ctor id: EmptyStack format (d ni d d)] .
+
+
+  *** lookup: auxiliar op to lookup values from store
+  op lookup : Map{ValRef, Value} ValRef -> Value .
+  op jump-to-L : StackAndLabel -> Inst [ctor] .
+
+  op errorMod : -> [WASMModule] . 
+  op errorWASMEnv : -> [WASMEnv] .
+
+
+  *** Block Instructions (they depend on the definition of List{Inst})
+  op block end : -> Inst [ctor format (d d ni)] .
+  op block _ end : List{Inst} -> Inst [ctor format (d d d ni)] .
+  op block _ _ end : BlockType List{Inst} -> Inst [ctor prec 24 gather (E &) format (d d d d ni)] .
+  op block _ _ _ end : ParamType ResultType List{Inst} -> Inst [ctor prec 24 gather (E E &) format (d d d d d ni)] .
+  op loop end : -> Inst [ctor format (d d ni)] .
+  op loop _ end : List{Inst} -> Inst [ctor format (d d d ni)] .
+  op loop _ _ end : BlockType List{Inst} -> Inst [ctor prec 24 gather (E &) format (d d d d ni)] .
+  op loop _ _ _ end : ParamType ResultType List{Inst} -> Inst [ctor prec 24 gather (E E &) format (d d d d d ni)] .
+  op if end :  -> Inst [ctor format (d d ni)] .
+  op if _ end : List{Inst} -> Inst [ctor format (d d d ni)] .
+  op if _ _ end : BlockType List{Inst} -> Inst [ctor prec 24 gather (E &) format (d d d d ni)] .
+  op if _ _ _ end : ParamType ResultType List{Inst} -> Inst [ctor prec 24 gather (E E &) format (d d d d d ni)] .
+  op if _ _ else _ end : BlockType List{Inst} List{Inst} -> Inst [ctor prec 24 gather (E & &) format (d d d d d d ni)] .
+  op if _ _ _ else _ end : ParamType ResultType List{Inst} List{Inst} -> Inst [ctor prec 24 gather (E E & &) format (d d d d d d d ni)] .
+
+
+
+  *** Variable definition
+
+  var WASMModule : WASMModule .
+  var WASMTypeFuncGlobalEnv : WASMTypeFuncGlobalEnv .
+  var WASMTypeFuncGlobalIndEnv : WASMTypeFuncGlobalIndEnv .
+  var WASMFuncGlobalIndEnv : WASMFuncGlobalIndEnv .
+  var WASMFuncGlobalEnv : WASMFuncGlobalEnv .
+  var WASMEnvTrigger : WASMEnvTrigger .
+  var WASMEnv : WASMEnv .
+  var WASMLocalEnv : WASMLocalEnv .
+  vars I1 S1 : Inst .
+  var ConstInst : ConstInst .
+  vars ValR ValR2 : ValRef .
+  vars Val Val1 Val2 : Value .
+  vars IL IL' IL1 IL1' IL2 ILElse : List{Inst} .
+  var NeIL : NeList{Inst} .
+  vars ST TempST ST1 ST' : Stack .
+  var NeST : NeStack .
+  var LocalSTRList : List{Stores} .
+  var NeLocalSTRList : NeList{Stores} .
+  vars LocalSTR STR2 : Stores .
+  var T T1 T2 T' : TypeToken .
+  --- var FloatT : FloatTypeToken .
+  var IntT : IntTypeToken .
+  var VecT : VecTypeToken .
+  vars IntVal IntVal1 IntVal2 : IntValue .
+  vars Int1 Int2 IntN : Int .
+  var IVal : IVal .
+  var STElem : StackElem .
+  var Str : String .
+  var Label : Label .
+  var N N1 N2 Ctr N' N'' : Nat .
+  var NzN : NzNat .
+  var GlobalAddrs : Map{String, Addr} .
+  var GlobalsStore : Map{Addr, GlobalInstance} .
+  var GlobalType : GlobalType .
+  var MutGlobalType : MutGlobalType .
+  var MutGlobalTypeIndicator : MutGlobalTypeIndicator .
+  var GlobalInstance : GlobalInstance .
+  var Addr : Addr .
+  var FuncStore TypeStore TypeStore' TypeStore'' : Map{Addr, ModuleContent} .
+  var TypeRef : TypeRef .
+  var ParamType : ParamType .
+  var ResultType : ResultType .
+  var LocalsRef : LocalsRef .
+  var TypeTokenList TList TList' TList1 TListRes TListParam TListPar TListLoc TListLabel : List{TypeToken} .
+  var LabelsResultTypeList : ResultTypeList .
+  var NeTList : NeList{TypeToken} .
+  var NzIntN : NzInt .
+  --- var FloatN F1 F2 : Float .
+  vars ValW ValW1 ValW2 : ValWrapper .
+  --- var Sg1 Sg2 : Sign .
+  --- var InfF : InfF .
+  --- var ZeroF ZeroF1 ZeroF2 : ZeroF .
+  --- var NaN : NaN .
+  var FuncDef : FuncDef .
+  var TypeDef : TypeDef .
+  var FuncDefL : FuncDefList .
+  var ModuleContent : ModuleContent .
+  var ComponentCtr : ComponentCtr .
+  vars TCtr TCtr' FCtr GCtr : Nat .
+  var Id : Id .
+  var IndFuncCtx : FuncIndCtx .
+  var IndTypeCtx : TypeIndCtx .
+  vars IndFuncCtxSTR IndTypeCtxSTR : Map{String, Addr} .
+  var StartFunc : Starter .
+  var FuncType : FuncType .
+  var FuncTypeDef : FuncTypeDef .
+  var BlockType : BlockType .
+  var GlobalInventory : GlobalInventory .
+  var binopT : BinopToken .
+  var unopT : UnopToken .
+  var relopT : RelopToken .
+  var cvtopT : CvtopToken .
+  var ExportDef : ExportDef .
+  var WasmTrigger : WasmTrigger .
+  var ParamResultType : ParamResultType .
+  var ISTR : IStore .
+  var RSTR : RStore .
+  var BSTR : BStore .
+
+  *** Equivalent instruction definitions
+  ***eq if TList = if (result TList) .
+  eq if end = if nil end .
+  ***eq block TList = block (result TList) .
+  eq block end = block nil end .
+  ***eq loop TList = loop (result TList) .
+  eq loop end = loop nil end .
+
+  eq if IL end = if (result nil) IL end .
+  eq block IL end = block (result nil) IL end .
+  eq loop IL end = loop (result nil) IL end .
+
+  eq if BlockType IL end = if BlockType IL else nil end .
+  eq if ParamType ResultType IL end = if ParamType ResultType IL else nil end .
+
+
+  *** Run trigger
+  op run-nomodule : List{Inst} -> WASMTypeFuncGlobalEnv .
+  eq run-nomodule(IL) = {funcIndCtx empty} < IL | EmptyStack | emptyStores > # empty <-> empty # empty # empty .
+
+  op uninitialized : -> Inst [ctor] .
+
+  op run-module-func : WASMModule Nat -> WASMEnv .
+  op run-module-func : WASMModule Nat List{Inst} -> WASMEnv .
+  eq run-module-func(WASMModule, N) = run-module-func(WASMModule, N, nil) .
+  eq run-module-func(WASMModule, N, IL) = validate-funcs-module(read-module({start N, indctr [0, 0, 0], initIL IL} # WASMModule # {typeIndCtx empty} {funcIndCtx empty} < uninitialized | EmptyStack | nil > # empty <-> empty # empty # empty #)) .
+
+  op run-module-func : WASMModule String -> WASMEnv .
+  op run-module-func : WASMModule String List{Inst} -> WASMEnv .
+  eq run-module-func(WASMModule, Str) = run-module-func(WASMModule, Str, nil) .
+  eq run-module-func(WASMModule, Str, IL) = validate-funcs-module(read-module({start Str, indctr [0, 0, 0], initIL IL} # WASMModule # {typeIndCtx empty} {funcIndCtx empty} < uninitialized | EmptyStack | nil > # empty <-> empty # empty # empty #)) .
+
+  *** Module decoding -> Module validation -> Module instantiation
+  *** Read module component definitions
+  *** Done as eq logic to avoid non-determinism on component parsing
+  op read-module : WASMEnvTrigger -> WASMEnvTrigger .
+  eq read-module({start N, indctr ComponentCtr, initIL IL1} # (module EmptyMod) # IndTypeCtx IndFuncCtx < uninitialized | ST | nil > # GlobalAddrs <-> GlobalsStore # FuncStore # TypeStore #)
+                 = {start N, indctr ComponentCtr, initIL IL1} # (module EmptyMod) # IndTypeCtx IndFuncCtx < uninitialized | ST | nil > # GlobalAddrs <-> GlobalsStore # FuncStore # TypeStore # .
+  eq read-module({start Str, indctr ComponentCtr, initIL IL1} # (module EmptyMod) # IndTypeCtx IndFuncCtx < uninitialized | ST | nil > # GlobalAddrs <-> GlobalsStore # FuncStore # TypeStore #)
+                 = {start Str, indctr ComponentCtr, initIL IL1} # (module EmptyMod) # IndTypeCtx IndFuncCtx < uninitialized | ST | nil > # GlobalAddrs <-> GlobalsStore # FuncStore # TypeStore # .
+  
+  eq read-module({StartFunc, indctr [TCtr, FCtr, GCtr], initIL IL1} # (module ((type Id FuncType) ModuleContent)) # IndTypeCtx IndFuncCtx < uninitialized | ST | nil > # GlobalAddrs <-> GlobalsStore # FuncStore # TypeStore #)
+                 = read-module({StartFunc, indctr [TCtr + 1, FCtr, GCtr], initIL IL1} # (module ModuleContent) # IndTypeCtx IndFuncCtx < uninitialized | ST | nil > # GlobalAddrs <-> GlobalsStore # FuncStore # insert(TCtr, (type Id FuncType), TypeStore) #) .
+  eq read-module({StartFunc, indctr [TCtr, FCtr, GCtr], initIL IL1} # (module ((type Str FuncType) ModuleContent)) # IndTypeCtx IndFuncCtx < uninitialized | ST | nil > # GlobalAddrs <-> GlobalsStore # FuncStore # TypeStore #)
+                 = read-module({StartFunc, indctr [TCtr + 1, FCtr, GCtr], initIL IL1} # (module ModuleContent) # insert(Str, TCtr, IndTypeCtx) IndFuncCtx < uninitialized | ST | nil > # GlobalAddrs <-> GlobalsStore # FuncStore # insert(TCtr, (type Str FuncType), TypeStore) #) .
+  
+  ceq read-module({StartFunc, indctr [TCtr, FCtr, GCtr], initIL IL1} # (module ((func Id FuncTypeDef LocalsRef IL ) ModuleContent)) # {typeIndCtx IndTypeCtxSTR} IndFuncCtx < uninitialized | ST | nil > # GlobalAddrs <-> GlobalsStore # FuncStore # TypeStore #)
+                 = read-module({StartFunc, indctr [TCtr', FCtr + 1, GCtr], initIL IL1} # (module ModuleContent) # {typeIndCtx IndTypeCtxSTR} IndFuncCtx < uninitialized | ST | nil > # GlobalAddrs <-> GlobalsStore # insert(Id, (func Id get-functype(FuncTypeDef, TypeStore, IndTypeCtxSTR) LocalsRef IL2 ), FuncStore) # TypeStore' #)
+                 if valid-functype(FuncTypeDef, TypeStore, IndTypeCtxSTR)
+                    /\ (IL2, TCtr', TypeStore') := expand-blocktypes(IL, TCtr, TypeStore) .
+  ceq read-module({StartFunc, indctr [TCtr, FCtr, GCtr], initIL IL1} # (module ((func Str FuncTypeDef LocalsRef IL ) ModuleContent)) # {typeIndCtx IndTypeCtxSTR} IndFuncCtx < uninitialized | ST | nil > # GlobalAddrs <-> GlobalsStore # FuncStore # TypeStore #)
+                 = read-module({StartFunc, indctr [TCtr', FCtr + 1, GCtr], initIL IL1} # (module ModuleContent) # {typeIndCtx IndTypeCtxSTR} insert(Str, FCtr, IndFuncCtx) < uninitialized | ST | nil > # GlobalAddrs <-> GlobalsStore # insert(FCtr, (func Str get-functype(FuncTypeDef, TypeStore, IndTypeCtxSTR) LocalsRef IL2 ), FuncStore) # TypeStore' #)
+                 if valid-functype(FuncTypeDef, TypeStore, IndTypeCtxSTR)
+                    /\ (IL2, TCtr', TypeStore') := expand-blocktypes(IL, TCtr, TypeStore) .
+ 
+  --- ceq read-module({StartFunc, indctr [TCtr, FCtr, GCtr], initIL IL1} # (module ((global Str (GlobalType) (IntT .const IVal)) ModuleContent)) # IndTypeCtx IndFuncCtx < uninitialized | ST | nil > # GlobalAddrs <-> GlobalsStore # FuncStore # TypeStore #)
+  ---                = read-module({StartFunc, indctr [TCtr, FCtr, GCtr + 1], initIL IL1} # (module ModuleContent) # IndTypeCtx IndFuncCtx < uninitialized | ST | nil > # insert(Str, GCtr, GlobalAddrs) <-> insert(GCtr, {type GlobalType, value const(IntT, IVal)}, GlobalsStore) # FuncStore # TypeStore #)
+  ---                if 0 <= IVal and IVal < (2 ^ (bit-width(IntT))) .
+  --- ceq read-module({StartFunc, indctr [TCtr, FCtr, GCtr], initIL IL1} # (module ((global Str (GlobalType) (IntT .const IVal)) ModuleContent)) # IndTypeCtx IndFuncCtx < uninitialized | ST | nil > # GlobalAddrs <-> GlobalsStore # FuncStore # TypeStore #)
+  ---                = read-module({StartFunc, indctr [TCtr, FCtr, GCtr + 1], initIL IL1} # (module ModuleContent) # IndTypeCtx IndFuncCtx < uninitialized | ST | nil > # insert(Str, GCtr, GlobalAddrs) <-> insert(GCtr, {type GlobalType, value const(IntT, ValW1)}, GlobalsStore) # FuncStore # TypeStore #)
+  ---                if ValW1 := unsigned(IVal, bit-width(IntT)) .
+  --- eq read-module({StartFunc, indctr [TCtr, FCtr, GCtr], initIL IL1} # (module ((global Str (GlobalType) (FloatT .const IVal)) ModuleContent)) # IndTypeCtx IndFuncCtx < uninitialized | ST | nil > # GlobalAddrs <-> GlobalsStore # FuncStore # TypeStore #)
+  ---                = read-module({StartFunc, indctr [TCtr, FCtr, GCtr], initIL IL1} # (module ((global Str (GlobalType) (FloatT .const float(IVal))) ModuleContent)) # IndTypeCtx IndFuncCtx < uninitialized | ST | nil > # GlobalAddrs <-> GlobalsStore # FuncStore # TypeStore #) .
+  --- eq read-module({StartFunc, indctr [TCtr, FCtr, GCtr], initIL IL1} # (module ((global Str (GlobalType) (FloatT .const 0.0)) ModuleContent)) # IndTypeCtx IndFuncCtx < uninitialized | ST | nil > # GlobalAddrs <-> GlobalsStore # FuncStore # TypeStore #)
+  ---                = read-module({StartFunc, indctr [TCtr, FCtr, GCtr + 1], initIL IL1} # (module ModuleContent) # IndTypeCtx IndFuncCtx < uninitialized | ST | nil > # insert(Str, GCtr, GlobalAddrs) <-> insert(GCtr, {type GlobalType, value correctFloat(const(FloatT, wval(zero(pos))))}, GlobalsStore) # FuncStore # TypeStore #) .
+  --- eq read-module({StartFunc, indctr [TCtr, FCtr, GCtr], initIL IL1} # (module ((global Str (GlobalType) (FloatT .const FloatN)) ModuleContent)) # IndTypeCtx IndFuncCtx < uninitialized | ST | nil > # GlobalAddrs <-> GlobalsStore # FuncStore # TypeStore #)
+  ---                = read-module({StartFunc, indctr [TCtr, FCtr, GCtr + 1], initIL IL1} # (module ModuleContent) # IndTypeCtx IndFuncCtx < uninitialized | ST | nil > # insert(Str, GCtr, GlobalAddrs) <-> insert(GCtr, {type GlobalType, value correctFloat(const(FloatT, wval(FloatN)))}, GlobalsStore) # FuncStore # TypeStore #) .
+  --- ceq read-module({StartFunc, indctr [TCtr, FCtr, GCtr], initIL IL1} # (module ((global Str (GlobalType) (v128 .const IVal)) ModuleContent)) # IndTypeCtx IndFuncCtx < uninitialized | ST | nil > # GlobalAddrs <-> GlobalsStore # FuncStore # TypeStore #)
+  ---                = read-module({StartFunc, indctr [TCtr, FCtr, GCtr + 1], initIL IL1} # (module ModuleContent) # IndTypeCtx IndFuncCtx < uninitialized | ST | nil > # insert(Str, GCtr, GlobalAddrs) <-> insert(GCtr, {type GlobalType, value const(v128, IVal)}, GlobalsStore) # FuncStore # TypeStore #)
+  ---                if 0 <= IVal and IVal < (2 ^ (bit-width(v128))) .
+  
+  eq read-module({StartFunc, indctr [TCtr, FCtr, GCtr], initIL IL1} # (module ExportDef ModuleContent) # IndTypeCtx IndFuncCtx < uninitialized | ST | nil > # GlobalAddrs <-> GlobalsStore # FuncStore # TypeStore #)
+                 = read-module({StartFunc, indctr [TCtr, FCtr, GCtr], initIL IL1} # (module ModuleContent) # IndTypeCtx IndFuncCtx < uninitialized | ST | nil > # GlobalAddrs <-> GlobalsStore # FuncStore # TypeStore #) .
+
+
+  op simulate-wasm : WASMTypeFuncGlobalIndEnv -> WASMTypeFuncGlobalIndEnv .
+  eq simulate-wasm(WASMTypeFuncGlobalIndEnv) = WASMTypeFuncGlobalIndEnv .
+
+  op insert : String Nat IndCtx -> IndCtx .
+  eq insert(Str, Ctr, {funcIndCtx IndFuncCtxSTR}) = {funcIndCtx insert(Str, Ctr, IndFuncCtxSTR)} .
+  eq insert(Str, Ctr, {typeIndCtx IndTypeCtxSTR}) = {typeIndCtx insert(Str, Ctr, IndTypeCtxSTR)} .
+
+  ***eq eval(wval(I:Int), STR:Stores) = I:Int .
+  eq evalI(wval(I:Int), ISTR) = I:Int .
+
+  *** Rules
+  
+  *** TODO: Generalize for any Value type
+  *** local.get rule: push to stack the value from ValR from the local store
+  rl [local.get] : < (local.get ValR) IL | ST | (ISTR | RSTR | BSTR) LocalSTRList >   =>   < IL | st-push(ST, const(i32, wval(evalI(iv(getQid(ValR)), ISTR)))) | (ISTR | RSTR | BSTR) LocalSTRList > .
+
+  *** TODO: Generalize for any Value type
+  *** TODO: FIXME: Not matching because, after Tr, stack values here are expected to be Int, but they may be symbolic (Integer)
+  ***   - PARTIAL-SOLUTION: Right now it is possible to work with dual wval 
+  ***                       But still not REWRITING local.set
+  *** local.set rule: pop value from stack and store it in ValR in the local store
+  --- rl [local.set] : < (local.set ValR) IL | Val $ ST | LocalSTR LocalSTRList >   =>   < IL | ST | insert(getQid(ValR), Val, LocalSTR) LocalSTRList > .
+  rl [local.set] : < (local.set ValR) IL | const(i32, wval(Int1)) $ ST | (ISTR | RSTR | BSTR) LocalSTRList >   =>   < IL | ST | (insert(getQid(ValR), evalI(wval(Int1), ISTR), ISTR) | RSTR | BSTR) LocalSTRList > .
+
+  *** local.tee rule: pop from stack, push value from ValR two times to stack, then execute local.set ValR
+  rl [local.tee] : < (local.tee ValR) IL | Val $ ST | NeLocalSTRList >   =>   < (local.set ValR) IL | st-push(st-push(ST, Val), Val) | NeLocalSTRList > .
+
+  *** global variable rules
+
+  --- rl [global.get] : < (global.get Str) IL | ST | NeLocalSTRList > # GlobalAddrs <-> GlobalsStore
+  ---                 =>   
+  ---                 < IL | st-push(ST, global-wval(GlobalsStore[GlobalAddrs[Str]])) | NeLocalSTRList > # GlobalAddrs <-> GlobalsStore .
+--- 
+  --- *** TODO: generlize for all types of values (refs, labels, etc.)
+  --- rl [global.set] : < (global.set Str) IL | const(T, ValW1) $ ST | NeLocalSTRList > # GlobalAddrs <-> GlobalsStore
+  ---                 =>   
+  ---                 < IL | ST | NeLocalSTRList > # GlobalAddrs <-> insert(GlobalAddrs[Str], {type (mut T), value const(T, ValW1)}, GlobalsStore) .
+
+  *** Parametric Instructions
+  rl [drop] : < (drop) IL | Val $ ST | NeLocalSTRList > 
+                  =>   
+                  < IL | ST | NeLocalSTRList > .
+  rl [select] : < (select) IL | const(i32, ValW2) $ Val2 $ Val1 $ ST | NeLocalSTRList > 
+                  =>   
+                  < IL | selectVal(ValW2, Val1, Val2) $ ST | NeLocalSTRList > .
+
+
+  *** t.const rule: push Val of type T to stack
+  *** TODO: Consider possibly symbolic IVal instead of val(Int1)??
+  ***   - PARTIAL-SOLUTION: Right now it is possible to work with dual wval thanks to eval conversion
+  crl [int-const] : < (IntT .const val(Int1)) IL | ST | (ISTR | RSTR | BSTR) LocalSTRList >   
+                    =>   
+                    < IL | st-push(ST, const(IntT, wval(evalI(val(Int1), ISTR)))) | (ISTR | RSTR | BSTR) LocalSTRList > 
+                    if 0 <= Int1 and Int1 < (2 ^ (bit-width(IntT))) .
+  crl [int-const-signed] : < (IntT .const val(Int1)) IL | ST | LocalSTRList >   
+                    =>   
+                    < IL | st-push(ST, const(IntT, ValW1)) | LocalSTRList > 
+                    if ValW1 := unsigned(wval(Int1), bit-width(IntT)) .
+  --- rl [int-as-float-const] : < (FloatT .const IVal) IL | ST | LocalSTRList >   =>   < (FloatT .const float(IVal)) IL | ST | LocalSTRList > .
+  --- rl [float-const] : < (FloatT .const FloatN) IL | ST | LocalSTRList >
+  ---                          =>
+  ---                          if FloatN =/= 0.0 then
+  ---                           < IL | st-push(ST, correctFloat(const(FloatT, wval(FloatN)))) | LocalSTRList >
+  ---                          else
+  ---                           < IL | st-push(ST, correctFloat(const(FloatT, wval(zero(pos))))) | LocalSTRList >
+  ---                          fi .
+  crl [vec-const] : < (v128 .const val(Int1)) IL | ST | (ISTR | RSTR | BSTR) LocalSTRList >   
+                    =>   
+                    < IL | st-push(ST, const(v128, wval(evalI(val(Int1), ISTR)))) | LocalSTRList > 
+                    if 0 <= Int1 and Int1 < (2 ^ (bit-width(v128))) .
+
+  *** ibinop: pop two int values from stack, operate and push the result to stack
+  crl [t.binop-und] : < (T . binopT) IL | const(T, ValW2) $ const(T, ValW1) $ ST | NeLocalSTRList >   
+                      => 
+                      trap("Binop result undefined")
+                      if binop(T, binopT, ValW1, ValW2) = und .
+  crl [t.binop-defined] : < (T . binopT) IL | const(T, ValW2) $ const(T, ValW1) $ ST | NeLocalSTRList >   
+                          => 
+                          < IL | st-push(ST, binop(T, binopT, ValW1, ValW2)) | NeLocalSTRList >
+                          if const(T, ValW) := binop(T, binopT, ValW1, ValW2) .
+
+  *** FUnops
+  rl [t.unop] : < (T . unopT) IL | const(T, ValW1) $ ST | NeLocalSTRList >   
+                   => 
+                   < IL | st-push(ST, unop(T, unopT, ValW1) ) | NeLocalSTRList > .
+
+  *** relop
+  rl [t.relop] : < (T . relopT) IL | const(T, ValW2) $ const(T, ValW1) $ ST | NeLocalSTRList >   
+            =>   
+            < IL |  const(i32, relop(T, relopT, ValW1, ValW2)) $ ST | NeLocalSTRList > .
+
+  *** testop
+  rl [t.eqz] : < (IntT . eqz) IL | const(IntT, ValW1) $ ST | NeLocalSTRList >   
+            =>   
+            < IL |  const(i32, ieq(ValW1, wval(0))) $ ST | NeLocalSTRList > .
+
+  *** Conversions
+  --- rl [t1.cvtop_t2] : < (T2 . cvtopT T1) IL | const(T1, ValW1) $ ST | NeLocalSTRList >
+  ---                   =>
+  ---                   if cvtop(T1, T2, cvtopT, ValW1) =/= und
+  ---                   then
+  ---                     < IL |  st-push(ST, cvtop(T1, T2, cvtopT, ValW1)) | NeLocalSTRList >
+  ---                   else
+  ---                     trap("Cvtop result undefined")
+  ---                   fi .  
+
+  *** Control instructions
+  rl [nop] : < nop IL | ST | NeLocalSTRList >   
+            =>   
+            < IL | ST | NeLocalSTRList > .
+
+  ***rl [block-resultT] : < ((block ResultType) IL2 end) IL | ST | NeLocalSTRList >
+  ***             =>
+  ***             < IL2 exit-block(IL) | st-push(ST, label("block", nil, size(aux-get-resultlistTList(ResultType)))) | NeLocalSTRList > .
+
+  --- crl [block-tref] : {typeIndCtx IndTypeCtxSTR} IndFuncCtx < (block TypeRef IL2 end) IL | ST1 | NeLocalSTRList > # GlobalInventory # FuncStore # TypeStore
+  ---              =>
+  ---              {typeIndCtx IndTypeCtxSTR} IndFuncCtx < IL2 exit-block(IL) | ST' $ label("block", nil, size(TListRes)) $ ST | NeLocalSTRList > # GlobalInventory # FuncStore # TypeStore
+  ---              if ST' := st-getTopVals(ST1, aux-get-paramlistTList(getParamType(expand(TypeRef, IndTypeCtxSTR, TypeStore))))
+  ---                 /\ ST := st-popN(ST1, st-size(ST'))
+  ---                 /\ TListRes := aux-get-resultlistTList(getResultType(expand(TypeRef, IndTypeCtxSTR, TypeStore))) .
+
+  rl [end] : < exit-block(IL) | NeST | LocalSTRList >   =>   < IL | get-st(reset-st(NeST)) | LocalSTRList > .
+
+  rl [if-else] : < (if BlockType IL1 else IL2 end) IL | const(i32, ValW1) $ ST | NeLocalSTRList >   
+                 =>
+                 < if-else(ValW1, IL1, IL2, BlockType) IL | ST | NeLocalSTRList > .
+
+  *** loop is an infinite loop
+  ***rl [loop-resultT] : < ((loop ResultType) IL2 end) IL | ST | NeLocalSTRList >
+  ***            =>
+  ***            < IL2 exit-block(IL) | st-push(ST, label("loop", (loop ResultType) IL2 end, 0)) | NeLocalSTRList > .
+
+  --- crl [loop-tref] : {typeIndCtx IndTypeCtxSTR} IndFuncCtx < (loop TypeRef IL2 end) IL | ST1 | NeLocalSTRList >  # GlobalInventory # FuncStore # TypeStore  
+  ---             =>
+  ---             {typeIndCtx IndTypeCtxSTR} IndFuncCtx < IL2 exit-block(IL) | ST' $ label("loop", loop TypeRef IL2 end, size(TListParam)) $ ST | NeLocalSTRList > # GlobalInventory # FuncStore # TypeStore
+  ---             if ST' := st-getTopVals(ST1, aux-get-paramlistTList(getParamType(expand(TypeRef, IndTypeCtxSTR, TypeStore))))
+  ---                 /\ ST := st-popN(ST1, st-size(ST'))
+  ---                 /\ TListParam := aux-get-paramlistTList(getParamType(expand(TypeRef, IndTypeCtxSTR, TypeStore))) .
+                  
+  crl [br] : < (br N) IL2 exit-block(IL) IL' | ST | NeLocalSTRList >   
+            =>   
+            < IL1 IL | ST1 | NeLocalSTRList >
+            if (ST1 || label(Str, IL1, N1)) := get-ith-stackandlabel(ST, N, EmptyStack) .
+
+  --- rl [br_if] : < (br~if N) IL | const(i32, wval(Int1)) $ ST | NeLocalSTRList >
+  ---             =>   
+  ---             if Int1 =/= 0 then
+  ---               < (br N) IL | ST | NeLocalSTRList > 
+  ---             else
+  ---               < IL | ST | NeLocalSTRList >
+  ---             fi .
+  ***crl [br_if] : < (br~if N) IL | const(i32, wval(Int1)) $ ST | NeLocalSTRList >
+  ***              => 
+  ***              < (br N) IL | ST | NeLocalSTRList > 
+  ***            if Int1 =/= 0 .
+  ***crl [br_if2] : < (br~if N) IL | const(i32, wval(Int1)) $ ST | NeLocalSTRList >
+  ***              => 
+  ***              < IL | ST | NeLocalSTRList >
+  ***            if Int1 == 0 . 
+
+
+  *** According to Specification: param init precedes local vars init
+  --- crl [call] : < (call Addr) IL | ST | LocalSTRList > # GlobalInventory # FuncStore
+  ---             =>   
+  ---             < get-IL-func(FuncDef) exit-func(TListRes) exit-block(IL) | 
+  ---               label("func", nil, size(TListRes)) $ st-popN(ST, size(TListPar)) | 
+  ---               init-store(TListPar TListLoc, st-getTopVals(ST, TListPar), (empty).Map{ValRef,Value}) LocalSTRList 
+  ---             > # GlobalInventory # FuncStore
+  ---             if FuncDef := FuncStore[Addr]
+  ---             /\ TListRes := get-resultlistTList-func(FuncDef)
+  ---             /\ TListPar := get-paramlistTList-func(FuncDef)
+  ---             /\ TListLoc := get-localsTList-func(FuncDef) .
+  
+  --- rl [call-by-name] : {funcIndCtx IndFuncCtxSTR } < (call Str) IL | ST | LocalSTRList > # GlobalInventory # FuncStore
+  ---             =>   
+  ---             {funcIndCtx IndFuncCtxSTR } < (call (IndFuncCtxSTR[Str])) IL | ST | LocalSTRList > # GlobalInventory # FuncStore .
+--- 
+  --- *** When exiting a function, stack is checked against the reverse of the result list (because of spec order)
+  --- crl [exit-func] : < exit-func(TypeTokenList) IL | ST | LocalSTR LocalSTRList > # GlobalInventory # FuncStore
+  ---                 =>   
+  ---                 < IL | ST | LocalSTRList > # GlobalInventory # FuncStore 
+  ---                 if valid-stack(ST, reverse(TypeTokenList)) .
+    
+
+  --- eq lookup(LocalSTR, ValR) = LocalSTR[ValR] .
+
+  op getQid : ValRef -> Qid .
+  eq getQid(ValR) = qid(string(ValR, 10)) .
+  *** TODO: Generalize for every int type (i64 too) and Rat/Float too
+  --- op _[_] : Stores ValRef -> Value .
+  --- eq (ISTR | RSTR | BSTR)[ValR] = const(i32, wval(ISTR[getQid(ValR)])) . 
+
+  *** Get state stack
+  op stack : [WASMEnv] -> Stack .
+  op stack : [WASMTypeFuncGlobalIndEnv] -> Stack .
+  op stack : [WASMTypeFuncGlobalEnv] -> Stack .
+  op stack : [WASMFuncGlobalIndEnv] -> Stack .
+  op stack : [WASMFuncGlobalEnv] -> Stack .
+  op stack : [WASMGlobalEnv] -> Stack .
+  op stack : [WASMLocalEnv] -> Stack .
+  eq stack(# WASMModule
+    #
+    IndTypeCtx
+    IndFuncCtx < IL | ST | LocalSTRList >
+    #
+    GlobalInventory
+    #
+    FuncStore
+    #
+    TypeStore
+    #) = ST .
+  eq stack(< IL | ST | LocalSTRList >) = ST .
+  
+  op localEnv : [WASMEnv] -> [WASMLocalEnv] .
+  eq localEnv(
+    # WASMModule
+    #
+    IndTypeCtx
+    IndFuncCtx
+    WASMLocalEnv
+    #
+    GlobalInventory
+    #
+    FuncStore
+    #
+    TypeStore
+    #) = WASMLocalEnv .
+  
+  op getGlobal : String [WASMEnv] -> Value .
+  eq getGlobal(Str,
+    # WASMModule
+    #
+    IndTypeCtx
+    IndFuncCtx < IL | ST | LocalSTRList >
+    #
+    GlobalAddrs <-> GlobalsStore
+    #
+    FuncStore
+    #
+    TypeStore
+    #) = global-wval(GlobalsStore[GlobalAddrs[Str]]) .
+  
+  op curr-inst : [WASMEnv] -> Inst .
+  eq curr-inst(# WASMModule
+    #
+    IndTypeCtx
+    IndFuncCtx < I1 IL | ST | LocalSTRList >
+    #
+    GlobalAddrs <-> GlobalsStore
+    #
+    FuncStore
+    #
+    TypeStore
+    #) = I1 .
+
+  op st-size : Stack -> Nat .
+  eq st-size(EmptyStack) = 0 .
+  eq st-size(STElem $ ST) = 1 + st-size(ST) .
+
+  op st-topVal : Stack -> Value .
+  eq st-topVal(Val $ ST) = Val .
+
+  op get-trigger : WASMEnvTrigger -> WasmTrigger .
+  eq get-trigger(WasmTrigger WASMEnv) = WasmTrigger .
+
+  op get-initIL : WasmTrigger ->  List{Inst} .
+  eq get-initIL({StartFunc, indctr ComponentCtr, initIL IL}) = IL .
+
+  ***
+
+  *** List{Inst} operations 
+  op head : NeList{Inst} -> Inst .
+  eq head(I1 IL) = I1 .
+
+  op tail : NeList{Inst} -> List{Inst} .
+  eq tail(I1 IL) = IL .
+  ***eq tail(EmptyList) = EmptyList .
+
+  *** Stack operations
+  op st-push : Stack StackElem -> NeStack .
+  eq st-push(ST, STElem) = STElem $ ST .
+  eq st-push(EmptyStack, STElem) = STElem $ EmptyStack .
+
+  op st-head : NeStack -> StackElem .
+  eq st-head(STElem $ ST) = STElem .
+
+  op st-pop : NeStack -> Stack .
+  eq st-pop(STElem $ ST) = ST .
+
+  op st-rev : Stack -> Stack .
+  eq st-rev(STElem $ ST) = st-rev(ST) $ STElem .
+  eq st-rev(EmptyStack) = EmptyStack .
+
+  op st-popN : Stack Nat -> Stack .
+  eq st-popN(ST, 0) = ST .
+  ceq st-popN(STElem $ ST, N) = st-popN(ST, N - 1) if N > 0 .
+
+  op st-getTopVals : Stack List{TypeToken} -> Stack .
+  eq st-getTopVals(ST, nil) = EmptyStack .
+  eq st-getTopVals(const(T, ValW1) $ ST, T TList) = const(T, ValW1) $ st-getTopVals(ST, TList) .
+
+  *** Globals auxiliary ops
+  op global-wval : GlobalInstance -> Value .
+  eq global-wval({type GlobalType, value Val}) = Val .
+
+  op global-type : GlobalInstance -> GlobalType .
+  eq global-type({type GlobalType, value Val}) = GlobalType .
+
+  *** Only change value if it is marked as mutable (mut/var) global variable (due to validation requirements).
+  ***op insert-gb-wval : Addr Value Map{Addr, GlobalInstance} -> Map{Addr, GlobalInstance} .
+  ***eq insert-gb-wval(Addr, Val2, (Addr |-> {type MutGlobalType, value Val1}, GlobalsStore)) = (Addr |-> {type MutGlobalType, value Val2}, GlobalsStore) .
+
+  *** Exit block. Reset stack to eliminate label
+  op _||_ : Stack Label -> StackAndLabel .
+  op reset-st : Stack -> StackAndLabel .
+  eq reset-st(Val $ ST) = Val $ get-st(reset-st(ST)) || get-label(reset-st(ST)) .
+  eq reset-st(Label $ ST) = ST || Label .
+  eq reset-st(EmptyStack) = EmptyStack || und .
+
+  *** Reset stack keeping only arity number of values (result). For functions and br.
+  op reset-st-res : Stack Nat -> Stack .
+  eq reset-st-res(Val $ ST, 0) = EmptyStack .
+  eq reset-st-res(Val $ ST, NzN) = Val $ reset-st-res(ST, NzN - 1) .
+  eq reset-st-res(EmptyStack, N) = EmptyStack .
+
+  op get-inst-list-label : StackAndLabel -> List{Inst} .
+  eq get-inst-list-label(ST || label(Str, IL, N)) = IL .
+
+  op get-st : StackAndLabel -> Stack .
+  eq get-st(ST || Label) = ST .
+  eq get-st(ST || und) = ST .
+
+  op get-label : StackAndLabel -> Label .
+  eq get-label(ST || Label) = Label .
+  eq get-label(ST || und) = und .
+
+  op get-lth-label : Stack Nat -> Label .
+  eq get-lth-label(Val $ ST, N) = get-lth-label(ST, N) .
+  eq get-lth-label(Label $ ST, 0) = Label .
+  eq get-lth-label(Label $ ST, NzN) = get-lth-label(ST, NzN - 1) .
+
+  op get-ith-stackandlabel : Stack Nat Stack -> StackAndLabel .
+  eq get-ith-stackandlabel(Val $ ST, N, TempST) = get-ith-stackandlabel(ST, N, TempST $ Val) .
+  eq get-ith-stackandlabel(label(Str, IL, N) $ ST, 0, TempST) = reset-st-res(TempST, N) $ ST || label(Str, IL, N) .
+  eq get-ith-stackandlabel(Label $ ST, NzN, TempST) = get-ith-stackandlabel(ST, NzN - 1, TempST) .
+  
+  op if-else : ValWrapper List{Inst} List{Inst} BlockType -> List{Inst} .
+  eq if-else(wval(NzIntN), IL1, IL2, BlockType) = (block BlockType IL1 end) .
+  eq if-else(wval(0), IL1, IL2, BlockType) = (block BlockType IL2 end) .
+  
+  op get-IL-func : FuncDef -> List{Inst} .
+  eq get-IL-func(func N FuncTypeDef LocalsRef IL ) = IL .
+  eq get-IL-func(func Str FuncTypeDef LocalsRef IL ) = IL .
+
+  op exit-block : List{Inst} -> Inst [ctor] .
+  op exit-func : List{TypeToken} -> Inst [ctor] .
+
+  op get-localsref-func : FuncDef -> LocalsRef .
+  eq get-localsref-func(func N FuncTypeDef LocalsRef IL ) = LocalsRef .
+  eq get-localsref-func(func Str FuncTypeDef LocalsRef IL ) = LocalsRef .
+
+  op get-localsTList-func : FuncDef -> List{TypeToken} .
+  eq get-localsTList-func(func N FuncTypeDef (local TList) IL ) = TList .
+  eq get-localsTList-func(func Str FuncTypeDef (local TList) IL ) = TList .
+
+  op get-localsTList : LocalsRef -> List{TypeToken} .
+  eq get-localsTList(local TList) = TList .
+
+  op get-paramlist-func : FuncDef -> ParamType .
+  eq get-paramlist-func(func N (ParamType ResultType) LocalsRef IL ) = ParamType .
+  eq get-paramlist-func(func Str (ParamType ResultType) LocalsRef IL ) = ParamType .
+  eq get-paramlist-func(func N (ParamType) LocalsRef IL ) = ParamType .
+  eq get-paramlist-func(func Str (ParamType) LocalsRef IL ) = ParamType .
+  eq get-paramlist-func(func N (ResultType) LocalsRef IL ) = (param nil) .
+  eq get-paramlist-func(func Str (ResultType) LocalsRef IL ) = (param nil) .
+  
+  op get-resultlist-func : FuncDef -> ResultType .
+  eq get-resultlist-func(func N (ParamType ResultType) LocalsRef IL ) = ResultType .
+  eq get-resultlist-func(func Str (ParamType ResultType) LocalsRef IL ) = ResultType .
+  eq get-resultlist-func(func N (ParamType) LocalsRef IL ) = (result nil) .
+  eq get-resultlist-func(func Str (ParamType) LocalsRef IL ) = (result nil) .
+  eq get-resultlist-func(func N (ResultType) LocalsRef IL ) = ResultType .
+  eq get-resultlist-func(func Str (ResultType) LocalsRef IL ) = ResultType .
+
+  op aux-get-paramlistTList : ParamType -> List{TypeToken} .
+  eq aux-get-paramlistTList((param TList)) = TList .
+
+  op get-paramlistTList-func : FuncDef -> List{TypeToken} .
+  eq get-paramlistTList-func(FuncDef) = aux-get-paramlistTList(get-paramlist-func(FuncDef)) .
+
+  op aux-get-resultlistTList : ResultType -> List{TypeToken} .
+  eq aux-get-resultlistTList((result TList)) = TList .
+
+  op get-resultlistTList-func : FuncDef -> List{TypeToken} .
+  eq get-resultlistTList-func(FuncDef) = aux-get-resultlistTList(get-resultlist-func(FuncDef)) .
+
+  op count-locals-localsref : LocalsRef -> Nat .
+  eq count-locals-localsref(local nil) = 0 .
+  eq count-locals-localsref(local (T TypeTokenList)) = 1 + count-locals-localsref(local TypeTokenList) .
+
+  op count-locals-paramlist : ParamType -> Nat .
+  eq count-locals-paramlist((param nil)) = 0 .
+  eq count-locals-paramlist((param (T TypeTokenList))) = 1 + count-locals-paramlist((param TypeTokenList)) .
+
+  op count-paramlist-func : FuncDef -> Nat .
+  eq count-paramlist-func(FuncDef) = count-locals-paramlist(get-paramlist-func(FuncDef)) .
+
+  op expand : BlockType Map{String, Addr} Map{Addr, ModuleContent} -> ParamResultType .
+  eq expand((type Id), IndTypeCtxSTR, TypeStore) = get-functype-typedef(TypeStore[Id]) .
+  eq expand((type Str), IndTypeCtxSTR, TypeStore) = get-functype-typedef(TypeStore[IndTypeCtxSTR[Str]]) .
+
+  *** Inizialize a LocalStore with typed variables
+  op init-store : List{TypeToken} Stack Stores -> Stores .
+  eq init-store(nil, ST, LocalSTR) = LocalSTR .
+  eq init-store(NeTList, ST, (ISTR | RSTR | BSTR)) = (inizialize-store(0, NeTList, ST, ISTR) | RSTR | BSTR) .
+
+  *** TODO: Generalize to every type
+  op inizialize-store : Nat List{TypeToken} Stack IStore -> IStore .
+  eq inizialize-store(N, nil, ST, ISTR) = ISTR .
+  --- eq inizialize-store(N, T TList, const(T, ValW1) $ ST, ISTR) = insert(getQid(N), const(T, ValW1), inizialize-store(N + 1, TList, ST, ISTR)) .
+  eq inizialize-store(N, T TList, const(T, wval(Int1)) $ ST, ISTR) = insert(getQid(N), Int1, inizialize-store(N + 1, TList, ST, ISTR)) .
+  --- eq inizialize-store(N, T TList, EmptyStack, ISTR) = insert(getQid(N), defaultVal(T), inizialize-store(N + 1, TList, EmptyStack, ISTR)) .
+  ceq inizialize-store(N, T TList, EmptyStack, ISTR) = insert(getQid(N), Int1, inizialize-store(N + 1, TList, EmptyStack, ISTR))
+   if val(Int1) := get-valW(defaultVal(T)) .
+
+  *** Auxiliary parametric instructions
+  op selectVal : ValWrapper Value Value -> Value .
+  eq selectVal(wval(NzIntN), Val1, Val2) = Val1 .
+  eq selectVal(wval(0), Val1, Val2) = Val2 .
+
+  op (_,_,_) : List{Inst} Nat Map{Addr, ModuleContent} -> DecodedBlocktypes [ctor] .
+
+  *** Expand explicit BlockType abreviation as a typeRef (as in specification) 
+  op expand-blocktypes : List{Inst} Nat Map{Addr, ModuleContent} -> DecodedBlocktypes .
+  ceq expand-blocktypes(IL (block ParamType ResultType IL1 end) IL', N, (Addr |-> (type Id (func ParamType ResultType)), TypeStore)) = (IL (block (type Addr) IL1' end) IL2, N'', (Addr |-> (type Id (func ParamType ResultType)), TypeStore)) 
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N, (Addr |-> (type Id (func (ParamType ResultType))), TypeStore))
+        /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N', (Addr |-> (type Id (func (ParamType ResultType))), TypeStore')) .
+  ceq expand-blocktypes(IL (block ParamType ResultType IL1 end) IL', N, (Addr |-> (type Str (func ParamType ResultType)), TypeStore)) = (IL (block (type Addr) IL1' end) IL2, N'', (Addr |-> (type Str (func ParamType ResultType)), TypeStore)) 
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N, (Addr |-> (type Str (func (ParamType ResultType))), TypeStore))
+        /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N', (Addr |-> (type Str (func (ParamType ResultType))), TypeStore')) .
+  ceq expand-blocktypes(IL (block ParamType IL1 end) IL', N, (Addr |-> (type Id (func ParamType)), TypeStore)) = (IL (block (type Addr) IL1' end) IL2, N'', (Addr |-> (type Id (func ParamType)), TypeStore)) 
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N, (Addr |-> (type Id (func ParamType)), TypeStore))
+        /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N', (Addr |-> (type Id (func ParamType)), TypeStore')) .
+  ceq expand-blocktypes(IL (block ParamType IL1 end) IL', N, (Addr |-> (type Str (func ParamType)), TypeStore)) = (IL (block (type Addr) IL1' end) IL2, N'', (Addr |-> (type Str (func ParamType)), TypeStore)) 
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N, (Addr |-> (type Str (func ParamType)), TypeStore))
+        /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N', (Addr |-> (type Str (func ParamType)), TypeStore')) .
+  ceq expand-blocktypes(IL (block ResultType IL1 end) IL', N, (Addr |-> (type Id (func ResultType)), TypeStore)) = (IL (block (type Addr) IL1' end) IL2, N'', (Addr |-> (type Id (func ResultType)), TypeStore)) 
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N, (Addr |-> (type Id (func ResultType)), TypeStore))
+      /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N', (Addr |-> (type Id (func ResultType)), TypeStore')) .
+  ceq expand-blocktypes(IL (block ResultType IL1 end) IL', N, (Addr |-> (type Str (func ResultType)), TypeStore)) = (IL (block (type Addr) IL1' end) IL2, N'', (Addr |-> (type Str (func ResultType)), TypeStore)) 
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N, (Addr |-> (type Str (func ResultType)), TypeStore))
+      /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N', (Addr |-> (type Str (func ResultType)), TypeStore')) .
+  ceq expand-blocktypes(IL (block (ParamType ResultType) IL1 end) IL', N, TypeStore) = (IL (block (type N) IL1' end) IL2, N'', TypeStore'')
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N + 1, insert(N, (type N (func ParamType ResultType)), TypeStore))
+      /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N' + 1, TypeStore') [owise] .
+  ceq expand-blocktypes(IL (block ParamType IL1 end) IL', N, TypeStore) = (IL (block (type N) IL1' end) IL2, N'', TypeStore'')
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N + 1, insert(N, (type N (func ParamType)), TypeStore))
+      /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N' + 1, TypeStore') [owise] .
+  ceq expand-blocktypes(IL (block ResultType IL1 end) IL', N, TypeStore) = (IL (block (type N) IL1' end) IL2, N'', TypeStore'')
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N + 1, insert(N, (type N (func ResultType)), TypeStore))
+      /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N' + 1, TypeStore') [owise] .
+  
+  ceq expand-blocktypes(IL ((loop ParamType ResultType IL1 end)) IL', N, (Addr |-> (type Id (func (ParamType ResultType))), TypeStore)) = (IL (loop (type Addr) IL1' end) IL2, N'', (Addr |-> (type Id (func ParamType ResultType)), TypeStore)) 
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N, (Addr |-> (type Id (func ParamType ResultType)), TypeStore))
+        /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N', (Addr |-> (type Id (func ParamType ResultType)), TypeStore')) .
+  ceq expand-blocktypes(IL (loop ParamType ResultType IL1 end) IL', N, (Addr |-> (type Str (func (ParamType ResultType))), TypeStore)) = (IL (loop (type Addr) IL1' end) IL2, N'', (Addr |-> (type Str (func ParamType ResultType)), TypeStore)) 
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N, (Addr |-> (type Str (func ParamType ResultType)), TypeStore))
+        /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N', (Addr |-> (type Str (func ParamType ResultType)), TypeStore')) .
+  ceq expand-blocktypes(IL loop ParamType IL1 end IL', N, (Addr |-> (type Id (func ParamType)), TypeStore)) = (IL (loop (type Addr) IL1' end) IL2, N'', (Addr |-> (type Id (func ParamType)), TypeStore)) 
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N, (Addr |-> (type Id (func ParamType)), TypeStore))
+        /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N', (Addr |-> (type Id (func ParamType)), TypeStore')) .
+  ceq expand-blocktypes(IL loop ParamType IL1 end IL', N, (Addr |-> (type Str (func ParamType)), TypeStore)) = (IL (loop (type Addr) IL1' end) IL2, N'', (Addr |-> (type Str (func ParamType)), TypeStore)) 
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N, (Addr |-> (type Str (func ParamType)), TypeStore))
+        /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N', (Addr |-> (type Str (func ParamType)), TypeStore')) .
+  ceq expand-blocktypes(IL loop ResultType IL1 end IL', N, (Addr |-> (type Id (func ResultType)), TypeStore)) = (IL (loop (type Addr) IL1' end) IL2, N'', (Addr |-> (type Id (func ResultType)), TypeStore)) 
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N, (Addr |-> (type Id (func ResultType)), TypeStore))
+      /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N', (Addr |-> (type Id (func ResultType)), TypeStore')) .
+  ceq expand-blocktypes(IL loop ResultType IL1 end IL', N, (Addr |-> (type Str (func ResultType)), TypeStore)) = (IL (loop (type Addr) IL1' end) IL2, N'', (Addr |-> (type Str (func ResultType)), TypeStore)) 
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N, (Addr |-> (type Str (func ResultType)), TypeStore))
+      /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N', (Addr |-> (type Str (func ResultType)), TypeStore')) .
+  ceq expand-blocktypes(IL (loop ParamType ResultType IL1 end) IL', N, TypeStore) = (IL loop (type N) IL1' end IL2, N'', TypeStore'')
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N + 1, insert(N, (type N (func ParamType ResultType)), TypeStore))
+      /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N' + 1, TypeStore') [owise] .
+  ceq expand-blocktypes(IL loop ParamType IL1 end IL', N, TypeStore) = (IL loop (type N) IL1' end IL2, N'', TypeStore'')
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N + 1, insert(N, (type N (func ParamType)), TypeStore))
+      /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N' + 1, TypeStore') [owise] .
+  ceq expand-blocktypes(IL loop ResultType IL1 end IL', N, TypeStore) = (IL loop (type N) IL1' end IL2, N'', TypeStore'')
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N + 1, insert(N, (type N (func ResultType)), TypeStore))
+      /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N' + 1, TypeStore') [owise] .
+  
+  ceq expand-blocktypes(IL (if ParamType ResultType IL1 else ILElse end) IL', N, (Addr |-> (type Id (func ParamType ResultType)), TypeStore)) = (IL (if (type Addr) IL1' else ILElse end) IL2, N'', (Addr |-> (type Id (func ParamType ResultType)), TypeStore)) 
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N, (Addr |-> (type Id (func ParamType ResultType)), TypeStore))
+        /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N', (Addr |-> (type Id (func ParamType ResultType)), TypeStore')) .
+  ceq expand-blocktypes(IL (if ParamType ResultType IL1 else ILElse end) IL', N, (Addr |-> (type Str (func ParamType ResultType)), TypeStore)) = (IL (if (type Addr) IL1' else ILElse end) IL2, N'', (Addr |-> (type Str (func ParamType ResultType)), TypeStore)) 
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N, (Addr |-> (type Str (func ParamType ResultType)), TypeStore))
+        /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N', (Addr |-> (type Str (func ParamType ResultType)), TypeStore')) .
+  ceq expand-blocktypes(IL if ParamType IL1 else ILElse end IL', N, (Addr |-> (type Id (func ParamType)), TypeStore)) = (IL (if (type Addr) IL1' else ILElse end) IL2, N'', (Addr |-> (type Id (func ParamType)), TypeStore)) 
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N, (Addr |-> (type Id (func ParamType)), TypeStore))
+        /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N', (Addr |-> (type Id (func ParamType)), TypeStore')) .
+  ceq expand-blocktypes(IL if ParamType IL1 else ILElse end IL', N, (Addr |-> (type Str (func ParamType)), TypeStore)) = (IL (if (type Addr) IL1' else ILElse end) IL2, N'', (Addr |-> (type Str (func ParamType)), TypeStore)) 
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N, (Addr |-> (type Str (func ParamType)), TypeStore))
+        /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N', (Addr |-> (type Str (func ParamType)), TypeStore')) .
+  ceq expand-blocktypes(IL if ResultType IL1 else ILElse end IL', N, (Addr |-> (type Id (func ResultType)), TypeStore)) = (IL (if (type Addr) IL1' else ILElse end) IL2, N'', (Addr |-> (type Id (func ResultType)), TypeStore)) 
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N, (Addr |-> (type Id (func ResultType)), TypeStore))
+      /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N', (Addr |-> (type Id (func ResultType)), TypeStore')) .
+  ceq expand-blocktypes(IL if ResultType IL1 else ILElse end IL', N, (Addr |-> (type Str (func ResultType)), TypeStore)) = (IL (if (type Addr) IL1' else ILElse end) IL2, N'', (Addr |-> (type Str (func ResultType)), TypeStore)) 
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N, (Addr |-> (type Str (func ResultType)), TypeStore))
+      /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N', (Addr |-> (type Str (func ResultType)), TypeStore')) .
+  ceq expand-blocktypes(IL (if ParamType ResultType IL1 else ILElse end) IL', N, TypeStore) = (IL if (type N) IL1' else ILElse end IL2, N'', TypeStore'')
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N + 1, insert(N, (type N (func ParamType ResultType)), TypeStore))
+      /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N' + 1, TypeStore') [owise] .
+  ceq expand-blocktypes(IL if ParamType IL1 else ILElse end IL', N, TypeStore) = (IL if (type N) IL1' else ILElse end IL2, N'', TypeStore'')
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N + 1, insert(N, (type N (func ParamType)), TypeStore))
+      /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N' + 1, TypeStore') [owise] .
+  ceq expand-blocktypes(IL if ResultType IL1 else ILElse end IL', N, TypeStore) = (IL if (type N) IL1' else ILElse end IL2, N'', TypeStore'')
+    if (IL1', N', TypeStore') := expand-blocktypes(IL1, N + 1, insert(N, (type N (func ResultType)), TypeStore))
+      /\ (IL2, N'', TypeStore'') := expand-blocktypes(IL', N' + 1, TypeStore') [owise] .
+  eq expand-blocktypes(IL, N, TypeStore) = (IL, N, TypeStore) [owise] .
+
+
+  ****************
+  *** Validation
+  ****************
+  
+  *** Assert there are n values on top of stack with specific types
+  op valid-stack : Stack List{TypeToken} -> Bool .
+  eq valid-stack(ST, nil) = true .
+  eq valid-stack(const(T, ValW1) $ ST, T TList) = valid-stack(ST, TList) .
+  eq valid-stack(ST, TList) = false [owise] .
+
+  *** Validate all functions in module context. If any function is not valid, the module is not valid and instantiation fails.
+  *** Module validation -> Module instantiation
+  op validate-funcs-module : WASMEnvTrigger -> WASMEnv .
+  eq validate-funcs-module({start N, indctr ComponentCtr, initIL IL} # (module EmptyMod) # {typeIndCtx IndTypeCtxSTR} {funcIndCtx IndFuncCtxSTR} < uninitialized | ST | nil > # GlobalAddrs <-> GlobalsStore # FuncStore # TypeStore #)
+      = if verify-funcList(get-funcList(FuncStore), IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs) then
+           # (module EmptyMod) # simulate-wasm({typeIndCtx IndTypeCtxSTR} {funcIndCtx IndFuncCtxSTR}  < IL (call N) | ST | nil > # GlobalAddrs <-> GlobalsStore # FuncStore # TypeStore) #
+        else 
+          Fail("Invalid module")
+        fi .
+  eq validate-funcs-module({start Str, indctr ComponentCtr, initIL IL} # (module EmptyMod) # {typeIndCtx IndTypeCtxSTR} {funcIndCtx IndFuncCtxSTR} < uninitialized | ST | nil > # GlobalAddrs <-> GlobalsStore # FuncStore # TypeStore #)
+      = if verify-funcList(get-funcList(FuncStore), IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore,  GlobalsStore, GlobalAddrs) then
+           # (module EmptyMod) # simulate-wasm({typeIndCtx IndTypeCtxSTR} {funcIndCtx IndFuncCtxSTR} < IL (call (IndFuncCtxSTR[Str])) | ST | nil > # GlobalAddrs <-> GlobalsStore # FuncStore # TypeStore) #
+        else 
+          Fail("Invalid module")
+        fi .
+
+  *** Auxiliary function to get list of functions in a FuncStore
+  op get-funcList : Map{Addr, ModuleContent} -> FuncDefList .
+  eq get-funcList((Addr |-> FuncDef, FuncStore)) = FuncDef, get-funcList(FuncStore) .
+  eq get-funcList(empty) = EmptyFuncDefL .
+
+  *** Auxiliary function to validate all functions in a list
+  op verify-funcList : FuncDefList Map{String, Addr} Map{Addr, ModuleContent} Map{String, Addr} Map{Addr, ModuleContent} Map{Addr, GlobalInstance} Map{String, Addr} -> Bool .
+  eq verify-funcList(EmptyFuncDefL, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs) = true .
+  eq verify-funcList(((func Id FuncTypeDef LocalsRef IL ), FuncDefL), IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs) = verify-IL(IL, nil, get-paramlistTList-func(func Id FuncTypeDef LocalsRef IL ) get-localsTList(LocalsRef), reverse(get-resultlistTList-func(func Id FuncTypeDef LocalsRef IL )), IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, get-resultlist-func(func Id FuncTypeDef LocalsRef IL )) and verify-funcList(FuncDefL, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs) .
+  eq verify-funcList(((func Str FuncTypeDef LocalsRef IL ), FuncDefL), IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs) = verify-IL(IL, nil, get-paramlistTList-func((func Str FuncTypeDef LocalsRef IL )) get-localsTList(LocalsRef), reverse(get-resultlistTList-func(func Str FuncTypeDef LocalsRef IL )), IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, get-resultlist-func(func Str FuncTypeDef LocalsRef IL )) and verify-funcList(FuncDefL, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs) .
+  eq verify-funcList(FuncDefL, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs) = false [owise] .
+
+  *** Verify func body (expr) with Context C' containing a temp TypeToken stack, the original TList, the params-local TList, the result TList (last TList is labels), etc.
+  op verify-IL : List{Inst} List{TypeToken} List{TypeToken} List{TypeToken} Map{String, Addr} Map{Addr, ModuleContent} Map{String, Addr} Map{Addr, ModuleContent} Map{Addr, GlobalInstance} Map{String, Addr} ResultTypeList -> Bool .
+  eq verify-IL(nil, TListRes, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = true .
+  ***eq verify-IL(return, TList1, TList1) = true .
+  ceq verify-IL((local.get ValR) IL, TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, T TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList)
+    if T := nthT(TList1, ValR) /\ ValR < size(TList1) .
+  ceq verify-IL((local.set ValR) IL, T' TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList)
+    if T' == nthT(TList1, ValR) .
+  ceq verify-IL((local.tee ValR) IL, T' TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, T' TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList)
+    if T' == nthT(TList1, ValR) .
+  eq verify-IL((global.get Str) IL, TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, get-GlobalTypeToken(global-type(GlobalsStore[GlobalAddrs[Str]])) TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  ceq verify-IL((global.set Str) IL, T TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList)
+      if (MutGlobalTypeIndicator T) := (global-type(GlobalsStore[GlobalAddrs[Str]])) .
+  eq verify-IL((select) IL, i32 T T TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, T TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  eq verify-IL((drop) IL, T TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  eq verify-IL((IntT .const IVal) IL, TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, IntT TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  --- eq verify-IL((FloatT .const IVal) IL, TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, FloatT TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  --- eq verify-IL((FloatT .const FloatN) IL, TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, FloatT TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  eq verify-IL((v128 .const IVal) IL, TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, v128 TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  eq verify-IL((T . binopT) IL, T T TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, T TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  eq verify-IL((T . unopT) IL, T TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, T TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  eq verify-IL((T . relopT) IL, T T TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, i32 TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  eq verify-IL((IntT . eqz) IL, IntT TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, i32 TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  eq verify-IL((i32 . wrap~ i64) IL, i64 TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, i32 TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  eq verify-IL((f32 . demote~ f64) IL, f64 TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, f32 TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  eq verify-IL((f64 . promote~ f32) IL, f32 TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, f64 TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  eq verify-IL((nop) IL, TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  ***ceq verify-IL(((block ResultType) IL2 end) IL, TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, aux-get-resultlistTList(ResultType) TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList)
+  ***  if verify-IL(IL2, nil, TList1, aux-get-resultlistTList(ResultType), IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, (ResultType, LabelsResultTypeList)) .
+  ceq verify-IL((block TypeRef IL2 end) IL, TList' TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, aux-get-resultlistTList(getResultType(expand(TypeRef, IndTypeCtxSTR, TypeStore))) TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList)
+    if verify-IL(IL2, TList',
+                  TList1, aux-get-resultlistTList(getResultType(expand(TypeRef, IndTypeCtxSTR, TypeStore))), IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, (getResultType(expand(TypeRef, IndTypeCtxSTR, TypeStore)), LabelsResultTypeList))
+       and TList' == aux-get-paramlistTList(getParamType(expand(TypeRef, IndTypeCtxSTR, TypeStore))) .
+  eq verify-IL((if BlockType IL1 else IL2 end) IL, i32 TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = 
+    verify-IL((block BlockType IL1 end) IL, TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList)
+      and verify-IL((block BlockType IL2 end) IL, TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  eq verify-IL((if BlockType IL1 else IL2 end) IL, i32 TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = 
+    verify-IL((block BlockType IL1 end) IL, TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, (getResultType(BlockType), LabelsResultTypeList))
+      and verify-IL((block BlockType IL2 end) IL, TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, (getResultType(BlockType), LabelsResultTypeList)) .
+  ***ceq verify-IL(((loop ResultType) IL2 end) IL, TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, aux-get-resultlistTList(ResultType) TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList)
+  ***  if verify-IL(IL2, nil, TList1, aux-get-resultlistTList(ResultType), IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, ((result nil), LabelsResultTypeList)) .
+  ceq verify-IL((loop TypeRef IL2 end) IL, TList' TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, aux-get-resultlistTList(getResultType(expand(TypeRef, IndTypeCtxSTR, TypeStore))) TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList)
+    if verify-IL(IL2, TList',
+                  TList1, aux-get-resultlistTList(getResultType(expand(TypeRef, IndTypeCtxSTR, TypeStore))), IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, ((result TList'), LabelsResultTypeList))
+       and TList' == aux-get-paramlistTList(getParamType(expand(TypeRef, IndTypeCtxSTR, TypeStore))) .
+  ceq verify-IL((br N) IL, TListLabel TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList)
+    if TListLabel == nthResultT(LabelsResultTypeList, N) .
+  ceq verify-IL((br~if N) IL, i32 TListLabel, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, TListLabel, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList)
+    if TListLabel == nthResultT(LabelsResultTypeList, N) .
+  ***eq verify-IL((call Addr) IL, get-paramlistTList-func(FuncStore[Addr]) TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, get-resultlistTList-func(FuncStore[Addr]) TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  eq verify-IL((call Str) IL, TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL((call (IndFuncCtxSTR[Str])) IL, TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  ceq verify-IL((call Addr) IL, TList' TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, get-resultlistTList-func(FuncStore[Addr]) TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList)
+    if TList' == get-paramlistTList-func(FuncStore[Addr]) .
+
+  *** Stack-polymorphic derivations. Used after unreachable, br, etc.
+  ceq verify-IL(nil, TList Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = true 
+    if TList TList' := TListRes .
+
+  eq verify-IL((local.set ValR) IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  eq verify-IL((local.tee ValR) IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+
+  eq verify-IL((global.set Str) IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  
+  eq verify-IL((select) IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  eq verify-IL((select) IL, i32 T Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, T Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  eq verify-IL((select) IL, i32 Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  
+  eq verify-IL((drop) IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  
+  eq verify-IL((IntT .const IVal) IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, IntT Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  --- eq verify-IL((FloatT .const IVal) IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, FloatT Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  --- eq verify-IL((FloatT .const FloatN) IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, FloatT Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  eq verify-IL((v128 .const IVal) IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, v128 Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  
+  eq verify-IL((T . binopT) IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, T Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  eq verify-IL((T . binopT) IL, T Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, T Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  
+  eq verify-IL((T . unopT) IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, T Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  
+  eq verify-IL((T . relopT) IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, i32 Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  eq verify-IL((T . relopT) IL, T Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, i32 Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  
+  eq verify-IL((IntT . eqz) IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, i32 Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+
+  eq verify-IL((i32 . wrap~ i64) IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, i32 Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  eq verify-IL((f32 . demote~ f64) IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, f32 Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  eq verify-IL((f64 . promote~ f32) IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, f64 Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) .
+  
+  ceq verify-IL((block TypeRef IL2 end) IL, TList Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, aux-get-resultlistTList(getResultType(expand(TypeRef, IndTypeCtxSTR, TypeStore))) Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList)
+    if verify-IL(IL2, aux-get-paramlistTList(getParamType(expand(TypeRef, IndTypeCtxSTR, TypeStore))),
+                  TList1, aux-get-resultlistTList(getResultType(expand(TypeRef, IndTypeCtxSTR, TypeStore))), IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, (getResultType(expand(TypeRef, IndTypeCtxSTR, TypeStore)), LabelsResultTypeList))
+                  and startsWith(aux-get-paramlistTList(getParamType(expand(TypeRef, IndTypeCtxSTR, TypeStore))), TList) .
+  
+  eq verify-IL((if BlockType IL1 else IL2 end) IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = 
+    verify-IL((block BlockType IL1 end) IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, (getResultType(BlockType), LabelsResultTypeList))
+      and verify-IL((block BlockType IL2 end) IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, (getResultType(BlockType), LabelsResultTypeList)) .
+  
+  ceq verify-IL((loop TypeRef IL2 end) IL, TList Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, aux-get-resultlistTList(getResultType(expand(TypeRef, IndTypeCtxSTR, TypeStore))) Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList)
+    if verify-IL(IL2, aux-get-paramlistTList(getParamType(expand(TypeRef, IndTypeCtxSTR, TypeStore))),
+                  TList1, aux-get-resultlistTList(getResultType(expand(TypeRef, IndTypeCtxSTR, TypeStore))), IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, ((result aux-get-paramlistTList(getParamType(expand(TypeRef, IndTypeCtxSTR, TypeStore)))), LabelsResultTypeList))
+                  and startsWith(aux-get-paramlistTList(getParamType(expand(TypeRef, IndTypeCtxSTR, TypeStore))), TList) .
+  
+  ceq verify-IL((br N) IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList)
+    if TListLabel := nthResultT(LabelsResultTypeList, N) .
+  
+  ceq verify-IL((br~if N) IL, Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, TListLabel, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList)
+    if TListLabel := nthResultT(LabelsResultTypeList, N) .
+  ceq verify-IL((br~if N) IL, i32 Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, TListLabel, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList)
+    if TListLabel := nthResultT(LabelsResultTypeList, N) .
+  
+  ceq verify-IL((call Addr) IL, TList Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = verify-IL(IL, get-resultlistTList-func(FuncStore[Addr]) Unknown, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList)
+    if startsWith(get-paramlistTList-func(FuncStore[Addr]), TList) .
+  ***
+
+  eq verify-IL(IL, TList, TList1, TListRes, IndTypeCtxSTR, TypeStore, IndFuncCtxSTR, FuncStore, GlobalsStore, GlobalAddrs, LabelsResultTypeList) = false [owise] .
+
+  *** First list starts with second
+  op startsWith : List{TypeToken} List{TypeToken} -> Bool .
+  eq startsWith(TList, nil) = true .
+  eq startsWith(T TList, T TList') = startsWith(TList, TList') .
+  eq startsWith(TList, TList') = false [owise] .
+
+  *** TODO: This should extend List{X :: TRIV}
+  op nthT : List{TypeToken} Nat -> TypeToken .
+  eq nthT(T TList, 0) = T .
+  eq nthT(T TList, N) = nthT(TList, N - 1) .
+
+  op nthResultT : ResultTypeList Nat -> List{TypeToken} .
+  eq nthResultT((result TList), 0) = TList .
+  eq nthResultT(((result TList), LabelsResultTypeList), 0) = TList .
+  eq nthResultT(((result TList), LabelsResultTypeList), NzN) = nthResultT(LabelsResultTypeList, NzN - 1) .
+
+  *** Auxiliary
+
+  op getStore : WASMLocalEnv -> Stores .
+  eq getStore(< IL | ST | LocalSTR LocalSTRList >) = LocalSTR .
+
+  op updateStore : WASMLocalEnv Stores -> WASMLocalEnv .
+  eq updateStore(< IL | ST | LocalSTR LocalSTRList >, STR2) = < IL | ST | STR2 LocalSTRList > .
+
+endm
+
+fmod WASM-TOKENIZER-MOD is
+
+  protecting LEXICAL .
+	protecting STRING-OPS .
+  protecting INT .
+
+	*** Tokenize as WASM program for Maude
+	op tokenize-wasm : String -> QidList .
+	op tokenize-wasm : QidList -> QidList .
+
+	var S C C2 : String .
+	var Q  : Qid .
+	var QL : QidList .
+	var N? : FindResult .
+  var N : Nat .
+
+	eq tokenize-wasm(S) = tokenize-wasm(tokenize(S)) .
+
+	eq tokenize-wasm(nil) = nil .
+	eq tokenize-wasm(Q QL) =
+		if startsWith(string(Q), "\"") then
+			Q
+		else
+      if startsWith(string(Q), "$") then
+        qid("\"" + string(Q) + "\"")
+      else
+			  splitDot(removeChar(removeChar(string(Q), "_", "~"), "\n", " "))
+      fi
+		fi
+		tokenize-wasm(QL) .
+
+	*** Replace char by another non-problematic symbol
+	op removeChar : String String String -> String .
+
+	ceq removeChar(S, C, C2) =
+		if N? :: Nat then
+			removeChar(substr(S, 0, N?) + C2 + substr(S, s N?, sd(length(S), N?)), C, C2)
+		else
+			S
+		fi
+	 if N? := find(S, C, 0) .
+
+	*** Split words by a dot
+	op splitDot : String -> QidList .
+
+	ceq splitDot(S) =
+		if (startsWith(S, "i") or startsWith(S, "f")) and N? :: Nat then
+			qid(substr(S, 0, N?))
+      if substr(S, N?, sd(length(S), N?)) =/= ".const" then
+        qid(substr(S, N?, 1))
+        if startsWith(substr(S, N?, sd(length(S), N?)), ".wrap") or startsWith(substr(S, N?, sd(length(S), N?)), ".demote") or startsWith(substr(S, N?, sd(length(S), N?)), ".promote") then
+          splitConversion(substr(S, s(N?), sd(length(S), N?)))
+        else 
+          qid(substr(S, s(N?), sd(length(S), N?)))
+        fi
+      else
+        qid(substr(S, N?, sd(length(S), N?)))
+      fi
+		else
+			qid(S)
+		fi
+	 if N? := find(S, ".", 0) .
+  
+  op splitConversion : String -> QidList .
+  ceq splitConversion(S) =
+    qid(substr(S, 0, N))
+    qid(substr(S, N, 3))
+  if N := length(S) - 3 . *** Conversion TypeTokens have length 3. Example: i32, f64
+
+endfm
+
+mod WASM-FILE-MOD is
+  inc FILE . 
+
+  protecting META-LEVEL .
+  protecting WASMMOD .
+  protecting WASM-TOKENIZER-MOD .
+
+  sorts CustomOid NullOid FormatedSearchResult .
+  sorts CustomSubstitution CustomAssignment .
+  subsorts CustomAssignment < CustomSubstitution .
+  subsorts NullOid Oid < CustomOid .
+
+  op nullOid : -> NullOid [ctor] .
+
+  op myClass : -> Cid . 
+  op myObj : -> Oid . 
+  ops in:_ : CustomOid -> Attribute . 
+  ops inFile:_ outText:_ : String -> Attribute . 
+
+  op _<==_ : Variable [WASMEnv] -> CustomAssignment [ctor] .
+  op noCustomSubstitution : -> CustomSubstitution [ctor] .
+  op _&&_ : CustomSubstitution CustomSubstitution -> CustomSubstitution [ctor assoc comm id: noCustomSubstitution prec 65 ] .
+  op [_/_/_] : [WASMEnv] Type CustomSubstitution  -> FormatedSearchResult [ctor format (ni ni ni ni ni ni ni ni)] .
+  op NoResult : -> FormatedSearchResult [ctor] .
+
+  op asis : [WASMEnv] -> [WASMEnv] [frozen] .
+  
+  vars Text Acc WASMModFile Reason Func : String . 
+  vars FHIn : Oid . 
+  var  Attrs : AttributeSet .
+  var Condition : Condition .
+  var SearchType : Qid .
+  var maxDepth : Bound .
+  var solNumber : Nat .
+  var OgTerm ResTerm : Term .
+  var WASMEnvTrigger : WASMEnvTrigger .
+  var Module : Module .
+  var Config : Configuration .
+  var Type : Type .
+  var ResSubstitution : Substitution .
+  var ResAssignment : Assignment .
+  var ResVar : Variable .
+  var InitIL : String .
+
+  *** Get Maude External API config from parsed module 
+  op gen-config : String -> Configuration [ctor] .
+  eq gen-config(WASMModFile) = <> 
+                               < myObj : myClass | in: nullOid, inFile: WASMModFile, outText: "" > 
+                               openFile(fileManager, myObj, WASMModFile, "r") .
+
+  op run-func-from-file : String String -> WASMEnv .
+  eq run-func-from-file(WASMModFile, Func) = get-config-sim(gen-config(WASMModFile), Func) .
+
+  *** Function to meta-search using erew
+  op search-with-func-from-file : String String String Term Condition Qid Bound Nat -> FormatedSearchResult .
+  op search-with-func-from-file : String String Term Condition Qid Bound Nat -> FormatedSearchResult .
+  eq search-with-func-from-file(WASMModFile, Func, ResTerm, Condition, SearchType, maxDepth, solNumber) = search-with-func-from-file(WASMModFile, Func, "", ResTerm, Condition, SearchType, maxDepth, solNumber) .
+  eq search-with-func-from-file(WASMModFile, Func, InitIL, ResTerm, Condition, SearchType, maxDepth, solNumber) =
+      getFormattedRes(aux-metaSearch(upModule('WASMMOD, false),
+                                gen-config(WASMModFile), Func, InitIL,
+                                ResTerm,
+                                Condition, SearchType, maxDepth, solNumber)) .
+  
+  *** Auxiliary function to trigger meta-search only when the file is read entirely
+  op aux-metaSearch : Module Configuration String String Term Condition Qid Bound Nat -> ResultTriple .
+  eq aux-metaSearch(Module, <> closedFile(myObj, FHIn) < myObj : myClass | outText: Acc, Attrs >, Func, InitIL, ResTerm, Condition, SearchType, maxDepth, solNumber) =
+    metaSearch(Module, upTerm(run-module-func(downTerm(getTerm(metaParse(['WASMMOD], tokenize-wasm(Acc), 'WASMModule)), errorMod), Func, downTerm(getTerm(metaParse(['WASMMOD], tokenize-wasm(InitIL), 'List`{Inst`})), nil))), ResTerm, Condition, SearchType, maxDepth, solNumber) .
+
+  op get-read : Configuration -> String .
+  eq get-read(<> closedFile(myObj, FHIn) < myObj : myClass | outText: Acc, Attrs >) = Acc .
+
+  op read-wat : String -> String .
+  eq read-wat(WASMModFile) = get-read(gen-config(WASMModFile)) .
+
+  *** Format ResultTriple from meta-search
+  op getFormattedRes : ResultTriple? -> FormatedSearchResult .
+  eq getFormattedRes(failure) = NoResult .
+  eq getFormattedRes({OgTerm, Type, ResSubstitution}) = [asis(downTerm(OgTerm, errorWASMEnv)) / Type / formatSubs(ResSubstitution)] .
+
+  *** Format substitutions
+  op formatSubs : Substitution -> CustomSubstitution .
+  eq formatSubs(none) = noCustomSubstitution .
+  eq formatSubs((ResVar <- ResTerm) ; ResSubstitution) = (ResVar <== asis(downTerm(ResTerm, errorWASMEnv))) && formatSubs(ResSubstitution) .
+
+  op get-config-sim : Configuration String -> WASMEnv .
+  eq get-config-sim(<> closedFile(myObj, FHIn) < myObj : myClass | outText: Acc, Attrs >, Func) = run-module-func(downTerm(getTerm(metaParse(['WASMMOD], tokenize-wasm(Acc), 'WASMModule)), errorMod), Func) . ***Acc .
+
+  *** Maude API for external objects
+  *** Read file line-by-line to a String until the end of the file 
+  rl < myObj : myClass | in: nullOid, outText: Acc, Attrs > 
+      openedFile(myObj, fileManager, FHIn) 
+  => < myObj : myClass | in: FHIn, outText: Acc, Attrs > 
+      getLine(FHIn, myObj) .
+  rl < myObj : myClass | in: nullOid, outText: Acc, Attrs > 
+      fileError(myObj, fileManager, Reason) 
+  => < myObj : myClass | in: nullOid, outText: Acc, Attrs > .
+  rl < myObj : myClass | in: FHIn, outText: Acc, Attrs > 
+      gotLine(myObj, FHIn, Text) 
+  => < myObj : myClass | in: FHIn, outText: (Acc + Text), Attrs > 
+      if Text == "" 
+      then closeFile(FHIn, myObj)
+      else getLine(FHIn, myObj)
+      fi .
+
+endm

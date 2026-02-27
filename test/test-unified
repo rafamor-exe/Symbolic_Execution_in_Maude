@@ -373,7 +373,7 @@ python3 semantics-analysis-ext.py --program "start('f [iv('k)], ('f [iv('x)] = i
 
 python3 semantics-analysis-ext.py --program "start('f [iv('var1) ', val(3)], ('f [iv('x) ', iv('y)] = if iv('x) then {iv('y)} else {val(0) - iv('y)}))" --pattern "'<_|_|_>['V:RECIVal, 'FSTR:Map\`{Qid\`,FDec\`}, 'STRf:Stores]" --file "language-semantics/rec-semantics.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --mod "upModule('REC-MAUDE, true)" --stSort "'State" --valOp "'recVal" --svars "(var1, Integer)" --solN 0
 
-- Factorial
+- Factorial (these are valid examples)
 
 *** Check factorial always positive
 - Always holds (each solution n gives the result n!)
@@ -626,3 +626,49 @@ red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'St
 red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'State, 'noVal, "start(if iv('x) > val(0) then{iv('x) := iv('x) ; } else { iv('x) := - iv('x) ; })", '<_|_>['nil.Program, '_|_['_|->In_[''x.Sort, '-_['Y:IntFVP]], 'BSTRf:BStoreN]], '+, unbounded, 'match, delay filter, 0, ('x, x0:IntFVP)) .
 
 red in VERIFICATION-COMMANDS : metaReduce(narrowingTr(upModule('WHILE-MAUDE, true), 'State), '0.Zero) .
+
+*************
+WebAssembly *
+*************
+
+maude file.maude language-semantics/simple-wasm-maude-semantics.maude semantics-analysis-tr.maude
+
+python3 semantics-analysis-ext.py --program "" --pattern "concolicState('WASMLocalEnv)" --file "language-semantics/simple-wasm-maude-semantics.maude" --analysis "concolic" --mod "upModule('WASMMOD, true)" --stSort "'WASMLocalEnv" --svars "(k, Integer)" --sType "'*" --solN 0
+
+*** Example where 3 is the index of the symbolic variable
+< (local.get 3) (local.set 2) | EmptyStack | emptyStores >
+python3 semantics-analysis-ext.py --program "< (local.get 3) (local.set 2) | EmptyStack | emptyStores >" --pattern "concolicState('WASMLocalEnv)" --file "language-semantics/simple-wasm-maude-semantics.maude" --analysis "concolic" --mod "upModule('WASMMOD, true)" --stSort "'WASMLocalEnv" --svars "(3, Integer)" --sType "'*" --solN 1 --valOp "'wval"
+
+With condition 3 (symbolic variable at index 3) > 0
+
+python3 semantics-analysis-ext.py --program "< (local.get 3) (local.set 2) | EmptyStack | emptyStores >" --pattern "concolicState('WASMLocalEnv)" --file "language-semantics/simple-wasm-maude-semantics.maude" --analysis "concolic" --mod "upModule('WASMMOD, true)" --stSort "'WASMLocalEnv" --svars "(3, Integer)" --sType "'*" --solN 2 --valOp "'wval" --symbCond "3 > 0"
+
+python3 semantics-analysis-ext.py --program "< (local.get 3) (local.set 2) (i32 .const val(25)) | EmptyStack | emptyStores >" --pattern "concolicState('WASMLocalEnv)" --file "language-semantics/simple-wasm-maude-semantics.maude" --analysis "concolic" --mod "upModule('WASMMOD, true)" --stSort "'WASMLocalEnv" --svars "(3, Integer)" --sType "'*" --solN 2 --valOp "'wval"
+
+
+
+
+**********
+red in VERIFICATION-COMMANDS : modCond('_==_['evalI['T:RECTerm, 'ISTR:IStore], '0.Zero] = 'true.Bool, maudeSE) .
+
+red downTerm('<_|_|_>['__['local.set_['s_^2['0.Zero]], '_.const_['i32.IntTypeToken, 'val['s_^25['0.Zero]]]], 'const['i32.IntTypeToken, 'wval['0.Zero]], '_|_|_['_|->I_[''3.Sort, '0.Zero], 'empty.RStore, 'empty.BStore]], w:WASMLocalEnv) .
+
+rew < local.set 2 i32 .const val(25) | const(i32, wval(0)) | '3 |->I 0 | empty | empty > .
+
+select VERIFICATION-COMMANDS .
+select transformModSymb(upModule('WASMMOD, true), 'WASMLocalEnv, 'wval, conc) .
+
+red downTerm('`[_`]`[_`]`[_`]['<_|_|_>['__['local.set_['s_^2['0.Zero]], '_.const_['i32.IntTypeToken, 'val['s_^25['0.Zero]]]], 'const['i32.IntTypeToken, 'wval['0.Zero]], '_|_|_['_|->I_[''3.Sort, '0.Zero], 'empty.RStore, 'empty.BStore]], '_`{_`}['<_|_|_>['__['local.set_['s_^2['0.Zero]], '_.const_['i32.IntTypeToken, 'val['s_^25['0.Zero]]]], 'const['i32.IntTypeToken, 'wval['30:Integer]], '_|_|_['_|->Is_[''3.Sort, '30:Integer], 'empty.RStoreS, 'empty.BStoreS]], 'true.Boolean], '<_|_|_>['__['local.get_['s_^3['0.Zero]], 'local.set_['s_^2['0.Zero]], '_.const_['i32.IntTypeToken, 'val['s_^25['0.Zero]]]], 'EmptyStack.EmptyStack, '_|_|_['_|->Is_[''3.Sort, '30:Integer], 'empty.RStoreS, 'empty.BStoreS]]], c:ConcolicState) .
+
+rew [< local.set 2 i32 .const val((25).NzNat) | const(i32, wval((0).Zero)) | '3 |->I 0 | (empty).RStore | (empty).BStore >][< local.set 2 i32 .const val((25).NzNat) | const(i32, wval(30:Integer)) | '3 |->Is 30:Integer | (empty).RStoreS | (empty).BStoreS >{true}][< local.get 3 local.set 2 i32 .const val((25).NzNat) | EmptyStack | '3 |->Is 30:Integer | (empty).RStoreS | (empty).BStoreS >] .
+
+PROBLEM IS HERE (evalIS not reducing because of symb Integer inside wval):
+result [ConcolicState]: [
+< i32 .const val((25).NzNat)
+ | EmptyStack | ('2 |->I 0, '3 |->I 0) | (empty).RStore | (empty).BStore >][
+< i32 .const val((25).NzNat)
+ | EmptyStack | insert('2, evalIS(wval(30:Integer), '3 |->Is 30:Integer), '3 |->Is 30:Integer) | (empty).RStoreS | (empty).BStoreS >{true}][
+< local.get 3
+ local.set 2
+ i32 .const val((25).NzNat)
+ | EmptyStack | '3 |->Is 30:Integer | (empty).RStoreS | (empty).BStoreS >]

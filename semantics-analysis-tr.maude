@@ -178,98 +178,122 @@ fmod MODULE-TRANSFORMER is
     eq concolicState(StateOp, T1) = '`[_`]`[_`]`[_`][T1, symbState(StateOp, 1), stateVar(StateOp, "SInit")] .
 
     *** Construct a symbolic mirror of a given a term. Transform all its Maude variables to use SMT types and stores, and change their name
-    op symbMirror : Term -> Term .
-    eq symbMirror(T1) = searchSubVarConst(T1, symb) .
+    op symbMirror : Term Qid -> Term .
+    eq symbMirror(T1, ValOp) = modOpStoreRec(T1, ValOp, symb) .
+    
+    *** Construct a symbolic mirror of a given a term. Transform all its Maude variables to use SMT types and stores, and change their name
+    ***op symbMirror : Term Qid RlSide -> Term .
+    ***eq symbMirror(T1, ValOp, RlSide) = modVal(modOpStoreRec(T1, symb), ValOp, RlSide) .
+    ***op nrwMirror : Term Qid RlSide -> Term .
+    ***eq nrwMirror(T1, ValOp, RlSide) = modVal(modOpStoreRec(T1, narrowing), ValOp, RlSide) .
 
     *** Transform teh rules for a pure symbolic analysis without MaudeSE. For now, rule conditions must be of the form: eval(B, STR) = true
     *** The function symbMirror creates a symbolic mirror of the concrete state
     *** Conditional rules accumulate the condition of the rule in the state Constraints
     *** Every time a conditional rule is to be executed, the satisfiability of the new accumulated Constraints is checked
-    op rlToSymbolic : RuleSet ~> RuleSet .
-    eq rlToSymbolic(none) = none .
-    eq rlToSymbolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet) = 
-          rl '_`{_`}[symbMirror(T1), 'Constraints:Boolean]
-            => '_`{_`}[symbMirror(T2), 'Constraints:Boolean] 
+    op rlToSymbolic : RuleSet Qid ~> RuleSet .
+    eq rlToSymbolic(none, ValOp) = none .
+    eq rlToSymbolic(rl T1 => T2 [label(InstId) AttrSet] . RlSet, ValOp) = 
+          rl '_`{_`}[symbMirror(T1, ValOp), 'Constraints:Boolean]
+            => '_`{_`}[symbMirror(T2, ValOp), 'Constraints:Boolean] 
             [label(toSymb(InstId)) AttrSet] .
-          rlToSymbolic(RlSet) .
-    ceq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet) = 
-          crl '_`{_`}[symbMirror(T1), 'Constraints:Boolean]
-            => '_`{_`}[symbMirror(T2), 'Constraints':Boolean]
+          rlToSymbolic(RlSet, ValOp) .
+    ceq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, ValOp) = 
+          crl '_`{_`}[symbMirror(T1, ValOp), 'Constraints:Boolean]
+            => '_`{_`}[symbMirror(T2, ValOp), 'Constraints':Boolean]
             if 'Constraints':Boolean := '_and_['Constraints:Boolean, Tcond]
             /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints':Boolean]] = 'true.Bool 
             [label(toSymb(InstId)) AttrSet] .
-          rlToSymbolic(RlSet)
+          rlToSymbolic(RlSet, ValOp)
       if (Tcond = 'true.Boolean) := Cond .
 
     *** Transform the rules for a concolic analysis. For now, rule conditions must be of the form: eval(B, STR) = true
     *** The symbolic state advances naturally following the concrete state, executing the same instructions.
     *** The function symbMirror ensures the symbolic state is of the same form as the concrete state at each step, but using symbolic functions and stores
-    op rlToConcolic : RuleSet Qid -> RuleSet .
-    eq rlToConcolic(none, StateOp) = none .
+    op rlToConcolic : RuleSet Qid Qid -> RuleSet .
+    eq rlToConcolic(none, ValOp, StateOp) = none .
     *** Transform unconditional rules
-    eq rlToConcolic(rl T1 => T2 [AttrSet] . RlSet, StateOp) =
-          (rl '`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], stateVar(StateOp)]
+    eq rlToConcolic(rl T1 => T2 [AttrSet] . RlSet, ValOp, StateOp) =
+          (rl '`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1, ValOp), 'Constraints:Boolean], stateVar(StateOp)]
             =>
-            '`[_`]`[_`]`[_`][T2, '_`{_`}[symbMirror(T2), 'Constraints:Boolean], stateVar(StateOp)]
+            '`[_`]`[_`]`[_`][T2, '_`{_`}[symbMirror(T2, ValOp), 'Constraints:Boolean], stateVar(StateOp)]
             [AttrSet] .)
-          rlToConcolic(RlSet, StateOp) .
+          rlToConcolic(RlSet, ValOp, StateOp) .
     *** Transform conditional rules to two concolic rules
     *** - Conditional rule 1: Advances the state with the concrete condition Cond and appends Cond to the accumulated Constraints
     *** - Conditional rule 2: Appends not(Cond) to the accumulated Constraints and, if Constraints is satisfiable, re-starts the execution with the new Constraints
     ***                       Re-executing requires re-initializing the concrete store with new satisfying values retrieved from the SMT hook, and resetting the symbolic store
-    ceq rlToConcolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, StateOp) = 
-          (crl '`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], stateVar(StateOp)]
+    eq rlToConcolic(crl T1 => T2 if ('eval[NeTL:NeTermList] = 'true.Bool) [label(InstId) AttrSet] . RlSet, ValOp, StateOp) = 
+          (crl '`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1, ValOp), 'Constraints:Boolean], stateVar(StateOp)]
             =>
-            '`[_`]`[_`]`[_`][T2, '_`{_`}[symbMirror(T2), 'Constraints':Boolean], stateVar(StateOp)]
-            if Cond
-            /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, searchSubVarConst(Tcond, conc)]
+            '`[_`]`[_`]`[_`][T2, '_`{_`}[symbMirror(T2, ValOp), 'Constraints':Boolean], stateVar(StateOp)]
+            if 'eval[NeTL:NeTermList] = 'true.Bool
+            /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, searchSubVarConst('eval[NeTL:NeTermList], conc)]
             [label(InstId) AttrSet] .)
-          (crl '`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], stateVar(StateOp)]
+          (crl '`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1, ValOp), 'Constraints:Boolean], stateVar(StateOp)]
             =>
             '`[_`]`[_`]`[_`]['updateStore[stateVar(StateOp), 'init-CStore['getStore[stateVar(StateOp)], 'Constraints':Boolean]],
                                 '_`{_`}[stateVar(StateOp), 'Constraints':Boolean],
                                 stateVar(StateOp)]
-            if Cond
-            /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, 'not_[searchSubVarConst(Tcond, conc)]]
+            if 'eval[NeTL:NeTermList] = 'true.Bool
+            /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, 'not_[searchSubVarConst('eval[NeTL:NeTermList], conc)]]
             /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints':Boolean]] = 'true.Bool
             [label(qid(string(InstId) + "-bis")) AttrSet] .)
-          rlToConcolic(RlSet, StateOp)
-        if (Tcond = 'true.Bool) := Cond .
-    eq rlToConcolic(crl T1 => T2 if Cond [AttrSet] . RlSet, StateOp) = 
-          (crl '`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1), 'Constraints:Boolean], stateVar(StateOp)]
+          rlToConcolic(RlSet, ValOp, StateOp) .
+          ***if ('eval['NeTL:NeTermList] = 'true.Bool) := Cond .
+    eq rlToConcolic(crl T1 => T2 if ('not_['eval[NeTL:NeTermList]] = 'true.Bool) [label(InstId) AttrSet] . RlSet, ValOp, StateOp) = 
+          (crl '`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1, ValOp), 'Constraints:Boolean], stateVar(StateOp)]
             =>
-            '`[_`]`[_`]`[_`][T2, '_`{_`}[symbMirror(T2), 'Constraints:Boolean], stateVar(StateOp)]
+            '`[_`]`[_`]`[_`][T2, '_`{_`}[symbMirror(T2, ValOp), 'Constraints':Boolean], stateVar(StateOp)]
+            if 'not_['eval[NeTL:NeTermList]] = 'true.Bool
+            /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, searchSubVarConst('not_['eval[NeTL:NeTermList]], conc)]
+            [label(InstId) AttrSet] .)
+          (crl '`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1, ValOp), 'Constraints:Boolean], stateVar(StateOp)]
+            =>
+            '`[_`]`[_`]`[_`]['updateStore[stateVar(StateOp), 'init-CStore['getStore[stateVar(StateOp)], 'Constraints':Boolean]],
+                                '_`{_`}[stateVar(StateOp), 'Constraints':Boolean],
+                                stateVar(StateOp)]
+            if 'not_['eval[NeTL:NeTermList]] = 'true.Bool
+            /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, 'not_[searchSubVarConst('not_['eval[NeTL:NeTermList]], conc)]]
+            /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints':Boolean]] = 'true.Bool
+            [label(qid(string(InstId) + "-bis")) AttrSet] .)
+          rlToConcolic(RlSet, ValOp, StateOp) .
+
+    eq rlToConcolic(crl T1 => T2 if Cond [AttrSet] . RlSet, ValOp, StateOp) = 
+          (crl '`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1, ValOp), 'Constraints:Boolean], stateVar(StateOp)]
+            =>
+            '`[_`]`[_`]`[_`][T2, '_`{_`}[symbMirror(T2, ValOp), 'Constraints:Boolean], stateVar(StateOp)]
             if Cond
             [AttrSet] .)
-          rlToConcolic(RlSet, StateOp) [owise] .
+          rlToConcolic(RlSet, ValOp, StateOp) [owise] .
     ***eq rlToConcolic(Rule RlSet, StateOp) = Rule rlToConcolic(RlSet, StateOp) [owise] .
 
     *** Transform the rules for an analysis with MaudeSE or narrowing
     *** - Transform the terms and conditions to use symbolic/FVP eval functions and symbolic/FVP stores
-    op rlToSE : RuleSet TrType -> RuleSet .
-    eq rlToSE(none, TrId) = none .
-    eq rlToSE(rl T1 => T2 [label(InstId) AttrSet] . RlSet, TrId) = (rl modOpStoreRec(T1, TrId) => modOpStoreRec(T2, TrId) 
+    op rlToSE : RuleSet Qid TrType -> RuleSet .
+    eq rlToSE(none, ValOp, TrId) = none .
+    eq rlToSE(rl T1 => T2 [label(InstId) AttrSet] . RlSet, ValOp, TrId) = (rl modOpStoreRec(T1, ValOp, TrId) => modOpStoreRec(T2, ValOp, TrId) 
                                                                       [label(toSymb(InstId)) AttrSet] .)
-                                                                    rlToSE(RlSet, TrId) .
-    eq rlToSE(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, TrId) = (crl modOpStoreRec(T1, TrId) => modOpStoreRec(T2, TrId) 
-                                                                              if modCond(Cond, TrId) 
+                                                                    rlToSE(RlSet, ValOp, TrId) .
+    eq rlToSE(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, ValOp, TrId) = (crl modOpStoreRec(T1, ValOp, TrId) => modOpStoreRec(T2, ValOp, TrId) 
+                                                                              if modCond(Cond, ValOp, TrId) 
                                                                               [label(toSymb(InstId)) AttrSet] .)
-                                                                            rlToSE(RlSet, TrId) .
-    eq rlToSE(Rule RlSet, TrId) = Rule rlToSE(RlSet, TrId) [owise] .
+                                                                            rlToSE(RlSet, ValOp, TrId) .
+    eq rlToSE(Rule RlSet, ValOp, TrId) = Rule rlToSE(RlSet, ValOp, TrId) [owise] .
 
-    op rlToNarrowing : RuleSet -> RuleSet .
-    eq rlToNarrowing(none) = none .
-    eq rlToNarrowing(rl T1 => T2 [AttrSet] . RlSet) = rlToSE(rl T1 => T2 [AttrSet narrowing] ., narrowing) rlToNarrowing(RlSet) .
-    eq rlToNarrowing(crl T1 => T2 if ('eval[NeTL:NeTermList] = 'true.Bool) [label(InstId) AttrSet] . RlSet) =
-                      (rl modOpStoreRec(T1, narrowing) => extNrwSt(modOpStoreRec(T1, narrowing), modOpStoreRec('eval[NeTL:NeTermList], narrowing)) [narrowing AttrSet] .)
-                      (rl extNrwSt(modOpStoreRec(T1, narrowing), trBool('true.Bool)) => modOpStoreRec(T2, narrowing) [label(toSymb(InstId)) narrowing AttrSet] .)
-                    rlToNarrowing(RlSet) .
-    eq rlToNarrowing(crl T1 => T2 if ('eval[NeTL:NeTermList] = 'false.Bool) [label(InstId) AttrSet] . RlSet) =
-                      (rl modOpStoreRec(T1, narrowing) => extNrwSt(modOpStoreRec(T1, narrowing), modOpStoreRec('eval[NeTL:NeTermList], narrowing)) [narrowing AttrSet] .)
-                      (rl extNrwSt(modOpStoreRec(T1, narrowing), trBool('false.Bool)) => modOpStoreRec(T2, narrowing) [label(toSymb(InstId)) narrowing AttrSet] .)
-                    rlToNarrowing(RlSet) .
-    eq rlToNarrowing(crl T1 => T2 if 'not_['eval[NeTL:NeTermList]] = 'true.Bool [AttrSet] . RlSet) = rlToNarrowing(crl T1 => T2 if ('eval[NeTL:NeTermList] = 'false.Bool) [AttrSet] . RlSet) .
-    eq rlToNarrowing(Rule RlSet) = Rule rlToNarrowing(RlSet) [owise] .
+    op rlToNarrowing : RuleSet Qid -> RuleSet .
+    eq rlToNarrowing(none, ValOp) = none .
+    eq rlToNarrowing(rl T1 => T2 [AttrSet] . RlSet, ValOp) = rlToSE(rl T1 => T2 [AttrSet narrowing] ., ValOp, narrowing) rlToNarrowing(RlSet, ValOp) .
+    eq rlToNarrowing(crl T1 => T2 if ('eval[NeTL:NeTermList] = 'true.Bool) [label(InstId) AttrSet] . RlSet, ValOp) =
+                      (rl modOpStoreRec(T1, ValOp, narrowing) => extNrwSt(modOpStoreRec(T1, ValOp, narrowing), modOpStoreRec('eval[NeTL:NeTermList], ValOp, narrowing)) [narrowing AttrSet] .)
+                      (rl extNrwSt(modOpStoreRec(T1, ValOp, narrowing), trBool('true.Bool)) => modOpStoreRec(T2, ValOp, narrowing) [label(toSymb(InstId)) narrowing AttrSet] .)
+                    rlToNarrowing(RlSet, ValOp) .
+    eq rlToNarrowing(crl T1 => T2 if ('eval[NeTL:NeTermList] = 'false.Bool) [label(InstId) AttrSet] . RlSet, ValOp) =
+                      (rl modOpStoreRec(T1, ValOp, narrowing) => extNrwSt(modOpStoreRec(T1, ValOp, narrowing), modOpStoreRec('eval[NeTL:NeTermList], ValOp, narrowing)) [narrowing AttrSet] .)
+                      (rl extNrwSt(modOpStoreRec(T1, ValOp, narrowing), trBool('false.Bool)) => modOpStoreRec(T2, ValOp, narrowing) [label(toSymb(InstId)) narrowing AttrSet] .)
+                    rlToNarrowing(RlSet, ValOp) .
+    eq rlToNarrowing(crl T1 => T2 if 'not_['eval[NeTL:NeTermList]] = 'true.Bool [AttrSet] . RlSet, ValOp) = rlToNarrowing(crl T1 => T2 if ('eval[NeTL:NeTermList] = 'false.Bool) [AttrSet] . RlSet, ValOp) .
+    eq rlToNarrowing(Rule RlSet, ValOp) = Rule rlToNarrowing(RlSet, ValOp) [owise] .
 
     ***op rlToClConcolic : RuleSet Qid -> RuleSet .
     ***eq rlToClConcolic(none, StateOp) = none .
@@ -452,6 +476,7 @@ fmod MODULE-TRANSFORMER is
     eq subSEVarSorts(MVar, 'RStore, TrId) = qid(string(toSymb(getName(MVar))) + ":" + string(trSorts('RStore, TrId))) .
     eq subSEVarSorts(MVar, 'BStore, TrId) = qid(string(toSymb(getName(MVar))) + ":" + string(trSorts('BStore, TrId))) .
     eq subSEVarSorts(MVar, 'Int, TrId) = qid(string(getName(MVar)) + ":" + string(trSorts('Int, TrId))) .
+    eq subSEVarSorts(MVar, 'Zero, TrId) = qid(string(getName(MVar)) + ":" + string(trSorts('Int, TrId))) .
     eq subSEVarSorts(MVar, 'Rat, TrId) = qid(string(getName(MVar)) + ":" + string(trSorts('Rat, TrId))) .
     eq subSEVarSorts(MVar, 'Bool, TrId) = qid(string(getName(MVar)) + ":" + string(trSorts('Bool, TrId))) .
     eq subSEVarSorts(MVar, T, TrId) = MVar [owise] .
@@ -467,6 +492,7 @@ fmod MODULE-TRANSFORMER is
     eq subSEConstSortsT(MConst, 'RStore, TrId) = qid(string(toSymb(getName(MConst))) + "." + string(trSorts('RStore, TrId))) .
     eq subSEConstSortsT(MConst, 'BStore, TrId) = qid(string(toSymb(getName(MConst))) + "." + string(trSorts('BStore, TrId))) .
     eq subSEConstSortsT(MConst, 'Int, TrId) = qid(string(getName(MConst)) + "." + string(trSorts('Int, TrId))) .
+    eq subSEConstSortsT(MConst, 'Zero, TrId) = qid(string(getName(MConst)) + "." + string(trSorts('Int, TrId))) .
     eq subSEConstSortsT(MConst, 'Rat, TrId) = qid(string(getName(MConst)) + "." + string(trSorts('Rat, TrId))) .
     eq subSEConstSortsT(MConst, 'Bool, NonNrwTrId) = qid(string(getName(MConst)) + "." + string(trSorts('Bool, NonNrwTrId))) .
     eq subSEConstSortsT(MConst, 'Bool, narrowing) = trBool(MConst) .
@@ -506,6 +532,7 @@ fmod MODULE-TRANSFORMER is
 
     *** Convert constant with Maude type to the corresponding SMT type
     op convertSMT : Constant Type -> Constant .
+    eq convertSMT(MConst, 'Zero)  = 'toInteger[MConst] .
     eq convertSMT(MConst, 'Int)  = 'toInteger[MConst] .
     eq convertSMT(MConst, 'Rat)  = 'toReal[MConst] .
     eq convertSMT(MConst, 'Bool) = 'toBoolean[MConst] .
@@ -513,17 +540,20 @@ fmod MODULE-TRANSFORMER is
     
     *** Convert variable with Maude type to the corresponding SMT type
     op convertSMT : Variable Type -> Variable .
+    eq convertSMT(MVar, 'Zero)  = 'toInteger[MVar] .
     eq convertSMT(MVar, 'Int)  = 'toInteger[MVar] .
     eq convertSMT(MVar, 'Rat)  = 'toReal[MVar] .
     eq convertSMT(MVar, 'Bool) = 'toBoolean[MVar] .
     eq convertSMT(MVar, T) = MVar [owise] .
 
     op convertNarrowing : Constant Type -> Constant .
+    eq convertNarrowing(MConst, 'Zero)  = 'toIntFVP[MConst] .
     eq convertNarrowing(MConst, 'Int)  = 'toIntFVP[MConst] .
     eq convertNarrowing(MConst, 'Bool) = 'toBoolFVP[MConst] .
     eq convertNarrowing(MConst, T) = MConst [owise] .
 
     op convertNarrowing : Variable Type -> Variable .
+    eq convertNarrowing(MVar, 'Zero)  = 'toIntFVP[MVar] .
     eq convertNarrowing(MVar, 'Int)  = 'toIntFVP[MVar] .
     eq convertNarrowing(MVar, 'Bool) = 'toBoolFVP[MVar] .
     eq convertNarrowing(MVar, T) = MVar [owise] .
@@ -540,73 +570,91 @@ fmod MODULE-TRANSFORMER is
     ***eq subSETermSTR('_*_[NeTL], narrowing) = '_*_[NeTL] .
     ***eq subSETermSTR(OpId[NeTL], TrId)      = modSEOpIds(OpId)[modOpStoreRec(NeTL, TrId)] [owise] .
 
-    op modStoreT : Constant Type TrType -> Term .
-    op modStoreT : Variable Type TrType -> Term .
-    op modStoreT : Term TrType -> Term .
-    eq modStoreT(MConst, 'Stores, TrId) = subSEConstSortsT(MConst, 'Stores, TrId) .
-    eq modStoreT(MConst, 'IStore, TrId) = subSEConstSortsT(MConst, 'IStore, TrId) .
-    eq modStoreT(MConst, 'RStore, TrId) = subSEConstSortsT(MConst, 'RStore, TrId) .
-    eq modStoreT(MConst, 'BStore, TrId) = subSEConstSortsT(MConst, 'BStore, TrId) .
-    eq modStoreT(MConst, T, TrId) = MConst [owise] .
-    eq modStoreT(MVar, 'Stores, TrId)   = subSEVarSorts(MVar, 'Stores, TrId) .
-    eq modStoreT(MVar, 'IStore, TrId)   = subSEVarSorts(MVar, 'IStore, TrId) .
-    eq modStoreT(MVar, 'RStore, TrId)   = subSEVarSorts(MVar, 'RStore, TrId) .
-    eq modStoreT(MVar, 'BStore, TrId)   = subSEVarSorts(MVar, 'BStore, TrId) .
-    eq modStoreT(MVar, T, TrId) = MVar [owise] .
-    eq modStoreT(MConst, TrId)          = modStoreT(MConst, getType(MConst), TrId) .
-    eq modStoreT(MVar, TrId)            = modStoreT(MVar, getType(MVar), TrId) .
-    eq modStoreT('_|->I_[T1, T2], TrId) = toSymb('_|->I_)[T1, searchSubVarConst(T2, TrId)] .
-    eq modStoreT('_|->R_[T1, T2], TrId) = toSymb('_|->R_)[T1, searchSubVarConst(T2, TrId)] .
-    eq modStoreT('_|->B_[T1, T2], TrId) = toSymb('_|->B_)[T1, searchSubVarConst(T2, TrId)] .
-    eq modStoreT('_`,_[T1, T2], TrId)   = '_`,_[modStoreT(T1, TrId), modStoreT(T2, TrId)] .
-    eq modStoreT(OpId[NeTL], TrId)   = modSEOpIds(OpId)[modOpStoreRec(NeTL, TrId)] [owise] .
+    op modStoreT : Constant Type Qid TrType -> Term .
+    op modStoreT : Variable Type Qid TrType -> Term .
+    op modStoreT : Term Qid TrType -> Term .
+    eq modStoreT(MConst, 'Stores, ValOp, TrId) = subSEConstSortsT(MConst, 'Stores, TrId) .
+    eq modStoreT(MConst, 'IStore, ValOp, TrId) = subSEConstSortsT(MConst, 'IStore, TrId) .
+    eq modStoreT(MConst, 'RStore, ValOp, TrId) = subSEConstSortsT(MConst, 'RStore, TrId) .
+    eq modStoreT(MConst, 'BStore, ValOp, TrId) = subSEConstSortsT(MConst, 'BStore, TrId) .
+    eq modStoreT(MConst, T, ValOp, TrId) = MConst [owise] .
+    eq modStoreT(MVar, 'Stores, ValOp, TrId)   = subSEVarSorts(MVar, 'Stores, TrId) .
+    eq modStoreT(MVar, 'IStore, ValOp, TrId)   = subSEVarSorts(MVar, 'IStore, TrId) .
+    eq modStoreT(MVar, 'RStore, ValOp, TrId)   = subSEVarSorts(MVar, 'RStore, TrId) .
+    eq modStoreT(MVar, 'BStore, ValOp, TrId)   = subSEVarSorts(MVar, 'BStore, TrId) .
+    eq modStoreT(MVar, T, ValOp, TrId) = MVar [owise] .
+    eq modStoreT(MConst, ValOp, TrId)                = modStoreT(MConst, getType(MConst), ValOp, TrId) .
+    eq modStoreT(MVar, ValOp, TrId)                  = modStoreT(MVar, getType(MVar), ValOp, TrId) .
+    eq modStoreT('_|->I_[T1, T2], ValOp, TrId)       = toSymb('_|->I_)[T1, searchSubVarConst(T2, TrId)] .
+    eq modStoreT('_|->R_[T1, T2], ValOp, TrId)       = toSymb('_|->R_)[T1, searchSubVarConst(T2, TrId)] .
+    eq modStoreT('_|->B_[T1, T2], ValOp, TrId)       = toSymb('_|->B_)[T1, searchSubVarConst(T2, TrId)] .
+    eq modStoreT('_`,_[T1, T2], ValOp, TrId)         = '_`,_[modStoreT(T1, ValOp, TrId), modStoreT(T2, ValOp, TrId)] .
+    eq modStoreT('insert[T1, MConst, TSTR], ValOp, TrId)     = 'insert[T1, convert(MConst, getType(MConst), TrId), modStoreT(TSTR, ValOp, TrId)] .
+    eq modStoreT('insert[T1, MVar, TSTR], ValOp, TrId)       = 'insert[T1, convert(MVar, getType(MVar), TrId), modStoreT(TSTR, ValOp, TrId)] .
+    eq modStoreT('_==_[T1, MConst], ValOp, TrId)             = modSEOpIds('_==_)[modStoreT(T1, ValOp, TrId), searchSubVarConst(MConst, TrId)] .
+    eq modStoreT('_==_[T1, MVar], ValOp, TrId)               = modSEOpIds('_==_)[modStoreT(T1, ValOp, TrId), searchSubVarConst(MVar, TrId)] .
+    eq modStoreT('_=/=_[T1, MConst], ValOp, TrId)            = modSEOpIds('_=/=_)[modStoreT(T1, ValOp, TrId), searchSubVarConst(MConst, TrId)] .
+    eq modStoreT('_=/=_[T1, MVar], ValOp, TrId)              = modSEOpIds('_=/=_)[modStoreT(T1, ValOp, TrId), searchSubVarConst(MVar, TrId)] .
+    eq modStoreT(ValOp[T1], ValOp, TrId)                  = ValOp[searchSubVarConst(T1, TrId)] .
+    ***eq modStoreT(ValOp[MConst], ValOp, TrId)                 = ValOp[convert(MConst, getType(MConst), TrId)] .
+    ***eq modStoreT(ValOp[MVar], ValOp, TrId)                   = ValOp[convert(MVar, getType(MVar), TrId)] .
+    eq modStoreT(OpId[NeTL], ValOp, TrId)                    = modSEOpIds(OpId)[modOpStoreRec(NeTL, ValOp, TrId)] [owise] .
 
 
     *** Transform terms in a list to use symbolic stores
-    op modOpStoreRec : TermList TrType -> TermList .
-    eq modOpStoreRec(empty, TrId)       = empty .
-    eq modOpStoreRec((T1, TermL), TrId)     = modStoreT(T1, TrId), modOpStoreRec(TermL, TrId) .
+    op modOpStoreRec : TermList Qid TrType -> TermList .
+    eq modOpStoreRec(empty, ValOp, TrId)           = empty .
+    eq modOpStoreRec((T1, TermL), ValOp, TrId)     = modStoreT(T1, ValOp, TrId), modOpStoreRec(TermL, ValOp, TrId) .
 
     *** Transform variables and constants within conditions to use SMT types
-    op modCond : Condition TrType -> Condition .
-    eq modCond(T1 = T2, TrId)        = (modOpStoreRec(T1, TrId) = searchSubVarConst(T2, TrId)) .
-    eq modCond(T1 := T2, TrId)       = (T1 := T2) .
+    op modCond : Condition Qid TrType -> Condition .
+    eq modCond(T1 = T2, ValOp, TrId)        = (modOpStoreRec(T1, ValOp, TrId) = searchSubVarConst(T2, TrId)) .
+    eq modCond(T1 := T2, ValOp, TrId)       = (T1 := T2) .
     ***eq modCond(T1 => T2)       = (T1 => T2) .
-    eq modCond(EqC /\ EqC2, TrId)    = modCond(EqC, TrId) /\ modCond(EqC2, TrId) .
-    eq modCond(Cond1 /\ Cond2, TrId) = modCond(Cond1, TrId) /\ modCond(Cond2, TrId) .
-    eq modCond(Cond, TrId) = Cond [owise] .
+    eq modCond(EqC /\ EqC2, ValOp, TrId)    = modCond(EqC, ValOp, TrId) /\ modCond(EqC2, ValOp, TrId) .
+    eq modCond(Cond1 /\ Cond2, ValOp, TrId) = modCond(Cond1, ValOp, TrId) /\ modCond(Cond2, ValOp, TrId) .
+    eq modCond(Cond, ValOp, TrId) = Cond [owise] .
 
     *** Patch eval function definition to use symbolic stores and convert values
-    op patchEvalSESTR : Equation TrType -> Equation .
-    eq patchEvalSESTR(eq 'eval[NeTL]   = T2 [AttrSet] ., TrId)        = (eq toSymb('eval)[modOpStoreRec(NeTL, TrId)] = modOpStoreRec(T2, TrId) [AttrSet] .) .
-    eq patchEvalSESTR(eq 'evalI[NeTL]  = T2 [AttrSet] ., TrId)        = (eq toSymb('evalI)[modOpStoreRec(NeTL, TrId)] = modOpStoreRec(T2, TrId) [AttrSet] .) .
-    eq patchEvalSESTR(eq 'evalR[NeTL]  = T2 [AttrSet] ., TrId)        = (eq toSymb('evalR)[modOpStoreRec(NeTL, TrId)] = modOpStoreRec(T2, TrId) [AttrSet] .) .
+    op patchEvalSESTR : Equation Qid TrType -> Equation .
+    eq patchEvalSESTR(eq 'eval[NeTL]   = T2 [AttrSet] ., ValOp, TrId)        = (eq toSymb('eval)[modOpStoreRec(NeTL, ValOp, TrId)] = modOpStoreRec(T2, ValOp, TrId) [AttrSet] .) .
+    eq patchEvalSESTR(eq 'evalI[NeTL]  = T2 [AttrSet] ., ValOp, TrId)        = (eq toSymb('evalI)[modOpStoreRec(NeTL, ValOp, TrId)] = modOpStoreRec(T2, ValOp, TrId) [AttrSet] .) .
+    eq patchEvalSESTR(eq 'evalR[NeTL]  = T2 [AttrSet] ., ValOp, TrId)        = (eq toSymb('evalR)[modOpStoreRec(NeTL, ValOp, TrId)] = modOpStoreRec(T2, ValOp, TrId) [AttrSet] .) .
     ***eq patchEvalSESTR(eq 'evalB[NeTL]  = T2 [AttrSet] .)        = (eq toSymb('evalB)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) [AttrSet] .) .
-    eq patchEvalSESTR(ceq 'eval[NeTL]  = T2 if EqC [AttrSet] ., TrId) = (ceq toSymb('eval)[modOpStoreRec(NeTL, TrId)] = modOpStoreRec(T2, TrId) if modCond(EqC, TrId) [AttrSet] .) .
-    eq patchEvalSESTR(ceq 'evalI[NeTL] = T2 if EqC [AttrSet] ., TrId) = (ceq toSymb('evalI)[modOpStoreRec(NeTL, TrId)] = modOpStoreRec(T2, TrId) if modCond(EqC, TrId) [AttrSet] .) .
-    eq patchEvalSESTR(ceq 'evalR[NeTL] = T2 if EqC [AttrSet] ., TrId) = (ceq toSymb('evalR)[modOpStoreRec(NeTL, TrId)] = modOpStoreRec(T2, TrId) if modCond(EqC, TrId) [AttrSet] .) .
+    eq patchEvalSESTR(ceq 'eval[NeTL]  = T2 if EqC [AttrSet] ., ValOp, TrId) = (ceq toSymb('eval)[modOpStoreRec(NeTL, ValOp, TrId)] = modOpStoreRec(T2, ValOp, TrId) if modCond(EqC, ValOp, TrId) [AttrSet] .) .
+    eq patchEvalSESTR(ceq 'evalI[NeTL] = T2 if EqC [AttrSet] ., ValOp, TrId) = (ceq toSymb('evalI)[modOpStoreRec(NeTL, ValOp, TrId)] = modOpStoreRec(T2, ValOp, TrId) if modCond(EqC, ValOp, TrId) [AttrSet] .) .
+    eq patchEvalSESTR(ceq 'evalR[NeTL] = T2 if EqC [AttrSet] ., ValOp, TrId) = (ceq toSymb('evalR)[modOpStoreRec(NeTL, ValOp, TrId)] = modOpStoreRec(T2, ValOp, TrId) if modCond(EqC, ValOp, TrId) [AttrSet] .) .
     ***eq patchEvalSESTR(ceq 'evalB[NeTL] = T2 if EqC [AttrSet] .) = (ceq toSymb('evalB)[modOpStoreRec(NeTL)] = modOpStoreRec(T2) if modCond(EqC) [AttrSet] .) .
-    eq patchEvalSESTR(Eq, TrId) = Eq [owise] .
+    eq patchEvalSESTR(Eq, ValOp, TrId) = Eq [owise] .
   
     *** Transform the eval functions definition to convert values to SMT types and patch the stores to the symbolic definition
-    op modSEEqs : EquationSet TrType -> EquationSet .
-    eq modSEEqs(none, TrId) = none .
-    eq modSEEqs(eq 'evalI['val['I:Int], NeTL] = MVar [AttrSet] . EquationSet, TrId)  = (eq toSymb('evalI)[modOpStoreRec(('val['I:Int], NeTL), TrId)] = convert(MVar, getType(MVar), TrId) [AttrSet] .)
-                                                                                 modSEEqs(EquationSet, TrId) .
-    eq modSEEqs(eq 'evalR['val['R:Rat], NeTL] = MVar [AttrSet] . EquationSet, TrId)  = (eq toSymb('evalR)[modOpStoreRec(('val['R:Rat], NeTL), TrId)] = convert(MVar, getType(MVar), TrId) [AttrSet] .)
-                                                                                 modSEEqs(EquationSet, TrId) .
-    eq modSEEqs(eq 'eval['val['B:Bool], NeTL] = MVar [AttrSet] . EquationSet, TrId) = (eq toSymb('eval)[modOpStoreRec(('val['B:Bool], NeTL), TrId)] = convert(MVar, getType(MVar), TrId) [AttrSet] .)
-                                                                                 modSEEqs(EquationSet, TrId) .
-    eq modSEEqs(Eq EquationSet, TrId) = patchEvalSESTR(Eq, TrId) modSEEqs(EquationSet, TrId) [owise] .
+    op modSEEqs : EquationSet Qid TrType -> EquationSet .
+    eq modSEEqs(none, ValOp, TrId) = none .
+    eq modSEEqs(eq 'evalI['val['I:Int], NeTL] = MVar [AttrSet] . EquationSet, ValOp, TrId)  = (eq toSymb('evalI)[modOpStoreRec(('val['I:Int], NeTL), ValOp, TrId)] = convert(MVar, getType(MVar), TrId) [AttrSet] .)
+                                                                                              modSEEqs(EquationSet, ValOp, TrId) .
+    eq modSEEqs(eq 'evalR['val['R:Rat], NeTL] = MVar [AttrSet] . EquationSet, ValOp, TrId)  = (eq toSymb('evalR)[modOpStoreRec(('val['R:Rat], NeTL), ValOp, TrId)] = convert(MVar, getType(MVar), TrId) [AttrSet] .)
+                                                                                              modSEEqs(EquationSet, ValOp, TrId) .
+    eq modSEEqs(eq 'eval['val['B:Bool], NeTL] = MVar [AttrSet] . EquationSet, ValOp, TrId) = (eq toSymb('eval)[modOpStoreRec(('val['B:Bool], NeTL), ValOp, TrId)] = convert(MVar, getType(MVar), TrId) [AttrSet] .)
+                                                                                              modSEEqs(EquationSet, ValOp, TrId) .
+    eq modSEEqs(eq 'evalI[ValOp['I:Int], NeTL] = MVar [AttrSet] . EquationSet, ValOp, TrId) = (eq toSymb('evalI)[(ValOp['I:Int], modOpStoreRec(NeTL, ValOp, TrId))] = convert(MVar, getType(MVar), TrId) [AttrSet] .)
+                                                                                              (eq toSymb('evalI)[(ValOp['I:Integer], modOpStoreRec(NeTL, ValOp, TrId))] = searchSubVarConst(MVar, TrId) [AttrSet] .)
+                                                                                              modSEEqs(EquationSet, ValOp, TrId) .
+    eq modSEEqs(eq 'evalR[ValOp['R:Rat], NeTL] = MVar [AttrSet] . EquationSet, ValOp, TrId) = (eq toSymb('evalR)[(ValOp['R:Rat],modOpStoreRec(NeTL, ValOp, TrId))] = convert(MVar, getType(MVar), TrId) [AttrSet] .)
+                                                                                              (eq toSymb('evalR)[(ValOp['R:Real],modOpStoreRec(NeTL, ValOp, TrId))] = searchSubVarConst(MVar, TrId) [AttrSet] .)
+                                                                                              modSEEqs(EquationSet, ValOp, TrId) .
+    eq modSEEqs(eq 'eval[ValOp['B:Bool], NeTL] = MVar [AttrSet] . EquationSet, ValOp, TrId) = (eq toSymb('eval)[(ValOp['B:Bool], modOpStoreRec(NeTL, ValOp, TrId))] = convert(MVar, getType(MVar), TrId) [AttrSet] .)
+                                                                                              (eq toSymb('eval)[(ValOp['B:Boolean], modOpStoreRec(NeTL, ValOp, TrId))] = searchSubVarConst(MVar, TrId) [AttrSet] .)
+                                                                                              modSEEqs(EquationSet, ValOp, TrId) .
+    eq modSEEqs(Eq EquationSet, ValOp, TrId) = patchEvalSESTR(Eq, ValOp, TrId) modSEEqs(EquationSet, ValOp, TrId) [owise] .
     
     *** Transformation for concolic execution duplicates the equation set and transforms one of the copies with the symbolic execution transformation
-    op modConcEqs : EquationSet TrType -> EquationSet .
-    eq modConcEqs(EquationSet, TrId) = EquationSet modSEEqs(EquationSet, TrId) .
+    op modConcEqs : EquationSet Qid TrType -> EquationSet .
+    eq modConcEqs(EquationSet, ValOp, TrId) = EquationSet modSEEqs(EquationSet, ValOp, TrId) .
 
     *** Transform equations according to transformation type
-    op modEqs : EquationSet TrType -> EquationSet .
-    eq modEqs(EquationSet, conc) = modConcEqs(EquationSet, conc) .
-    eq modEqs(EquationSet, TrId) = modSEEqs(EquationSet, TrId) [owise] .
+    op modEqs : EquationSet Qid TrType -> EquationSet .
+    eq modEqs(EquationSet, ValOp, conc) = modConcEqs(EquationSet, ValOp, conc) .
+    eq modEqs(EquationSet, ValOp, TrId) = modSEEqs(EquationSet, ValOp, TrId) [owise] .
 
     *** Include equational definitions for injected operators 
     op inclSEEqs : Qid -> EquationSet .
@@ -660,11 +708,11 @@ fmod MODULE-TRANSFORMER is
 
 
     *** Transform rules depending on transformation type
-    op modRl : RuleSet Qid TrType -> RuleSet .
-    eq modRl(RlSet, StateOp, symb) = rlToSymbolic(RlSet) .
-    eq modRl(RlSet, StateOp, conc) = rlToConcolic(RlSet, StateOp) .
-    eq modRl(RlSet, StateOp, maudeSE) = rlToSE(RlSet, maudeSE) .
-    eq modRl(RlSet, StateOp, narrowing) = rlToNarrowing(RlSet) .
+    op modRl : RuleSet Qid Qid TrType -> RuleSet .
+    eq modRl(RlSet, StateOp, ValOp, symb) = rlToSymbolic(RlSet, ValOp) .
+    eq modRl(RlSet, StateOp, ValOp, conc) = rlToConcolic(RlSet, ValOp, StateOp) .
+    eq modRl(RlSet, StateOp, ValOp, maudeSE) = rlToSE(RlSet, ValOp, maudeSE) .
+    eq modRl(RlSet, StateOp, ValOp, narrowing) = rlToNarrowing(RlSet, ValOp) .
     ***eq modRl(RlSet, clconc) = rlToClConcolic(RlSet, StateOp) inclClConcCrl(StateOp) .
 
     *** NOTE: MaudeSE does not work with smod
@@ -677,8 +725,8 @@ fmod MODULE-TRANSFORMER is
                                           getSubsorts(M)
                                           modSEOps(getOps(M), StateOp, ValOp, TrId)
                                           getMbs(M)
-                                          modEqs(getEqs(M), TrId) inclSEEqs(StateOp)
-                                          modRl(getRls(M), StateOp, TrId)
+                                          modEqs(getEqs(M), ValOp, TrId) inclSEEqs(StateOp)
+                                          modRl(getRls(M), StateOp, ValOp, TrId)
                                           ***getStrats(M)
                                           ***getSds(M)
                                         endm .
@@ -919,7 +967,7 @@ mod MAUDE-SE-EXT is
                                                                 searchSubVarConst(upTerm(SVDeclL), maudeSE), 
                                                                 '_|_|_['empty.IStoreS, 'empty.RStoreS, 'empty.BStoreS]],
                                      PatternSEState,
-                                     modCond(SearchCond, maudeSE),
+                                     modCond(SearchCond, ValOp, maudeSE),
                                      SearchType,
                                      Bound,
                                      SolN,
@@ -942,7 +990,7 @@ mod MAUDE-SE-EXT is
                                                                 searchSubVarConst(upTerm(SVDeclL), maudeSE), 
                                                                 '_|_|_['empty.IStoreS, 'empty.RStoreS, 'empty.BStoreS]],
                                              PatternSEState,
-                                             modCond(SearchCond, maudeSE),
+                                             modCond(SearchCond, ValOp, maudeSE),
                                              SearchType,
                                              Bound,
                                              SolN,
