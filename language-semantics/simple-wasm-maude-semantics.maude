@@ -5,6 +5,9 @@
 *** - Only local environments
 *** - Only i32 data type
 *** - Small subset of supported instructions
+*** - In languages that load values to the state and them operate with them (e.g. perform assignments in multiple steps) like this one:
+***     Values can be symbolic in the state and we need to represent that.
+***     Value wrappers (used as semantically-relevant values here ) cannot be referred as Maude variables in rules (use wval(Int1) explicitly)
 
 load ../semantics-basics/semantics-basics-maudeTypes.maude
 
@@ -1372,7 +1375,7 @@ mod WASMMOD is
   var NeST : NeStack .
   var LocalSTRList : List{Stores} .
   var NeLocalSTRList : NeList{Stores} .
-  vars LocalSTR STR2 : Stores .
+  vars LocalSTR STR STR2 : Stores .
   var T T1 T2 T' : TypeToken .
   --- var FloatT : FloatTypeToken .
   var IntT : IntTypeToken .
@@ -1632,9 +1635,21 @@ mod WASMMOD is
 
   rl [end] : < exit-block(IL) | NeST | LocalSTRList >   =>   < IL | get-st(reset-st(NeST)) | LocalSTRList > .
 
-  rl [if-else] : < (if BlockType IL1 else IL2 end) IL | const(i32, ValW1) $ ST | NeLocalSTRList >   
+  --- rl [if-else] : < (if BlockType IL1 else IL2 end) IL | const(i32, ValW1) $ ST | NeLocalSTRList >   
+  ---                =>
+  ---                < if-else(ValW1, IL1, IL2, BlockType) IL | ST | NeLocalSTRList > .
+
+  *** NOTE: Right now semantic values (wval) must be used as wval(Int1), using variables ValW:ValWrapper does not allow for transformation change while states are paired
+  *** TODO: Search for ways of using semantic value Maude variables like ValW:ValueWrapper while keeping state paired 
+  crl [if-else1] : < (if BlockType IL1 else IL2 end) IL | const(i32, wval(Int1)) $ ST | (ISTR | RSTR | BSTR) LocalSTRList >   
                  =>
-                 < if-else(ValW1, IL1, IL2, BlockType) IL | ST | NeLocalSTRList > .
+                 < (block BlockType IL1 end) IL | ST | (ISTR | RSTR | BSTR) LocalSTRList >
+                if evalI(wval(Int1), ISTR) =/= 0 .
+
+  crl [if-else2] : < (if BlockType IL1 else IL2 end) IL | const(i32, wval(Int1)) $ ST | (ISTR | RSTR | BSTR) LocalSTRList >   
+                 =>
+                 < (block BlockType IL2 end) IL | ST | (ISTR | RSTR | BSTR) LocalSTRList >
+                 if evalI(wval(Int1), ISTR) == 0 .
 
   *** loop is an infinite loop
   ***rl [loop-resultT] : < ((loop ResultType) IL2 end) IL | ST | NeLocalSTRList >

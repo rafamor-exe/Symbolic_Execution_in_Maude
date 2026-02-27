@@ -672,3 +672,23 @@ result [ConcolicState]: [
  local.set 2
  i32 .const val((25).NzNat)
  | EmptyStack | '3 |->Is 30:Integer | (empty).RStoreS | (empty).BStoreS >]
+
+python3 semantics-analysis-ext.py --program "< (local.get 3) (local.set 2) (i32 .const val(25)) (if (result i32) (i32 .const val(10)) else (i32 .const val(20)) end) | EmptyStack | emptyStores >" --pattern "concolicState('WASMLocalEnv)" --file "language-semantics/simple-wasm-maude-semantics.maude" --analysis "concolic" --mod "upModule('WASMMOD, true)" --stSort "'WASMLocalEnv" --svars "(3, Integer)" --sType "'!" --solN 0 --valOp "'wval"
+
+----------------------
+
+[< if (result i32) i32 .const val((10).NzNat)
+ else i32 .const val((20).NzNat)
+ end
+ | const(i32, wval((25).NzNat)) | ('2 |->I 0, '3 |->I 0) | (empty).RStore | (empty).BStore >][
+< if (result i32) i32 .const val((10).NzNat)
+ else i32 .const val((20).NzNat)
+ end
+ | const(i32, wval((25).Integer)) | ('2 |->Is 30:Integer, '3 |->Is 30:Integer) | (empty).RStoreS | (empty).BStoreS >{true}][
+< local.get 3
+ local.set 2
+ i32 .const val((25).NzNat)
+ if (result i32) i32 .const val((10).NzNat)
+ else i32 .const val((20).NzNat)
+ end
+ | EmptyStack | '3 |->Is 30:Integer | (empty).RStoreS | (empty).BStoreS >]

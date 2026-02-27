@@ -146,7 +146,7 @@ fmod MODULE-TRANSFORMER is
     var  T                                                : Type .
     var  Import                                           : Import .
     var  TermL                                            : TermList .
-    var  NeTL                                             : NeTermList .
+    var  NeTL NeTL'                                       : NeTermList .
     var  MVar                                             : Variable .
     var  MConst                                           : Constant .
     var  N                                                : Nat .
@@ -211,6 +211,7 @@ fmod MODULE-TRANSFORMER is
     *** The symbolic state advances naturally following the concrete state, executing the same instructions.
     *** The function symbMirror ensures the symbolic state is of the same form as the concrete state at each step, but using symbolic functions and stores
     op rlToConcolic : RuleSet Qid Qid -> RuleSet .
+    op rlToConcolicAux : Rule Qid Qid -> RuleSet .
     eq rlToConcolic(none, ValOp, StateOp) = none .
     *** Transform unconditional rules
     eq rlToConcolic(rl T1 => T2 [AttrSet] . RlSet, ValOp, StateOp) =
@@ -224,39 +225,35 @@ fmod MODULE-TRANSFORMER is
     *** - Conditional rule 2: Appends not(Cond) to the accumulated Constraints and, if Constraints is satisfiable, re-starts the execution with the new Constraints
     ***                       Re-executing requires re-initializing the concrete store with new satisfying values retrieved from the SMT hook, and resetting the symbolic store
     eq rlToConcolic(crl T1 => T2 if ('eval[NeTL:NeTermList] = 'true.Bool) [label(InstId) AttrSet] . RlSet, ValOp, StateOp) = 
-          (crl '`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1, ValOp), 'Constraints:Boolean], stateVar(StateOp)]
-            =>
-            '`[_`]`[_`]`[_`][T2, '_`{_`}[symbMirror(T2, ValOp), 'Constraints':Boolean], stateVar(StateOp)]
-            if 'eval[NeTL:NeTermList] = 'true.Bool
-            /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, searchSubVarConst('eval[NeTL:NeTermList], conc)]
-            [label(InstId) AttrSet] .)
-          (crl '`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1, ValOp), 'Constraints:Boolean], stateVar(StateOp)]
-            =>
-            '`[_`]`[_`]`[_`]['updateStore[stateVar(StateOp), 'init-CStore['getStore[stateVar(StateOp)], 'Constraints':Boolean]],
-                                '_`{_`}[stateVar(StateOp), 'Constraints':Boolean],
-                                stateVar(StateOp)]
-            if 'eval[NeTL:NeTermList] = 'true.Bool
-            /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, 'not_[searchSubVarConst('eval[NeTL:NeTermList], conc)]]
-            /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints':Boolean]] = 'true.Bool
-            [label(qid(string(InstId) + "-bis")) AttrSet] .)
+          rlToConcolicAux(crl T1 => T2 if ('eval[NeTL:NeTermList] = 'true.Bool) [label(InstId) AttrSet] ., ValOp, StateOp)
           rlToConcolic(RlSet, ValOp, StateOp) .
           ***if ('eval['NeTL:NeTermList] = 'true.Bool) := Cond .
-    eq rlToConcolic(crl T1 => T2 if ('not_['eval[NeTL:NeTermList]] = 'true.Bool) [label(InstId) AttrSet] . RlSet, ValOp, StateOp) = 
-          (crl '`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1, ValOp), 'Constraints:Boolean], stateVar(StateOp)]
-            =>
-            '`[_`]`[_`]`[_`][T2, '_`{_`}[symbMirror(T2, ValOp), 'Constraints':Boolean], stateVar(StateOp)]
-            if 'not_['eval[NeTL:NeTermList]] = 'true.Bool
-            /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, searchSubVarConst('not_['eval[NeTL:NeTermList]], conc)]
-            [label(InstId) AttrSet] .)
-          (crl '`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1, ValOp), 'Constraints:Boolean], stateVar(StateOp)]
-            =>
-            '`[_`]`[_`]`[_`]['updateStore[stateVar(StateOp), 'init-CStore['getStore[stateVar(StateOp)], 'Constraints':Boolean]],
-                                '_`{_`}[stateVar(StateOp), 'Constraints':Boolean],
-                                stateVar(StateOp)]
-            if 'not_['eval[NeTL:NeTermList]] = 'true.Bool
-            /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, 'not_[searchSubVarConst('not_['eval[NeTL:NeTermList]], conc)]]
-            /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints':Boolean]] = 'true.Bool
-            [label(qid(string(InstId) + "-bis")) AttrSet] .)
+    eq rlToConcolic(crl T1 => T2 if (OpId['eval[NeTL:NeTermList], NeTL'] = 'true.Bool) [label(InstId) AttrSet] . RlSet, ValOp, StateOp) = 
+          rlToConcolicAux(crl T1 => T2 if (OpId['eval[NeTL:NeTermList], NeTL'] = 'true.Bool) [label(InstId) AttrSet] ., ValOp, StateOp)
+          rlToConcolic(RlSet, ValOp, StateOp) .
+
+    eq rlToConcolic(crl T1 => T2 if ('evalI[NeTL:NeTermList] = 'true.Bool) [label(InstId) AttrSet] . RlSet, ValOp, StateOp) = 
+          rlToConcolicAux(crl T1 => T2 if ('evalI[NeTL:NeTermList] = 'true.Bool) [label(InstId) AttrSet] ., ValOp, StateOp)
+          rlToConcolic(RlSet, ValOp, StateOp) .
+          ***if ('eval['NeTL:NeTermList] = 'true.Bool) := Cond .
+    eq rlToConcolic(crl T1 => T2 if (OpId['evalI[NeTL:NeTermList], NeTL'] = 'true.Bool) [label(InstId) AttrSet] . RlSet, ValOp, StateOp) = 
+          rlToConcolicAux(crl T1 => T2 if (OpId['evalI[NeTL:NeTermList], NeTL'] = 'true.Bool) [label(InstId) AttrSet] ., ValOp, StateOp)
+          rlToConcolic(RlSet, ValOp, StateOp) .
+
+    eq rlToConcolic(crl T1 => T2 if ('evalR[NeTL:NeTermList] = 'true.Bool) [label(InstId) AttrSet] . RlSet, ValOp, StateOp) = 
+          rlToConcolicAux(crl T1 => T2 if ('evalR[NeTL:NeTermList] = 'true.Bool) [label(InstId) AttrSet] ., ValOp, StateOp)
+          rlToConcolic(RlSet, ValOp, StateOp) .
+          ***if ('eval['NeTL:NeTermList] = 'true.Bool) := Cond .
+    eq rlToConcolic(crl T1 => T2 if (OpId['evalR[NeTL:NeTermList], NeTL'] = 'true.Bool) [label(InstId) AttrSet] . RlSet, ValOp, StateOp) = 
+          rlToConcolicAux(crl T1 => T2 if (OpId['evalR[NeTL:NeTermList], NeTL'] = 'true.Bool) [label(InstId) AttrSet] ., ValOp, StateOp)
+          rlToConcolic(RlSet, ValOp, StateOp) .
+    
+    eq rlToConcolic(crl T1 => T2 if ('evalB[NeTL:NeTermList] = 'true.Bool) [label(InstId) AttrSet] . RlSet, ValOp, StateOp) = 
+          rlToConcolicAux(crl T1 => T2 if ('evalB[NeTL:NeTermList] = 'true.Bool) [label(InstId) AttrSet] ., ValOp, StateOp)
+          rlToConcolic(RlSet, ValOp, StateOp) .
+          ***if ('eval['NeTL:NeTermList] = 'true.Bool) := Cond .
+    eq rlToConcolic(crl T1 => T2 if (OpId['evalB[NeTL:NeTermList], NeTL'] = 'true.Bool) [label(InstId) AttrSet] . RlSet, ValOp, StateOp) = 
+          rlToConcolicAux(crl T1 => T2 if (OpId['evalB[NeTL:NeTermList], NeTL'] = 'true.Bool) [label(InstId) AttrSet] ., ValOp, StateOp)
           rlToConcolic(RlSet, ValOp, StateOp) .
 
     eq rlToConcolic(crl T1 => T2 if Cond [AttrSet] . RlSet, ValOp, StateOp) = 
@@ -266,6 +263,23 @@ fmod MODULE-TRANSFORMER is
             if Cond
             [AttrSet] .)
           rlToConcolic(RlSet, ValOp, StateOp) [owise] .
+
+    eq rlToConcolicAux(crl T1 => T2 if (Tcond = 'true.Bool) [label(InstId) AttrSet] ., ValOp, StateOp) =
+          (crl '`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1, ValOp), 'Constraints:Boolean], stateVar(StateOp)]
+            =>
+            '`[_`]`[_`]`[_`][T2, '_`{_`}[symbMirror(T2, ValOp), 'Constraints':Boolean], stateVar(StateOp)]
+            if Tcond = 'true.Bool
+            /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, searchSubVarConst(Tcond, conc)]
+            [label(InstId) AttrSet] .)
+          (crl '`[_`]`[_`]`[_`][T1, '_`{_`}[symbMirror(T1, ValOp), 'Constraints:Boolean], stateVar(StateOp)]
+            =>
+            '`[_`]`[_`]`[_`]['updateStore[stateVar(StateOp), 'init-CStore['getStore[stateVar(StateOp)], 'Constraints':Boolean]],
+                                '_`{_`}[stateVar(StateOp), 'Constraints':Boolean],
+                                stateVar(StateOp)]
+            if Tcond = 'true.Bool
+            /\ 'Constraints':Boolean := '_and_['Constraints:Boolean, 'not_[searchSubVarConst(Tcond, conc)]]
+            /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints':Boolean]] = 'true.Bool
+            [label(qid(string(InstId) + "-bis")) AttrSet] .) .
     ***eq rlToConcolic(Rule RlSet, StateOp) = Rule rlToConcolic(RlSet, StateOp) [owise] .
 
     *** Transform the rules for an analysis with MaudeSE or narrowing
@@ -605,6 +619,17 @@ fmod MODULE-TRANSFORMER is
     op modOpStoreRec : TermList Qid TrType -> TermList .
     eq modOpStoreRec(empty, ValOp, TrId)           = empty .
     eq modOpStoreRec((T1, TermL), ValOp, TrId)     = modStoreT(T1, ValOp, TrId), modOpStoreRec(TermL, ValOp, TrId) .
+
+    op hasEval : TermList -> Bool .
+    eq hasEval(empty)        = false .
+    eq hasEval(MConst)       = false .
+    eq hasEval(MVar)         = false .
+    eq hasEval('eval[NeTL])  = true .
+    eq hasEval('evalI[NeTL]) = true .
+    eq hasEval('evalR[NeTL]) = true .
+    eq hasEval('evalB[NeTL]) = true .
+    eq hasEval(OpId[NeTL])   = hasEval(NeTL) [owise] .
+    eq hasEval((T1, TermL))  = (hasEval(T1) or hasEval(TermL)) .
 
     *** Transform variables and constants within conditions to use SMT types
     op modCond : Condition Qid TrType -> Condition .
