@@ -66,7 +66,7 @@ if __name__ == '__main__':
         maudeSE.load(args.file)
         maudeSE.maude.load(SEMANTICS_TRANSFORMER_MAUDE)
         mod = maudeSE.maude.getModule('MAUDE-SE-EXT')
-
+        #maudeSE.maude.input("set trace on .")
         # MaudeSE main still needs to be invoked to be able to reduce
         # It is invoked with the language semantics instead of the transformer because of collision ("multiple parses" Maude warning)  
         sys.argv = ["maude-se", args.file, "-no-meta"]

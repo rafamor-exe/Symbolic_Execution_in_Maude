@@ -675,6 +675,19 @@ result [ConcolicState]: [
 
 python3 semantics-analysis-ext.py --program "< (local.get 3) (local.set 2) (i32 .const val(25)) (if (result i32) (i32 .const val(10)) else (i32 .const val(20)) end) | EmptyStack | emptyStores >" --pattern "concolicState('WASMLocalEnv)" --file "language-semantics/simple-wasm-maude-semantics.maude" --analysis "concolic" --mod "upModule('WASMMOD, true)" --stSort "'WASMLocalEnv" --svars "(3, Integer)" --sType "'!" --solN 0 --valOp "'wval"
 
+Conditional test:
+python3 semantics-analysis-ext.py --program "< (local.get 3) (if (result i32) (i32 .const val(10)) else (i32 .const val(20)) end) | EmptyStack | emptyStores >" --pattern "concolicState('WASMLocalEnv)" --file "language-semantics/simple-wasm-maude-semantics.maude" --analysis "concolic" --mod "upModule('WASMMOD, true)" --stSort "'WASMLocalEnv" --svars "(3, Integer)" --sType "'!" --solN 0 --valOp "'wval"
+python3 semantics-analysis-ext.py --program "< (local.get 3) (if (result i32) (i32 .const val(10)) else (i32 .const val(20)) end) | EmptyStack | emptyStores >" --pattern "concolicState('WASMLocalEnv)" --file "language-semantics/simple-wasm-maude-semantics.maude" --analysis "concolic" --mod "upModule('WASMMOD, true)" --stSort "'WASMLocalEnv" --svars "(3, Integer)" --sType "'!" --solN 1 --valOp "'wval"
+
+
+******
+MaudeSE
+
+python3 semantics-analysis-ext.py --program "< (local.get 3) (if (result i32) (i32 .const val(10)) else (i32 .const val(20)) end) | EmptyStack | emptyStores >" --pattern "'S:WASMLocalEnv" --file "language-semantics/simple-wasm-maude-semantics.maude" --analysis "maude-se" --mod "upModule('WASMMOD, true)" --stSort "'WASMLocalEnv" --svars "(3, Integer)" --sType "'*" --solN 0 --valOp "'wval"
+
+*** Check different outcomes:
+python3 semantics-analysis-ext.py --program "< (local.get 3) (if (result i32) (i32 .const val(10)) else (i32 .const val(20)) end) | EmptyStack | emptyStores >" --pattern "'<_|_|_>['nil.List\`{Inst\`}, 'STf:Stack, 'STRf:Stores]" --file "language-semantics/simple-wasm-maude-semantics.maude" --analysis "maude-se" --mod "upModule('WASMMOD, true)" --stSort "'WASMLocalEnv" --svars "(3, Integer)" --sType "'*" --solN 0 --valOp "'wval"
+
 ----------------------
 
 [< if (result i32) i32 .const val((10).NzNat)
@@ -692,3 +705,42 @@ python3 semantics-analysis-ext.py --program "< (local.get 3) (local.set 2) (i32 
  else i32 .const val((20).NzNat)
  end
  | EmptyStack | '3 |->Is 30:Integer | (empty).RStoreS | (empty).BStoreS >]
+
+ After rew:
+
+ [
+< if (result i32) i32 .const val((10).NzNat)
+ else i32 .const val((20).NzNat)
+ end
+ | const(i32, wval((25).NzNat)) | ('2 |->I 0, '3 |->I 0) | (empty).RStore | (empty).BStore >][
+< if (result i32) i32 .const val((10).NzNat)
+ else i32 .const val((20).NzNat)
+ end
+ | const(i32, wval((25).Integer)) | ('2 |->Is 30:Integer, '3 |->Is 30:Integer) | (empty).RStoreS | (empty).BStoreS >{true}][
+< local.get 3
+ local.set 2
+ i32 .const val((25).NzNat)
+ if (result i32) i32 .const val((10).NzNat)
+ else i32 .const val((20).NzNat)
+ end
+ | EmptyStack | '3 |->Is 30:Integer | (empty).RStoreS | (empty).BStoreS >]
+
+
+
+
+************
+[
+< block (result i32) i32 .const val((20).NzNat)
+ end
+ | EmptyStack | '3 |->I 0 | (empty).RStore | (empty).BStore >][
+< block (result i32) i32 .const val((20).NzNat)
+ end
+ | EmptyStack | '3 |->Is 30:Integer | (empty).RStoreS | (empty).BStoreS >{true and 30:Integer === (0).Integer}][
+< local.get 3
+ if (result i32) i32 .const val((10).NzNat)
+ else i32 .const val((20).NzNat)
+ end
+ | EmptyStack | '3 |->Is 30:Integer | (empty).RStoreS | (empty).BStoreS >]
+
+
+red in VERIFICATION-COMMANDS : transformModSymb(upModule('WASMMOD, true), 'WASMLocalEnv, 'wval, maudeSE) .

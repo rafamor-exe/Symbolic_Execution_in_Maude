@@ -1,13 +1,15 @@
 *** Simplified and adapted version of WebAssembly semantics in Maude to the framework based on previous work (Master Thesis):
 ***   https://github.com/rafamor-exe/wasm-maude 
 
-*** Simplifications (WIP adaptations):
+*** Simplifications (WIP/TODO: adaptations):
 *** - Only local environments
 *** - Only i32 data type
 *** - Small subset of supported instructions
 *** - In languages that load values to the state and them operate with them (e.g. perform assignments in multiple steps) like this one:
 ***     Values can be symbolic in the state and we need to represent that.
 ***     Value wrappers (used as semantically-relevant values here ) cannot be referred as Maude variables in rules (use wval(Int1) explicitly)
+*** - Generalize variable name transformation if they include values (stacks) or store (store lists, e.g. see [block] and [end])
+*** - Store list is expected to be possibly empty, allow that in [end] when enabling function calls
 
 load ../semantics-basics/semantics-basics-maudeTypes.maude
 
@@ -1586,7 +1588,7 @@ mod WASMMOD is
   crl [t.binop-und] : < (T . binopT) IL | const(T, ValW2) $ const(T, ValW1) $ ST | NeLocalSTRList >   
                       => 
                       trap("Binop result undefined")
-                      if binop(T, binopT, ValW1, ValW2) = und .
+                      if binop(T, binopT, ValW1, ValW2) == und .
   crl [t.binop-defined] : < (T . binopT) IL | const(T, ValW2) $ const(T, ValW1) $ ST | NeLocalSTRList >   
                           => 
                           < IL | st-push(ST, binop(T, binopT, ValW1, ValW2)) | NeLocalSTRList >
@@ -1622,9 +1624,11 @@ mod WASMMOD is
             =>   
             < IL | ST | NeLocalSTRList > .
 
-  ***rl [block-resultT] : < ((block ResultType) IL2 end) IL | ST | NeLocalSTRList >
-  ***             =>
-  ***             < IL2 exit-block(IL) | st-push(ST, label("block", nil, size(aux-get-resultlistTList(ResultType)))) | NeLocalSTRList > .
+  *** TODO: Generalize variable name change on store transformation so that (STR LocalSTRList) could be NeLocalSTRList
+  *** TODO: If stack is not empty will not reduce standard vs symbolic stack are different because of values (see solution in [end])
+  rl [block-resultT] : < (block ResultType IL2 end) IL | ST | (STR LocalSTRList) >
+                      =>
+                      < IL2 exit-block(IL) | st-push(ST, label("block", nil, size(aux-get-resultlistTList(ResultType)))) | (STR LocalSTRList) > .
 
   --- crl [block-tref] : {typeIndCtx IndTypeCtxSTR} IndFuncCtx < (block TypeRef IL2 end) IL | ST1 | NeLocalSTRList > # GlobalInventory # FuncStore # TypeStore
   ---              =>
@@ -1633,7 +1637,10 @@ mod WASMMOD is
   ---                 /\ ST := st-popN(ST1, st-size(ST'))
   ---                 /\ TListRes := aux-get-resultlistTList(getResultType(expand(TypeRef, IndTypeCtxSTR, TypeStore))) .
 
-  rl [end] : < exit-block(IL) | NeST | LocalSTRList >   =>   < IL | get-st(reset-st(NeST)) | LocalSTRList > .
+  *** TODO: Generalize variable name change on store transformation so that (STR LocalSTRList) could be NeLocalSTRList
+  *** TODO: Store list is expected to be possibly empty, allow that when enabling function calls
+  *** TODO: Generalize variable name change (on structures that may contain values) also to allow NeST instead of STElem $ ST
+  rl [end] : < exit-block(IL) | STElem $ ST | (STR LocalSTRList) >   =>   < IL | get-st(reset-st(STElem $ ST)) | (STR LocalSTRList) > .
 
   --- rl [if-else] : < (if BlockType IL1 else IL2 end) IL | const(i32, ValW1) $ ST | NeLocalSTRList >   
   ---                =>
@@ -1684,7 +1691,7 @@ mod WASMMOD is
   ***              < IL | ST | NeLocalSTRList >
   ***            if Int1 == 0 . 
 
-
+  *** TODO: Store list is expected to be possibly empty, allow that in [end] when enabling function calls
   *** According to Specification: param init precedes local vars init
   --- crl [call] : < (call Addr) IL | ST | LocalSTRList > # GlobalInventory # FuncStore
   ---             =>   
