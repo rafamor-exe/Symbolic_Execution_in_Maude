@@ -744,3 +744,26 @@ python3 semantics-analysis-ext.py --program "< (local.get 3) (if (result i32) (i
 
 
 red in VERIFICATION-COMMANDS : transformModSymb(upModule('WASMMOD, true), 'WASMLocalEnv, 'wval, maudeSE) .
+
+select transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb) .
+
+
+red metaParse(['WASMMOD], tokenize-wasm("(module\r\n      (export \"$func0\" (func 0))\r\n      (func $func0 (result i32)\r\n            i32.const val(1)\r\n            if (result i32)\r\n                i32.const val(1)\r\n            else\r\n                i32.const val(2)\r\n            end    \r\n      )\r\n)\r\n"), 'WASMModule) .
+
+ResultPair: {'module_['__['export__['"$func0".String, 'func_['0.Zero]], 'func___['"$func0".String, 'result_['i32.IntTypeToken], '__['_.const_['i32.IntTypeToken, 'val['s_['0.Zero]]], 'if__else_end['result_['i32.IntTypeToken], '_.const_['i32.IntTypeToken, 'val['s_['0.Zero]]], '_.const_['i32.IntTypeToken, 'val['s_^2['0.Zero]]]]]]]], 'WASMModule}
+
+run-module-func(downTerm('module_['__['export__['"$func0".String, 'func_['0.Zero]], 'func___['"$func0".String, 'result_['i32.IntTypeToken], '__['_.const_['i32.IntTypeToken, 'val['s_['0.Zero]]], 'if__else_end['result_['i32.IntTypeToken], '_.const_['i32.IntTypeToken, 'val['s_['0.Zero]]], '_.const_['i32.IntTypeToken, 'val['s_^2['0.Zero]]]]]]]], err:WASMModule), "$func0")
+
+red in VERIFICATION-COMMANDS : transformModSymb(upModule('WASMMOD, true), 'WASMEnv, 'wval, maudeSE) .
+
+module (export "$func0" func 0) (func "$func0" (result i32) (local nil) i32 .const val((1).NzNat) if (result i32) i32 .const val((1).NzNat) else i32 .const val((2).NzNat) end)
+
+*** Purely symbolic transformation and execution with maude-shell 
+
+search startSE(start(if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;}), ('k, k0S:Integer), ((empty).IStoreS | (empty).RStoreS | (empty).BStoreS)) {(true).Boolean} =>* < P:Program | (IS:IStoreS | empty | empty) > {CST:Boolean} .
+
+search startSE(start(if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;}), ('k, k0S:Integer), ((empty).IStoreS | (empty).RStoreS | (empty).BStoreS)) {(true).Boolean} =>! < P:Program | (IS:IStoreS | empty | empty) > {CST:Boolean} .
+
+*** TODO: Create startS for pure symbolic execution
+
+s.t. (RES:Integer < 0)
