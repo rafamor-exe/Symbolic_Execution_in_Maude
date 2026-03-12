@@ -201,11 +201,17 @@ fmod MODULE-TRANSFORMER is
     ceq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, ValOp) = 
           crl '_`{_`}[symbMirror(T1, ValOp), 'Constraints:Boolean]
             => '_`{_`}[symbMirror(T2, ValOp), 'Constraints':Boolean]
-            if 'Constraints':Boolean := '_and_['Constraints:Boolean, Tcond]
+            if 'Constraints':Boolean := '_and_['Constraints:Boolean, modOpStoreRec(Tcond, ValOp, symb)]
             /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints':Boolean]] = 'true.Bool 
             [label(toSymb(InstId)) AttrSet] .
           rlToSymbolic(RlSet, ValOp)
-      if (Tcond = 'true.Boolean) := Cond .
+      if (Tcond = 'true.Bool) := Cond .
+    eq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, ValOp) = 
+          crl '_`{_`}[symbMirror(T1, ValOp), 'Constraints:Boolean]
+            => '_`{_`}[symbMirror(T2, ValOp), 'Constraints:Boolean]
+            if Cond
+            [label(toSymb(InstId)) AttrSet] .
+          rlToSymbolic(RlSet, ValOp) [owise] .
 
     *** Transform the rules for a concolic analysis. For now, rule conditions must be of the form: eval(B, STR) = true
     *** The symbolic state advances naturally following the concrete state, executing the same instructions.
