@@ -232,7 +232,7 @@ python3 semantics-analysis-ext.py --program "start(iv('var2) := val(3) ; if iv('
 *** With vars
 python3 semantics-analysis-ext.py --program "start(rv('var2) := val(20/1) ; rv('i) := val(5/1) ; rv('var3) := val(1) ; while rv('var1) < rv('var2) do {if rv('i) === val(0/1) then {rv('var3) := rv('var2) / rv('i) ; } rv('var3) := rv('var3) * val(5) ; rv('var1) := rv('var1) + val(1/1) ; rv('i) := rv('i) - val(1/1) ;})" --pattern "'<_|_>['Prest:Program, '_|_|_['ISTRSf:IStoreS, '_\`,_['_|->Rs_[''i.Sort, '0/1.Real], 'RSTRSf:RStoreS], 'BSTRSf:BStoreS]]" --file "language-semantics/while-semantics-concrete.maude" --analysis "maude-se" --logic "'QF_LRA" --fold "false" --mod "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(var1, Real)" --sType "'*" --solN 0
 
-*** Search for a state where we are diving by rv('i), and it is 0 (solution provided var1 = 21/4 = 5,25)
+*** Search for a state where we are dividing by rv('i), and it is 0 (solution provided var1 = 21/4 = 5,25)
 
 rv('y) := val(20); rv('i) := val(5); 
 while rv('k) < rv('y) do {
@@ -613,6 +613,9 @@ red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'St
 red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'State, 'noVal, "start(if iv('x) > val(0) then{iv('x) := iv('x) ; } else { iv('x) := - iv('x) ; })", '<_|_>['nil.Program, '_|_['_|->In_[''x.Sort, 'Y:NzNatFVP], 'BSTRf:BStoreN]], '+, unbounded, 'match, delay filter, 0, ('x, x0:IntFVP)) .
 red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'State, 'noVal, "start(if iv('x) > val(0) then{iv('x) := iv('x) ; } else { iv('x) := - iv('x) ; })", '<_|_>['nil.Program, '_|_['_|->In_[''x.Sort, 'Y:NzNatFVP], 'BSTRf:BStoreN]], '+, unbounded, 'match, delay filter, 1, ('x, x0:IntFVP)) .
 
+*** Loops
+red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'State, 'noVal, "start(iv('y) := val(20) ; iv('i) := val(5) ; while iv('k) < iv('y) do {if iv('k) > val(10) then {iv('z) := iv('y) + iv('i) ; } iv('k) := iv('k) + val(1) ; iv('i) := iv('i) - val(1) ;})", '<_|_>['__['_:=_;['IV1:IVar, '_+_['IExp1:IExp, 'iv[''i.Sort]]], 'Prest:Program], '_|_['_`,_['_|->In_[''i.Sort, '0.IntFVP], 'ISTRSf:IStoreN], 'BSTRSf:BStoreN]], '+, unbounded, 'match, delay filter, 0, ('k, k0:IntFVP)) .
+
 red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'State, 'noVal, "start(if iv('x) > val(0) then{iv('x) := iv('x) ; } else { iv('x) := - iv('x) ; })", '<_|_>['nil.Program, '_|_['_|->In_[''x.Sort, '-_['Y:NzNatFVP]], 'BSTRf:BStoreN]], '+, unbounded, 'match, delay filter, 0, ('x, x0:IntFVP)) .
 red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'State, 'noVal, "start(if iv('x) > val(0) then{iv('x) := iv('x) ; } else { iv('x) := - iv('x) ; })", '<_|_>['nil.Program, '_|_['_|->In_[''x.Sort, '-_['Y:NzNatFVP]], 'BSTRf:BStoreN]], '+, unbounded, 'match, delay filter, 1, ('x, x0:IntFVP)) .
 
@@ -759,11 +762,25 @@ red in VERIFICATION-COMMANDS : transformModSymb(upModule('WASMMOD, true), 'WASME
 module (export "$func0" func 0) (func "$func0" (result i32) (local nil) i32 .const val((1).NzNat) if (result i32) i32 .const val((1).NzNat) else i32 .const val((2).NzNat) end)
 
 *** Purely symbolic transformation and execution with maude-shell 
+select transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb) . 
 
 search startSE(start(if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;}), ('k, k0S:Integer), ((empty).IStoreS | (empty).RStoreS | (empty).BStoreS)) {(true).Boolean} =>* < P:Program | (IS:IStoreS | empty | empty) > {CST:Boolean} .
 
 search startSE(start(if iv('k) >= val(0) then{iv('res) := iv('k) ;} else {iv('res) := - iv('k) ;}), ('k, k0S:Integer), ((empty).IStoreS | (empty).RStoreS | (empty).BStoreS)) {(true).Boolean} =>! < P:Program | (IS:IStoreS | empty | empty) > {CST:Boolean} .
 
+*** Loops
+search [1] startSE(start(iv('y) := val(20) ; iv('i) := val(5) ; while iv('k) < iv('y) do {if iv('k) > val(10) then {iv('z) := iv('y) / iv('i) ; } iv('k) := iv('k) + val(1) ; iv('i) := iv('i) - val(1) ;}), ('k, k0S:Integer), ((empty).IStoreS | (empty).RStoreS | (empty).BStoreS)) {(true).Boolean} =>* < IV1:IVar := IExp1:IExp / iv('i) ; Pf:Program | (ISTRf:IStoreS, 'i |->Is RES:Integer) | RSTRf:RStoreS | BSTRf:BStoreS > {CST:Boolean} s.t. (metaCheck(['REAL-INTEGER], upTerm(RES:Integer === 0))) .
+
+-> Solution 1 (state 94) rewrites: 1842
+With MaudeSE: 94 states (12 branching points) rewrites 3263 (without module transformation, I guess because it transforms again the semantics) rewrites 12140 (with module transformation) (when measuring after already reducing once 1576, but that may have to be related to terms already reduced?)
+
+*** Complex program (does not end because it is SE and solver cannot solver non-linear arithmetic)
+search [1] startSE(start(iv('i) := val(5); while iv('k) < iv('y) do { if iv('k) > val(10) then {iv('x) := iv('k) * iv('y) ; iv('a) := iv('x) - iv('i); iv('z) := iv('y) / iv('a) ;} iv('k) := iv('k) + val(1) ; iv('i) := iv('i) * val(2) ;}), ('k, k0S:Integer) ('y, y0S:Integer), ((empty).IStoreS | (empty).RStoreS | (empty).BStoreS)) {(true).Boolean} =>* < IV1:IVar := IExp1:IExp / iv(IV:Qid) ; Pf:Program | (ISTRf:IStoreS, IV:Qid |->Is RES:Integer) | RSTRf:RStoreS | BSTRf:BStoreS > {CST:Boolean} s.t. (metaCheck(['REAL-INTEGER], upTerm(RES:Integer === 0))) .
+
 *** TODO: Create startS for pure symbolic execution
 
 s.t. (RES:Integer < 0)
+
+
+
+*** search [1] startC(start(iv('i) := val(5); while iv('k) < iv('y) do { if iv('k) > val(10) then {iv('x) := iv('k) * iv('y) ; iv('a) := iv('x) - iv('i); iv('z) := iv('y) / iv('a) ;} iv('k) := iv('k) + val(1) ; iv('i) := iv('i) * val(2) ;}), ('k, k0S:Integer) ('y, y0S:Integer)) =>* [< IV1:IVar := IExp1:IExp / iv(IV:Qid) ; Pf:Program |(ISTRf:IStore, IV:Qid |->I 0) | RSTRf:RStore | BSTRf:BStore >][SMS:State {CST:Boolean}][SMSInit:State] .

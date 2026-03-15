@@ -29,6 +29,8 @@ def get_args():
 
     parser.add_argument("--logic", action="store", help="Logic to use in MaudeSE analysis", default="'QF_LRA")
     parser.add_argument("--fold", action="store", help="Allow folding in MaudeSE analysis", default="false")
+
+    parser.add_argument("--metrics", action="store_true", help="Enable rewrite metrics without module transformation")
     return parser.parse_args()
 
 def getSymbVarCond(args) :
@@ -73,41 +75,67 @@ if __name__ == '__main__':
         maudeSE.main()
 
         svPairs, symbCond = getSymbVarCond(args)
-
-        t = f"""searchMaudeSE(
-                       {args.mod},
-                       {args.stSort},
-                       {args.valOp},
-                       "{args.program}",
-                       {args.pattern},
-                       upTerm({symbCond}) = 'true.Boolean /\\ {args.sCond},
-                       {args.sType},
-                       {args.bound},
-                       {args.solN},
-                       {args.logic},
-                       {args.fold},
-                       {svPairs})"""
-        t = mod.parseTerm(t)
-        t.reduce()
-        print(t)
-        print("---------")
-        print("With path:")
-        path = f"""searchPathMaudeSE(" \
-                                 {args.mod},
-                                 {args.stSort},
-                                 {args.valOp},
-                                 "{args.program}",
-                                 {args.pattern},
-                                 upTerm({symbCond}) = 'true.Boolean /\\ {args.sCond},
-                                 {args.sType},
-                                 {args.bound},
-                                 {args.solN},
-                                 {args.logic},
-                                 {args.fold},
-                                 {svPairs})"""
-        path = mod.parseTerm(path)
-        path.reduce()
-        print(path)
+        if not args.metrics :
+            t = f"""searchMaudeSE(
+                        {args.mod},
+                        {args.stSort},
+                        {args.valOp},
+                        "{args.program}",
+                        {args.pattern},
+                        upTerm({symbCond}) = 'true.Boolean /\\ {args.sCond},
+                        {args.sType},
+                        {args.bound},
+                        {args.solN},
+                        {args.logic},
+                        {args.fold},
+                        {svPairs})"""
+            t = mod.parseTerm(t)
+            n_rew = t.reduce()
+            print(t)
+            print(f"Rewrites: {n_rew}")
+            print("---------")
+            print("With path:")
+            path = f"""searchPathMaudeSE(" \
+                                    {args.mod},
+                                    {args.stSort},
+                                    {args.valOp},
+                                    "{args.program}",
+                                    {args.pattern},
+                                    upTerm({symbCond}) = 'true.Boolean /\\ {args.sCond},
+                                    {args.sType},
+                                    {args.bound},
+                                    {args.solN},
+                                    {args.logic},
+                                    {args.fold},
+                                    {svPairs})"""
+            path = mod.parseTerm(path)
+            path.reduce()
+            print(path)
+        else:
+            print("---------")
+            print("Only measure search rewrites")
+            t_mod = f"transformModSymb({args.mod}, {args.stSort}, {args.valOp}, maudeSE)"
+            t_mod = mod.parseTerm(t_mod)
+            t_mod.reduce()
+            t_0 = f"""getTerm(metaParse(transformModSymb({args.mod}, {args.stSort}, {args.valOp}, maudeSE),
+                                                            tokenize("{args.program}"),
+                                                            {args.stSort}))"""
+            t_0 = mod.parseTerm(t_0)
+            t_0.reduce()
+            #print(t_0)
+            t_search = f"""metaSmtSearch({t_mod},
+                                        'startSE[{t_0}, searchSubVarConst(upTerm({svPairs}), maudeSE),'_|_|_['empty.IStoreS, 'empty.RStoreS, 'empty.BStoreS]],
+                                        {args.pattern},
+                                        modCond(upTerm({symbCond}) = 'true.Boolean /\\ {args.sCond}, {args.valOp}, maudeSE),
+                                        {args.sType},
+                                        {args.bound},
+                                        {args.solN},
+                                        {args.logic},
+                                        {args.fold})"""
+            t_search = mod.parseTerm(t_search)
+            n_rew = t_search.reduce()
+            print(t_search)
+            print(f"Rewrites: {n_rew}")
     else:
         import maude
         from maudeSMTHook import SMTAssignmentHook
