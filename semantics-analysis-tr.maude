@@ -85,7 +85,10 @@ fmod NARROWING-CONVERSION is
     var I      : Int .
     var MConst : Constant .
 
-    eq toIntFVP(I) = downTerm(getTerm(metaParse(['NARROWING-BASICS], tokenize(string(I, 10)), 'IntFVP)), errIntFVP) .
+    eq toIntFVP(0) = (0).IntFVP .
+    eq toIntFVP(1) = (1).IntFVP .
+    eq toIntFVP(I) = toIntFVP(I - 1) + (1).IntFVP [owise] .
+    ***eq toIntFVP(I) = downTerm(getTerm(metaParse(['NARROWING-BASICS], tokenize(string(I, 10)), 'IntFVP)), errIntFVP) .
     eq toBoolFVP(true) = tt .
     eq toBoolFVP(false) = ff .
 
