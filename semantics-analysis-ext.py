@@ -120,9 +120,9 @@ if __name__ == '__main__':
             t_mod = mod.parseTerm(t_mod)
             t_mod.reduce()
             mod_time = time.time()
-            t_0 = f"""getTerm(metaParse(transformModSymb({args.mod}, {args.stSort}, {args.valOp}, maudeSE),
-                                                            tokenize("{args.program}"),
-                                                            {args.stSort}))"""
+            t_0 = f"""getTerm(metaParse({t_mod},
+                                        tokenize("{args.program}"),
+                                        {args.stSort}))"""
             t_0 = mod.parseTerm(t_0)
             t_0.reduce()
             term_time = time.time()
