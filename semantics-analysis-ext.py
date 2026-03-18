@@ -1,6 +1,7 @@
 import argparse
 import sys
 import re
+import time
 
 ADHOC_CONCOLIC_IMPL = 'adhoc-analysis/while-semantics-concolic.maude'
 
@@ -114,14 +115,17 @@ if __name__ == '__main__':
         else:
             print("---------")
             print("Only measure search rewrites")
+            start = time.time()
             t_mod = f"transformModSymb({args.mod}, {args.stSort}, {args.valOp}, maudeSE)"
             t_mod = mod.parseTerm(t_mod)
             t_mod.reduce()
+            mod_time = time.time()
             t_0 = f"""getTerm(metaParse(transformModSymb({args.mod}, {args.stSort}, {args.valOp}, maudeSE),
                                                             tokenize("{args.program}"),
                                                             {args.stSort}))"""
             t_0 = mod.parseTerm(t_0)
             t_0.reduce()
+            term_time = time.time()
             #print(t_0)
             t_search = f"""metaSmtSearch({t_mod},
                                         'startSE[{t_0}, searchSubVarConst(upTerm({svPairs}), maudeSE),'_|_|_['empty.IStoreS, 'empty.RStoreS, 'empty.BStoreS]],
@@ -134,9 +138,14 @@ if __name__ == '__main__':
                                         {args.fold})"""
             t_search = mod.parseTerm(t_search)
             n_rew = t_search.reduce()
+            end = time.time()
             print(t_search)
             print(f"Rewrites: {n_rew}")
-    else:
+            print(f"Module transformation time (s): {mod_time - start}")
+            print(f"Term reduction time (s): {term_time - mod_time}")
+            print(f"Search time (s): {end - term_time}")
+            print(f"Total time elapsed (s): {end - start}")
+    elif args.analysis == "concolic":
         import maude
         from maudeSMTHook import SMTAssignmentHook
         maude.init(advise=True)
@@ -163,8 +172,8 @@ if __name__ == '__main__':
             maude.load(args.file)
             maude.load(SEMANTICS_TRANSFORMER_MAUDE)
             mod = maude.getModule('VERIFICATION-COMMANDS')
-            if args.analysis == "concolic":
-                svPairs, symbCond = getSymbVarCond(args)
+            svPairs, symbCond = getSymbVarCond(args)
+            if not args.metrics:
                 t = f"""searchConcolic(
                                    {args.mod},
                                    {args.stSort},
@@ -199,14 +208,76 @@ if __name__ == '__main__':
                     path.reduce()
                     print(path)
             else:
-                t = f"""transformModSymb(
-                                   {args.mod},
-                                   {args.stSort},
-                                   {args.valOp},
-                                   conc)"""
-                t = mod.parseTerm(t)
-                t.reduce()
-                print(t)
+                print("---------")
+                print("Only measure search rewrites")
+                start = time.time()
+                t_mod = f"transformModSymb({args.mod}, {args.stSort}, {args.valOp}, conc)"
+                t_mod = mod.parseTerm(t_mod)
+                t_mod.reduce()
+                mod_time = time.time()
+                t_0 = f"""getTerm(metaParse({args.mod},
+                                            tokenize("{args.program}"),
+                                            {args.stSort}))"""
+                t_0 = mod.parseTerm(t_0)
+                t_0.reduce()
+                term_time = time.time()
+                #print(t_0)
+                t_search = f"""metaSearch({t_mod},
+                                            'startC['_where_[{t_0}, searchSubVarConst(upTerm({symbCond}), conc)],
+                                                    searchSubVarConst(upTerm({svPairs}), conc)],
+                                            {args.pattern},
+                                            {args.sCond},
+                                            {args.sType},
+                                            {args.bound},
+                                            {args.solN})"""
+                t_search = mod.parseTerm(t_search)
+                n_rew = t_search.reduce()
+                end = time.time()
+                print(t_search)
+                print(f"Rewrites: {n_rew}")
+                print(f"Module transformation time (s): {mod_time - start}")
+                print(f"Term reduction time (s): {term_time - mod_time}")
+                print(f"Search time (s): {end - term_time}")
+                print(f"Total time elapsed (s): {end - start}")
+    elif args.analysis == "symb":
+        import maude
+        from maudeSMTHook import SMTAssignmentHook
+        maude.init(advise=True)
+        maude.load(args.file)
+        maude.load(SEMANTICS_TRANSFORMER_MAUDE)
+        mod = maude.getModule('VERIFICATION-COMMANDS')
+        svPairs, symbCond = getSymbVarCond(args)
+        print("---------")
+        print("Only measure search rewrites")
+        start = time.time()
+        t_mod = f"transformModSymb({args.mod}, {args.stSort}, {args.valOp}, symb)"
+        t_mod = mod.parseTerm(t_mod)
+        t_mod.reduce()
+        mod_time = time.time()
+        t_0 = f"""getTerm(metaParse({t_mod},
+                                    tokenize("{args.program}"),
+                                    {args.stSort}))"""
+        t_0 = mod.parseTerm(t_0)
+        t_0.reduce()
+        term_time = time.time()
+        #print(t_0)
+        t_search = f"""metaSearch({t_mod},
+                                    '_`{{_`}}[{t_0}, 'true.Boolean],
+                                    {args.pattern},
+                                    {args.sCond},
+                                    {args.sType},
+                                    {args.bound},
+                                    {args.solN})"""
+        t_search = mod.parseTerm(t_search)
+        n_rew = t_search.reduce()
+        end = time.time()
+        print(t_search)
+        print(f"Rewrites: {n_rew}")
+        print(f"Module transformation time (s): {mod_time - start}")
+        print(f"Term reduction time (s): {term_time - mod_time}")
+        print(f"Search time (s): {end - term_time}")
+        print(f"Total time elapsed (s): {end - start}")
+
 
 
     

@@ -28,6 +28,7 @@ mod SYMBOLIC-EXECUTION-NARROWING is
 	op _-_ : AExp AExp -> AExp [ctor] .
 	op -_ : AExp -> AExp [ctor] .
 	op _>_ : AExp AExp -> BExp [ctor] .
+	op _==_ : AExp AExp -> BExp [ctor] .
 	op _and_ : BExp BExp -> BExp [ctor] .
 	op not_ : BExp -> BExp [ctor] .
 
@@ -75,7 +76,9 @@ mod SYMBOLIC-EXECUTION-NARROWING is
 	sort Program .
 
 	op if _ then {_} else {_} : BExp Program Program -> Program [ctor] .  *** condicional
+	op if _ then {_} : BExp Program -> Program .  *** condicional
 	op _:=_ : Qid AExp -> Program [ctor] .  *** asignación
+	op while _ do {_} : BExp Program -> Program [ctor] .
 
 	op skip : -> Program [ctor] .
 	op _;_ : Program Program -> Program [ctor assoc prec 50] .
@@ -87,6 +90,8 @@ mod SYMBOLIC-EXECUTION-NARROWING is
 
 	op <_,_>   : Program IStore -> State [ctor] .
 	op <_,_,_> : Program IStore BoolFVP -> State [ctor] .
+
+	eq if BE then {P1} = if BE then {P1} else {skip} .
 
 	*** Semantic rules
 
@@ -117,12 +122,30 @@ mod SYMBOLIC-EXECUTION-NARROWING is
 	=>
 		< P3, store(Q, eval(AE, ISTR), ISTR) >
 	[narrowing] .
+
+	rl [whilepre] :
+		< while BE do { P1 } ; P2, ISTR >
+	=>
+		< while BE do { P1 } ; P2, ISTR, eval(BE, ISTR) >
+	[narrowing] .
+
+	rl [whiledo] :
+		< while BE do { P1 } ; P2, ISTR, tt >
+	=>
+		< P1 ; while BE do { P1 } ; P2, ISTR >
+	[narrowing] .
+
+	rl [whileexit] :
+		< while BE do { P1 } ; P2, ISTR, ff >
+	=>
+		< P2, ISTR >
+	[narrowing] .
 endm
 
 mod EXAMPLE is
 	protecting SYMBOLIC-EXECUTION-NARROWING .
 
-	ops ex1 ex2 : -> Program .
+	ops ex1 ex2 ex3 : -> Program .
 
 	eq ex1 = if ivar('x) > ival(1)
 	                 then { 'x := ivar('x) + ival(3) }
@@ -131,6 +154,15 @@ mod EXAMPLE is
 	eq ex2 = if ivar('x) > ival(0)
 					then { 'x := ivar('x) }
 					else { 'x := - ivar('x) } .
+	
+	eq ex3 = 'y := ival(20) ;
+			 'i := ival(5) ;
+			 while ivar('y) > ivar('k) do {
+				if ivar('k) > ival(10)
+					then { 'z := ivar('y) + ivar('i) } ;
+				'k := ivar('k) + ival(1) ;
+			 	'i := ivar('i) - ival(1)
+			 } .
 
 	*** To be used as < ex1, 'x |-> X:IntFVP > .
 
@@ -155,3 +187,6 @@ vu-narrow {delay, filter} < ex2, 'x |-> X:IntFVP > =>+ < skip, 'x |-> - Y:NzNatF
 
 *** Preimages of the result (Y and - Y)
 vu-narrow {delay, filter} < ex2, 'x |-> X:IntFVP > =>+ < skip, 'x |-> Y:NzNatFVP > .
+
+*** Loops
+vu-narrow {delay, filter} < ex3, 'k |-> K:IntFVP > =>+ < Q:Qid := AExp1:AExp + ivar('i) ; Pf:Program, (ISTRf:IStore ; 'i |-> (0).NatFVP) > .
