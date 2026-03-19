@@ -204,11 +204,11 @@ fmod MODULE-TRANSFORMER is
     ceq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, ValOp) = 
           crl '_`{_`}[symbMirror(T1, ValOp), 'Constraints:Boolean]
             => '_`{_`}[symbMirror(T2, ValOp), 'Constraints':Boolean]
-            if 'Constraints':Boolean := '_and_['Constraints:Boolean, modOpStoreRec(Tcond, ValOp, symb)]
+            if 'Constraints':Boolean := '_and_['Constraints:Boolean, Tcond]
             /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints':Boolean]] = 'true.Bool 
             [label(toSymb(InstId)) AttrSet] .
           rlToSymbolic(RlSet, ValOp)
-      if (Tcond = 'true.Bool) := Cond .
+      if (Tcond = 'true.Boolean) := modCondRl(Cond, ValOp, symb)  .
     eq rlToSymbolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, ValOp) = 
           crl '_`{_`}[symbMirror(T1, ValOp), 'Constraints:Boolean]
             => '_`{_`}[symbMirror(T2, ValOp), 'Constraints:Boolean]

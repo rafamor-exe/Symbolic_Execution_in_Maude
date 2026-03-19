@@ -694,6 +694,10 @@ python3 semantics-analysis-ext.py --program "< (local.get 3) (if (result i32) (i
 *** Check different outcomes:
 python3 semantics-analysis-ext.py --program "< (local.get 3) (if (result i32) (i32 .const val(10)) else (i32 .const val(20)) end) | EmptyStack | emptyStores >" --pattern "'<_|_|_>['nil.List\`{Inst\`}, 'STf:Stack, 'STRf:Stores]" --file "language-semantics/simple-wasm-maude-semantics.maude" --analysis "maude-se" --mod "upModule('WASMMOD, true)" --stSort "'WASMLocalEnv" --svars "(3, Integer)" --sType "'*" --solN 0 --valOp "'wval"
 
+*** Pure symbolic
+TODO: Check why it can apply both [int-constS] (produces type Integer) and [int-const-signed] (produces type Int) when loading integers...
+python3 semantics-analysis-ext.py --program "startSE(< (local.get 3) (if (result i32) (i32 .const val(10)) else (i32 .const val(20)) end) | EmptyStack | emptyStores >, ('3, 3S:Integer), ((empty).IStoreS | (empty).RStoreS | (empty).BStoreS))" --pattern "'_\`{_\`}['<_|_|_>['nil.List\`{Inst\`}, 'STf:Stack, 'STRf:Stores], 'CST:Boolean]" --file "language-semantics/simple-wasm-maude-semantics.maude" --analysis "symb" --mod "upModule('WASMMOD, true)" --stSort "'WASMLocalEnv" --svars "(3, Integer)" --sType "'*" --solN 0 --valOp "'wval"
+
 ----------------------
 
 [< if (result i32) i32 .const val((10).NzNat)
