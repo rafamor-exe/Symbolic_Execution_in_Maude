@@ -1,0 +1,188 @@
+load ../semantics-basics/semantics-basics-gen.maude
+
+fmod CONCRETE-VAR-MOD is
+
+    protecting QID .
+    protecting CONCRETE-VARSTATE-MOD .
+
+    sorts Var IVar BVar .
+    subsort IVar BVar < Var .
+    subsort IVar < IExp .
+    subsort BVar < BExp .
+
+    op iv : Qid -> IVar [ctor] .
+    op bv : Qid -> BVar [ctor] .
+
+    op _>_ : IExp IExp -> BExp [prec 37] .
+    op _>_ : Var Var -> BExp [prec 37] .
+
+    op -_ : IExp -> IExp [prec 30] .
+    op _+_ : IExp IExp -> IExp [gather (E e) prec 33] .
+    op _-_ : IExp IExp -> IExp [gather (E e) prec 33] .
+
+endfm
+
+view Var from TRIV to CONCRETE-VAR-MOD is
+  sort Elt to Var .
+endv
+view IVar from TRIV to CONCRETE-VAR-MOD is
+  sort Elt to IVar .
+endv
+view BVar from TRIV to CONCRETE-VAR-MOD is
+  sort Elt to BVar .
+endv
+
+fmod WHILE-LANG-INSTS-MOD is
+
+    protecting CONCRETE-VAR-MOD .
+
+    sort Inst .
+
+    op skip ; : -> Inst [ctor prec 20] .
+    op _ := _ ; : IVar IExp -> Inst [ctor prec 20] .
+    op _ := _ ; : BVar BExp -> Inst [ctor prec 20] .
+
+endfm
+
+view Inst from TRIV to WHILE-LANG-INSTS-MOD is
+  sort Elt to Inst .
+endv
+
+fmod WHILE-LANG-BLOCK-MOD is
+
+    protecting WHILE-LANG-INSTS-MOD .
+    protecting LIST{Inst} * (sort List{Inst} to Program) .
+
+    op if _ then {_} else {_} : BExp Program Program -> Inst [ctor prec 20] .
+    op if _ then {_} : BExp Program -> Inst [prec 20] .
+
+    op while _ do {_} : BExp Program -> Inst [ctor prec 20] .
+
+    var B : BExp .
+    var P1 : Program .
+
+    eq if B then {P1} = if B then {P1} else {nil} .
+
+endfm
+
+fmod WHILE-STATE is
+    protecting WHILE-LANG-BLOCK-MOD .
+    protecting MAP{Qid, IVal} * (sort Map{Qid, IVal} to IStore) * (op _|->_ to _|->I_ ) .
+    protecting MAP{Qid, BVal} * (sort Map{Qid, BVal} to BStore) * (op _|->_ to _|->B_ ) .
+
+    sorts Stores State .
+
+    op _|_ : IStore BStore -> Stores [ctor] .
+
+    op < _ | _ > : Program Stores -> State [ctor] . 
+    op errState : -> State [ctor] . 
+endfm
+
+view State from TRIV to WHILE-STATE is
+  sort Elt to State .
+endv
+
+fmod WHILE-BASICS is
+    protecting WHILE-STATE .
+    protecting CONCRETE-FW-NORAT{State} .
+    protecting IREF{IVar, State} .
+    protecting BREF{BVar, State} .
+endfm
+
+mod WHILE-MAUDE is
+
+    protecting WHILE-BASICS .
+
+    vars Var Var1 Var2 : Var .
+    var IVar : IVar .
+    var BVar : BVar .
+    vars BExp BExp2 : BExp .
+    vars P P1 P2 : Program .
+    vars STR STR2 : Stores .
+    var ISTR : IStore .
+    var BSTR : BStore .
+    var IExp : IExp .
+    var Q : Qid .
+    var State : State .
+    var I : Int .
+    var B : Bool .
+
+    op start : Program -> State .
+    eq start(P) = < P | ((empty).IStore | (empty).BStore) > .
+
+    rl [skip] : 
+        < skip ; P | STR >
+        =>
+        < P | STR > .
+
+    rl [assign-I] : 
+        < iv(Q) := IExp ; P | (ISTR | BSTR) >
+        =>
+        < P | insert(Q, val(cieval(IExp, < iv(Q) := IExp ; P | (ISTR | BSTR) >)), ISTR) | BSTR > .
+
+    rl [assign-B] : 
+        < bv(Q) := BExp ; P | (ISTR | BSTR) >
+        =>
+        < P | ISTR | insert(Q, val(cbeval(BExp, < bv(Q) := BExp ; P | (ISTR | BSTR) >)), BSTR) > .
+
+    crl [if-then] : 
+        < if BExp then { P1 } else { P2 } P | STR >
+        =>
+        < P1 P | STR >
+        if cbeval(BExp, < if BExp then { P1 } else { P2 } P | STR >) .
+
+    crl [if-else] : 
+        < if BExp then { P1 } else { P2 } P | STR >
+        =>
+        < P2 P | STR >
+        if not cbeval(BExp, < if BExp then { P1 } else { P2 } P | STR >) .
+
+    crl [while-loop] : 
+        < while BExp do { P1 } P | STR >
+        =>
+        < P1 while BExp do { P1 } P | STR >
+        if cbeval(BExp, < while BExp do { P1 } P | STR >) .
+        
+    crl [while-exit] : 
+        < while BExp do { P1 } P | STR >
+        =>
+        < P | STR >
+        if not cbeval(BExp, < while BExp do { P1 } P | STR >) .
+
+    *** Auxiliary
+
+    op getStore : State -> Stores .
+    eq getStore(< P | STR >) = STR .
+
+    op updateStore : State Stores -> State .
+    eq updateStore(< P | STR >, STR2) = < P | STR2 > .
+
+    op getIStore : Stores -> IStore .
+    eq getIStore(ISTR | BSTR) = ISTR .
+
+    op getBStore : Stores -> BStore .
+    eq getBStore(ISTR | BSTR) = BSTR .
+
+    op emptyStoresN : -> Stores [ctor] .
+    eq emptyStoresN = (empty | empty) .
+
+    *** User defined references
+    eq bresolve(bv(Q), < P | (ISTR | BSTR) >) = BSTR[Q] .
+    eq iresolve(iv(Q), < P | (ISTR | BSTR) >) = ISTR[Q] .
+
+endm
+
+mod EXAMPLE is
+
+    protecting WHILE-MAUDE .
+
+	ops ex1 ex2 : -> Program .
+
+	eq ex1 = if iv('x) > val(1)
+	                 then { iv('x) := iv('x) + val(3) ; }
+	                 else { iv('x) := val(7) ; } .
+
+	eq ex2 = if iv('x) > val(0)
+					then { iv('x) := iv('x) ; }
+					else { iv('x) := - iv('x) ; } .
+endm

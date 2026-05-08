@@ -1,0 +1,349 @@
+fmod SEM-BASICS is
+    protecting RAT .
+    sorts IVal RVal BVal .
+    sorts IExp RExp BExp .
+    subsort IVal < RVal .
+
+    op val : Int -> IVal .
+    op val : Rat -> RVal .
+    op val : Bool -> BVal .
+endfm
+
+view IVal from TRIV to SEM-BASICS is
+  sort Elt to IVal .
+endv
+view RVal from TRIV to SEM-BASICS is
+  sort Elt to RVal .
+endv
+view BVal from TRIV to SEM-BASICS is
+  sort Elt to BVal .
+endv
+
+fmod STRUCT{VStruct :: TRIV} is
+    sort Struct .
+    op struct : VStruct$Elt -> Struct [ctor metadata "vstruct"] .
+endfm
+
+fmod STACK is
+
+    protecting SEM-BASICS .
+
+    sorts Stack StackElem NeStack IHeadST BHeadST .
+    subsorts NeStack < Stack .
+    subsorts StackElem < NeStack .
+    ***subsort IHeadST < IExp .
+    ***subsort BHeadST < BExp .
+
+    *** Stack definition
+    op EmptyStack : -> Stack [ctor] .
+    op _$_ : StackElem Stack -> NeStack [ctor id: EmptyStack format (d ni d d)] .
+
+    op ielem : IVal -> StackElem [ctor] .
+    op belem : BVal -> StackElem [ctor] .
+
+    ***op iheadST : -> IHeadST [ctor] .
+    ***op bheadST : -> BHeadST [ctor] .
+
+endfm
+
+mod SEM-USER is
+    protecting MAP{Qid, IVal} * (sort Map{Qid, IVal} to IStore) * (op _|->_ to _|->I_ ) .
+    protecting MAP{Qid, RVal} * (sort Map{Qid, RVal} to RStore) * (op _|->_ to _|->R_ ) .
+    protecting MAP{Qid, BVal} * (sort Map{Qid, BVal} to BStore) * (op _|->_ to _|->B_ ) .
+    protecting STACK .
+
+    sort Stores .
+
+    op _|_|_ : IStore RStore BStore -> Stores [ctor] .
+    op _|_ : IStore BStore -> Stores [ctor] .
+    op emptySTR : -> Stores [ctor] .
+endm
+
+view IStore from TRIV to SEM-USER is
+  sort Elt to IStore .
+endv
+view RStore from TRIV to SEM-USER is
+  sort Elt to RStore .
+endv
+view BStore from TRIV to SEM-USER is
+  sort Elt to BStore .
+endv
+view Stores from TRIV to SEM-USER is
+  sort Elt to Stores .
+endv
+view NeStack from TRIV to SEM-USER is
+  sort Elt to NeStack .
+endv
+view Stack from TRIV to SEM-USER is
+  sort Elt to Stack .
+endv
+
+mod SEM is
+    protecting SEM-USER .
+    protecting STRUCT{IStore} .
+    protecting STRUCT{RStore} .
+    protecting STRUCT{BStore} .
+    protecting STRUCT{Stores} .
+    ***protecting STRUCT{NeStack} .
+    protecting STRUCT{Stack} .
+endm
+
+load ../semantics-basics/smt-conversion.maude
+mod SEM-TR is
+    *** Needed because this module emualtes the transformation module
+    protecting META-LEVEL .
+    protecting CONVERSION .
+    protecting REAL-INTEGER .
+    
+    *** NOTE: Only imported to simplify symbolic XVal op generation
+    protecting SEM .
+
+    op val : Integer -> IVal [ctor] .
+    op val : Real -> RVal [ctor] .
+    op val : Boolean -> BVal [ctor] .
+
+    var I : Int .
+    var R : Rat .
+    var B : Bool .
+    vars T T' : Term .
+    var TL : TermList .
+    var NeTL : NeTermList .
+    var Q : Qid .
+    var Str : String .
+    var C : Constant .
+    var V : Variable .
+
+    ***op modStructT : Constant Qid -> Term .
+    op subSEConstSortsT : Constant Qid -> Constant .
+    eq subSEConstSortsT(C, 'Int) = qid(string(getName(C)) + "." + string(trSorts('Int))) .
+    eq subSEConstSortsT(C, 'Zero) = qid(string(getName(C)) + "." + string(trSorts('Int))) .
+    eq subSEConstSortsT(C, 'Rat) = qid(string(getName(C)) + "." + string(trSorts('Rat))) .
+    eq subSEConstSortsT(C, 'Bool) = qid(string(getName(C)) + "." + string(trSorts('Bool))) .
+    eq subSEConstSortsT(C, Q) = C [owise] .
+
+    op subSEVarSorts : Variable Qid -> Variable .
+    eq subSEVarSorts(V, 'Int) = qid(string(getName(V)) + ":" + string(trSorts('Int))) .
+    eq subSEVarSorts(V, 'Zero) = qid(string(getName(V)) + ":" + string(trSorts('Int))) .
+    eq subSEVarSorts(V, 'Rat) = qid(string(getName(V)) + ":" + string(trSorts('Rat))) .
+    eq subSEVarSorts(V, 'Bool) = qid(string(getName(V)) + ":" + string(trSorts('Bool))) .
+    eq subSEVarSorts(V, Q) = V [owise] .
+
+    op trSorts : Qid -> Qid .
+    eq trSorts('Bool) = 'Boolean .
+    eq trSorts('Int) = 'Integer .
+    eq trSorts('Rat) = 'Real .
+    eq trSorts(Q) = Q .
+
+    ***op modStructT : Variable Type Qid TrType -> Term .
+    op modStructT : Term -> Term .
+    op modStructT : Term Qid -> Term .
+    ***op modStructT : RStore Qid -> Term .
+    ***op modStructT : BStore Qid -> Term .
+    ***op modStructT : Stores Qid -> Term .
+    *** TODO: Include TrType for each settign transformation
+    ***       This functions should transform the constants and variables inside a val structure
+    op convert : Constant -> Constant .
+    op convert : Variable -> Variable .
+    op convert : Term -> Term .
+    eq convert('val['I:Int]) = 'val['toInteger['I:Int]] .
+    eq convert('val['R:Rat]) = 'val['toReal['R:Rat]] .
+    eq convert('val['_/_[T, T']]) = 'val['toReal['_/_[T, T']]] .
+    eq convert('val['B:Bool]) = 'val['toBoolean['B:Bool]] .
+
+    op toSymb : Qid -> Qid .
+    eq toSymb(Q) = qid(string(Q) + "S") .
+
+    op trVal : TermList -> TermList .
+    eq trVal(empty)           = empty .
+    eq trVal(C)               = subSEConstSortsT(C, getType(C)) .
+    eq trVal(V)               = subSEVarSorts(V, getType(V)) .
+    eq trVal('val['I:Int])    = convert('val['I:Int]) .
+    eq trVal('val['R:Rat])    = convert('val['R:Rat]) .
+    eq trVal('val['_/_[T, T']])    = convert('val['_/_[T, T']]) .
+    eq trVal('val['B:Bool])   = convert('val['B:Bool]) .
+    eq trVal('s_['0.Zero])    = '1.Integer .
+    ceq trVal(Q['0.Zero])     = qid(string(rat(substr(Str, 3, sd(length(Str), 3)), 10), 10) + ".Integer")
+      if Str := string(Q)
+      /\ substr(Str, 0, 3) = "s_^" .
+    ***eq trVal('_*_[NeTL], narrowing) = '_*_[NeTL] .
+    ***eq trVal('_/_[NeTL], narrowing) = '_/_[NeTL] .
+    eq trVal(Q[NeTL])            = Q[trVal(NeTL)] [owise] .
+    eq trVal((T, NeTL))       = trVal(T), trVal(NeTL) .
+
+endm
+
+fmod STRUCT-TR is
+    protecting META-LEVEL .
+
+    var Q OpQ : Qid .
+    var T : Term .
+    var TL : TermList .
+    vars NeTL NeTLasTV : NeTermList .
+    var S : Sort .
+    var SortS : SortSet .
+    var V : Variable .
+
+    op genEqsConsVar : Qid -> EquationSet .
+    *** Simplified version of modification function
+    eq genEqsConsVar(Q) = (eq 'modStructT['C:Constant, Q] = 'subSEConstSortsT['C:Constant, Q] [none] .)
+                          (eq 'modStructT['V:Variable, Q] = 'subSEVarSorts['V:Variable, Q] [none] .)
+                          (eq 'modStructT['C:Constant] = 'modStructT['C:Constant, 'getType['C:Constant]] [none] .)
+                          (eq 'modStructT['V:Variable] = 'modStructT['V:Variable, 'getType['V:Variable]] [none] .)
+                          .
+
+    ***op multUpTerm : TermList -> TermList .
+    ***eq multUpTerm(empty) = empty .
+    ***eq multUpTerm((T, TL)) = 'upTerm[T] , multUpTerm(TL) .
+
+    op toTVar : TermList ~> TermList .
+    eq toTVar(empty) = empty .
+    eq toTVar((V, TL)) = qid(string(getName(V)) + ":Term"), toTVar(TL) .
+    eq toTVar((T, TL)) = T, toTVar(TL) [owise] .
+    
+    *** TODO: Include subSEVarSorts and subSEConstSortsT eqs for each sort (to distinguish symb and conc)
+    op genEqsCompTerm : Qid TermList -> EquationSet .
+    eq genEqsCompTerm(Q, empty) = none .
+    ceq genEqsCompTerm(Q, (OpQ[T] , TL)) =
+        ***       We are using another meta-level (that is why we use upTerm here)
+        (eq 'modStructT['_`[_`][upTerm(OpQ), NeTLasTV]] = '_`[_`][upTerm(OpQ), 'trVal[NeTLasTV]] [owise] .)
+        (eq 'subSEVarSorts['V:Variable, Q] = 'qid['_+_['_+_['string['getName['V:Variable]], '"S:".String], 'string['trSorts[Q]]]] [owise] .)
+        genEqsCompTerm(Q, TL)
+      if NeTLasTV := toTVar(T) [owise] .
+    ceq genEqsCompTerm(Q, (OpQ[T, NeTL] , TL)) =
+        ***       We are using another meta-level (that is why we use upTerm here)
+        (eq 'modStructT['_`[_`][upTerm(OpQ), '_`,_[NeTLasTV]]] = '_`[_`][upTerm(OpQ), 'trVal['_`,_[NeTLasTV]]] [owise] .)
+        (eq 'subSEVarSorts['V:Variable, Q] = 'qid['_+_['_+_['string['getName['V:Variable]], '"S:".String], 'string['trSorts[Q]]]] [owise] .)
+        genEqsCompTerm(Q, TL)
+      if NeTLasTV := toTVar((T, NeTL)) [owise] .
+    eq genEqsCompTerm(Q, ('_`,_[NeTL] , TL)) = genEqsCompTerm(Q, TL) .
+
+    op generateEqs : Qid TermList -> EquationSet .
+    eq generateEqs(Q, TL) = genEqsConsVar(Q)
+                            genEqsCompTerm(Q, TL) .
+    op generateEqsFromSortSet : SortSet TermList -> EquationSet .
+    eq generateEqsFromSortSet(none, TL) = none .
+    eq generateEqsFromSortSet(S ; SortS, TL) = generateEqs(upTerm(S), TL) generateEqsFromSortSet(SortS, TL) .
+endfm
+
+mod META-STRUCT-TR is
+    protecting CONVERSION .
+
+    protecting STRUCT-TR .
+    protecting SEM-TR .
+
+    ***op genConstant : Sort -> Constant .
+    ***var S : Sort .
+    ***eq genConstant(S) = qid(string(S) + ".Sort") .
+    *** red genConstant('Stores) .
+    sort TrPair .
+
+    var M : Module .
+    var C : Constant .
+    var SortS : SortSet .
+    vars S S' : Sort .
+    vars structOpTL TL TL' : TermList .
+    var Q : Qid .
+    var TyL : TypeList .
+    var NeTyL : NeTypeList .
+    var Ty : Type .
+    var OpDecl : OpDecl .
+    vars OpDeclSet OpDeclSet' : OpDeclSet .
+    var N : Nat .
+    var AttrSet : AttrSet .
+    var SubSSet : SubsortDeclSet .
+    var SubS : SubsortDecl .
+
+    op genTLStr : TypeList Nat -> TermList .
+    eq genTLStr(nil, N) = empty .
+    eq genTLStr(Ty TyL, N) = qid("T" + string(N + 1, 10) + ":" + string(Ty)), genTLStr(TyL, N + 1) .
+
+    op genCompT : Qid TypeList Nat -> Term .
+    eq genCompT(Q, nil, N) = Q .
+    eq genCompT(Q, Ty TyL, N) = Q[qid("T" + string(N, 10) + ":" + string(Ty)), genTLStr(TyL, N)] .
+
+    op (_|_) : OpDeclSet TermList -> TrPair [ctor] .
+    op __ : TrPair TrPair -> TrPair .
+    eq (OpDeclSet | TL) (OpDeclSet' | TL') = (OpDeclSet OpDeclSet' | TL TL') .
+
+    op genSymbOp : Qid TypeList Sort AttrSet -> OpDecl .
+    eq genSymbOp('_`,_, TyL, S, AttrSet) = (op '_`,_ : TyL -> S [AttrSet] .) .
+    eq genSymbOp(Q, TyL, S, AttrSet) = (op toSymb(Q) : TyL -> S [AttrSet] .) [owise] .
+
+    *** TODO: Use list of pairs of the form (Term, Sort) -> Not needed because IVal can be dual
+    ***op genStructOpTL : OpDeclSet SortSet Nat -> TrPair .
+    ***eq genStructOpTL(none, SortS, N) = (none | empty) .
+    ***eq genStructOpTL(OpDeclSet, none, N) = (none | empty) .
+    ***ceq genStructOpTL((op Q : TyL -> S [AttrSet] .) OpDeclSet, S ; SortS, N) = (genSymbOp(Q, TyL, S, AttrSet) OpDeclSet' | (genCompT(Q, TyL, N) , TL'))
+    ***  if (OpDeclSet' | TL') := genStructOpTL(OpDeclSet, SortS, N) . 
+    ***eq genStructOpTL(OpDecl OpDeclSet, SortS, N) = genStructOpTL(OpDeclSet, SortS, N) [owise] .
+    
+    *** TODO: Revise if NeTyL is correct (included because it was taking constants like EmptyStack, though not empty, and it should take none)
+    op genStructOpTL : OpDeclSet SortSet Nat -> TermList .
+    eq genStructOpTL(none, SortS, N) = empty .
+    eq genStructOpTL(OpDeclSet, none, N) = empty .
+    eq genStructOpTL((op Q : NeTyL -> S [AttrSet] .) OpDeclSet, S ; SortS, N) = genCompT(Q, NeTyL, N) , genStructOpTL(OpDeclSet, SortS, N) . 
+    eq genStructOpTL(OpDecl OpDeclSet, SortS, N) = genStructOpTL(OpDeclSet, SortS, N) [owise] .
+    
+    op subOfS : SubsortDeclSet SortSet -> SortSet .
+    eq subOfS(none, SortS) = none .
+    ***eq subOfS(SubS SubSSet, none) = none [owise] .
+    eq subOfS(subsort S' < S . SubSSet, S ; SortS) = S' ; subOfS(SubSSet, S ; SortS) .
+    eq subOfS(subsort S' < S . SubSSet, SortS) = subOfS(SubSSet, SortS) [owise] .
+
+    op tr : Module SortSet -> Module .
+    ceq tr(M, SortS) = mod getName(M) is
+                getImports(M) (protecting 'META-STRUCT-TR .)
+                sorts getSorts(M) .
+                getSubsorts(M)
+                getOps(M) ***OpDeclSet
+                getMbs(M)
+                getEqs(M) generateEqsFromSortSet(SortS, structOpTL)
+                getRls(M)
+                ***getStrats(M) getStrats(FM)
+                ***getSds(M) getSds(FM)
+                endm
+        ***if (OpDeclSet | structOpTL) := genStructOpTL(getOps(M), subOfS(getSubsorts(M), SortS) ; SortS, 0)
+        if structOpTL := genStructOpTL(getOps(M), subOfS(getSubsorts(M), SortS) ; SortS, 0) .
+    
+    op getStructS : OpDeclSet -> SortSet .
+    eq getStructS(none) = none .
+    eq getStructS((op 'struct : S -> 'Struct [ ctor metadata("vstruct") AttrSet] .) OpDeclSet) = S ; getStructS(OpDeclSet) . 
+    eq getStructS(OpDecl OpDeclSet) = getStructS(OpDeclSet) [owise] .
+    
+    
+    *** Function to invoke tr with the SortSet of marked Structs
+    op trWithStructs : Module -> Module .
+    ceq trWithStructs(M) = tr(M, SortS)
+      if SortS := getStructS(getOps(M)) .
+    *** red metaReduce(tr(upModule('SEM-TR, true), 'Stores), 'modStructT[''emptySTR.Stores.Constant, ''Stores.Sort]) .
+    *** red metaReduce(tr(upModule('SEM-TR, true), 'IStore), 'modStructT[upTerm('_|->I_['T1:Qid, 'T2:IVal]), ''IStore.Sort]) .
+    
+    *** Full transformation (more than one structs (only stores for now))
+    *** red metaReduce(trWithStructs(upModule('SEM-TR, true)), 'modStructT[upTerm('_|->I_['T0:Qid, 'T1:IVal]), ''IStore.Sort]) .
+    *** red metaReduce(trWithStructs(upModule('SEM-TR, true)), 'modStructT[upTerm('_|->R_['T0:Qid, 'T1:RVal]), ''RStore.Sort]) .
+    *** NOTE: The number of the terms matters (start from T0, T1,...Tn)
+    *** red metaReduce(trWithStructs(upModule('SEM-TR, true)), 'modStructT['_|->I_['T0:Qid, 'T1:IVal], ''IStore.Sort]) .
+    *** red metaReduce(trWithStructs(upModule('SEM-TR, true)), 'modStructT['_|->I_['T0:Qid, 'val['I:Int]], ''IStore.Sort]) .
+    *** red downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), 'modStructT['_|->I_['T0:Qid, 'val['I:Int]], ''IStore.Sort])), err:Term) .
+    *** red downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), 'modStructT['_|->I_['T0:Qid, 'val['s_^2['0.Zero]]], ''IStore.Sort])), err:Term) .
+    *** Valid:
+    *** red downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), 'modStructT[upTerm('_|->I_['T0:Qid, 'val['s_^2['0.Zero]]])])), err:Term) .
+    *** red downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), 'modStructT[upTerm('_|->R_['T0:Qid, 'val[upTerm((2/3).Rat)]])])), err:Term) .
+    *** red downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), 'modStructT[upTerm('_|->B_['T0:Qid, 'val['true.Bool]])])), err:Term) .
+    *** red downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), 'modStructT[''empty.BStore.Constant])), err:Term) .
+    *** red downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), 'modStructT[''EmptyStack.Stack.Constant])), err:Term) .
+    *** red downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), 'modStructT[upTerm('_$_['S1:StackElem, 'ielem['val['s_^2['0.Zero]]]])])), err:Term) .
+    *** red downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), 'modStructT[upTerm('_$_['ielem['val['s_^27['0.Zero]]], 'ielem['val['s_^2['0.Zero]]]])])), err:Term) .
+    *** red downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), 'modStructT[upTerm('_$_['belem['val['true.Bool]], 'ielem['val['s_^2['0.Zero]]]])])), err:Term) .
+    *** red downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), 'subSEVarSorts[''IStore:IStore.Variable, ''IStore.Sort])), err:Term) .
+
+    *** With downTerm to original struct
+    *** red downTerm(downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), 'modStructT[upTerm('_$_['belem['val['true.Bool]], 'ielem['val['s_^2['0.Zero]]]]), ''Stack.Sort])), err:Term), err:Stack) .
+
+    *** red downTerm('_`[_`]['_`[_`][''toSymb.Sort, ''_|->I_.Sort], '_`[_`][''trVal.Sort, '_`,_[''T1:Qid.Variable, ''T2:Int.Variable]]], err:Term) .
+    *** red downTerm(getTerm(metaReduce(tr(upModule('SEM-TR, true), 'IStore), 'modStructT[upTerm('_|->I_['T1:Qid, 'T2:Int]), ''IStore.Sort])), err:Term) .
+    *** red metaReduce(tr(upModule('SEM-TR, true), 'IStore), downTerm(getTerm(metaReduce(tr(upModule('SEM-TR, true), 'IStore), 'modStructT[upTerm('_|->I_['T1:Qid, 'T2:Int]), ''IStore.Sort])), err:Term)) .
+    
+    *** Target:
+    *** red downTerm('_`[_`]['toSymb[''_|->I_.Sort], 'trVal['_`,_[''T1:Qid.Variable, ''T2:Int.Variable]]], err:Term) .
+endm

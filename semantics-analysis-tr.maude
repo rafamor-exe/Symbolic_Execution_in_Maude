@@ -441,7 +441,9 @@ fmod MODULE-TRANSFORMER is
                             *** Initialize the concolic state
                             (op '$startC : StateOp 'PairSVarL 'Stores 'Boolean -> 'ConcolicState [none] .)
                             *** Create a symbolic state for MaudeSE or narrowing execution
-                            (op 'startSE : StateOp 'PairSVarL 'Stores -> StateOp [none] .) .
+                            (op 'startSE : StateOp 'PairSVarL 'Stores -> StateOp [none] .)
+                            *** Direct symbolic transformation state
+                            (op 'startSED : StateOp 'PairSVarL 'Stores 'Boolean -> 'SEState [none] .) .
 
     *** Transform operator declarations depending on the transformation type
     op modSEOps : OpDeclSet Qid Qid TrType -> OpDeclSet .
@@ -580,6 +582,7 @@ fmod MODULE-TRANSFORMER is
     eq modStoreT(MVar, T, ValOp, TrId) = MVar [owise] .
     eq modStoreT(MConst, ValOp, TrId)                = modStoreT(MConst, getType(MConst), ValOp, TrId) .
     eq modStoreT(MVar, ValOp, TrId)                  = modStoreT(MVar, getType(MVar), ValOp, TrId) .
+    *** TODO: Does toSymb('_|->I_) make sense? Wouldn't that convert to '_|->I_S?
     eq modStoreT('_|->I_[T1, T2], ValOp, TrId)       = toSymb('_|->I_)[T1, searchSubVarConst(T2, TrId)] .
     eq modStoreT('_|->R_[T1, T2], ValOp, TrId)       = toSymb('_|->R_)[T1, searchSubVarConst(T2, TrId)] .
     eq modStoreT('_|->B_[T1, T2], ValOp, TrId)       = toSymb('_|->B_)[T1, searchSubVarConst(T2, TrId)] .
@@ -724,7 +727,10 @@ fmod MODULE-TRANSFORMER is
                             (eq 'startSE[stateVar(StateOp), '__['_`,_['Var:Qid, 'B1:Boolean], 'SVDeclL:PairSVarL], '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'BSTRS:BStoreS]] = 'startSE[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_|_['ISTRS:IStoreS, 'RSTRS:RStoreS, 'insert['Var:Qid, 'B1:Boolean, 'BSTRS:BStoreS]]] [none] .)
                             *** Similar definition for starting narrowing execution
                             (eq 'startSE[stateVar(StateOp), '__['_`,_['Var:Qid, 'I1:IntFVP], 'SVDeclL:PairSVarL], '_|_['ISTRN:IStoreN, 'BSTRN:BStoreN]] = 'startSE[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_['insert['Var:Qid, 'I1:IntFVP, 'ISTRN:IStoreN], 'BSTRN:BStoreN]] [none] .)
-                            (eq 'startSE[stateVar(StateOp), '__['_`,_['Var:Qid, 'B1:BoolFVP], 'SVDeclL:PairSVarL], '_|_['ISTRN:IStoreN, 'BSTRN:BStoreN]] = 'startSE[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_['ISTRN:IStoreN, 'insert['Var:Qid, 'B1:BoolFVP, 'BSTRN:BStoreN]]] [none] .) .
+                            (eq 'startSE[stateVar(StateOp), '__['_`,_['Var:Qid, 'B1:BoolFVP], 'SVDeclL:PairSVarL], '_|_['ISTRN:IStoreN, 'BSTRN:BStoreN]] = 'startSE[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_['ISTRN:IStoreN, 'insert['Var:Qid, 'B1:BoolFVP, 'BSTRN:BStoreN]]] [none] .)
+                            
+                            (ceq 'startSED[stateVar(StateOp), 'SVDeclL:PairSVarL, 'STR:Stores, 'B:Boolean] = '_`{_`}['startSE[stateVar(StateOp), 'SVDeclL:PairSVarL, 'STR:Stores], 'B:Boolean]
+                              if 'metaCheck[upTerm(['REAL-INTEGER]), upTerm('B:Boolean)] = 'true.Bool [none] .) .
 
 
     *** Transform rules depending on transformation type

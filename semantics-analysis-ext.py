@@ -5,7 +5,7 @@ import time
 
 ADHOC_CONCOLIC_IMPL = 'adhoc-analysis/while-semantics-concolic.maude'
 
-SEMANTICS_TRANSFORMER_MAUDE = 'semantics-analysis-tr.maude'
+SEMANTICS_TRANSFORMER_MAUDE = 'gen-semantics-analysis-tr.maude'
 
 def get_args():
     parser = argparse.ArgumentParser(description="Argument Parser for Maude While Language Concolic Engine", 
@@ -31,6 +31,9 @@ def get_args():
     parser.add_argument("--logic", action="store", help="Logic to use in MaudeSE analysis", default="'QF_LRA")
     parser.add_argument("--fold", action="store", help="Allow folding in MaudeSE analysis", default="false")
 
+    parser.add_argument("--nrwFold", action="store", help="Narrowing fold Qid", default="'match")
+    parser.add_argument("--vOpSet", action="store", help="Narrowing variant op set", default="delay filter")
+
     parser.add_argument("--metrics", action="store_true", help="Enable rewrite metrics without module transformation")
     return parser.parse_args()
 
@@ -53,6 +56,8 @@ def getSymbVarCond(args) :
             if var in cnd:
                 cndMod = cnd.replace(var, val)
                 reSymbCond.append(cndMod)
+            else:
+                reSymbCond.append(cnd)
     symbCond = ' and '.join(reSymbCond)
     return svPairs, symbCond
 
@@ -75,9 +80,10 @@ if __name__ == '__main__':
         sys.argv = ["maude-se", args.file, "-no-meta"]
         maudeSE.main()
 
+        # TODO: enable svPairs and path again. Make separate option for searchMaudeSESimple (used for generic transform)
         svPairs, symbCond = getSymbVarCond(args)
         if not args.metrics :
-            t = f"""searchMaudeSE(
+            t = f"""searchMaudeSESimple(
                         {args.mod},
                         {args.stSort},
                         {args.valOp},
@@ -88,30 +94,29 @@ if __name__ == '__main__':
                         {args.bound},
                         {args.solN},
                         {args.logic},
-                        {args.fold},
-                        {svPairs})"""
+                        {args.fold})""" # ,{svPairs}
             t = mod.parseTerm(t)
             n_rew = t.reduce()
             print(t)
             print(f"Rewrites: {n_rew}")
             print("---------")
-            print("With path:")
-            path = f"""searchPathMaudeSE(" \
-                                    {args.mod},
-                                    {args.stSort},
-                                    {args.valOp},
-                                    "{args.program}",
-                                    {args.pattern},
-                                    upTerm({symbCond}) = 'true.Boolean /\\ {args.sCond},
-                                    {args.sType},
-                                    {args.bound},
-                                    {args.solN},
-                                    {args.logic},
-                                    {args.fold},
-                                    {svPairs})"""
-            path = mod.parseTerm(path)
-            path.reduce()
-            print(path)
+            #print("With path:")
+            #path = f"""searchPathMaudeSE(" \
+            #                        {args.mod},
+            #                        {args.stSort},
+            #                        {args.valOp},
+            #                        "{args.program}",
+            #                        {args.pattern},
+            #                        upTerm({symbCond}) = 'true.Boolean /\\ {args.sCond},
+            #                        {args.sType},
+            #                        {args.bound},
+            #                        {args.solN},
+            #                        {args.logic},
+            #                        {args.fold},
+            #                        {svPairs})"""
+            #path = mod.parseTerm(path)
+            #path.reduce()
+            #print(path)
         else:
             print("---------")
             print("Only measure search rewrites")
@@ -246,6 +251,7 @@ if __name__ == '__main__':
         maude.load(args.file)
         maude.load(SEMANTICS_TRANSFORMER_MAUDE)
         mod = maude.getModule('VERIFICATION-COMMANDS')
+        print(args.symbCond)
         svPairs, symbCond = getSymbVarCond(args)
         print("---------")
         print("Only measure search rewrites")
@@ -261,13 +267,54 @@ if __name__ == '__main__':
         t_0.reduce()
         term_time = time.time()
         #print(t_0)
+        print(symbCond)
         t_search = f"""metaSearch({t_mod},
-                                    '_`{{_`}}[{t_0}, 'true.Boolean],
+                                    'startSED[{t_0}, searchSubVarConst(upTerm({svPairs}), symb),'_|_|_['empty.IStoreS, 'empty.RStoreS, 'empty.BStoreS], searchSubVarConst(upTerm({symbCond}), symb)],
                                     {args.pattern},
                                     {args.sCond},
                                     {args.sType},
                                     {args.bound},
                                     {args.solN})"""
+        t_search = mod.parseTerm(t_search)
+        n_rew = t_search.reduce()
+        end = time.time()
+        print(t_search)
+        print(f"Rewrites: {n_rew}")
+        print(f"Module transformation time (s): {mod_time - start}")
+        print(f"Term reduction time (s): {term_time - mod_time}")
+        print(f"Search time (s): {end - term_time}")
+        print(f"Total time elapsed (s): {end - start}")
+    elif args.analysis == "narrowing":
+        import maude
+        from maudeSMTHook import SMTAssignmentHook
+        maude.init(advise=True)
+        maude.load(args.file)
+        maude.load(SEMANTICS_TRANSFORMER_MAUDE)
+        mod = maude.getModule('VERIFICATION-COMMANDS')
+        svPairs, symbCond = getSymbVarCond(args)
+        print("---------")
+        print("Only measure search rewrites")
+        start = time.time()
+        t_mod = f"transformModSymb({args.mod}, {args.stSort}, {args.valOp}, narrowing)"
+        t_mod = mod.parseTerm(t_mod)
+        t_mod.reduce()
+        mod_time = time.time()
+        t_0 = f"""getTerm(metaParse({args.mod},
+                                    tokenize("{args.program}"),
+                                    {args.stSort}))"""
+        t_0 = mod.parseTerm(t_0)
+        t_0.reduce()
+        term_time = time.time()
+        #print(t_0)
+        t_search = f"""metaNarrowingSearch({t_mod},
+                                            'startSE[{t_0}, searchSubVarConst(upTerm({svPairs}), narrowing), 
+                                                        '_|_['empty.IStoreN, 'empty.BStoreN]],
+                                            {args.pattern},
+                                            {args.sType},
+                                            {args.bound},
+                                            {args.nrwFold},
+                                            {args.vOpSet},
+                                            {args.solN})"""
         t_search = mod.parseTerm(t_search)
         n_rew = t_search.reduce()
         end = time.time()

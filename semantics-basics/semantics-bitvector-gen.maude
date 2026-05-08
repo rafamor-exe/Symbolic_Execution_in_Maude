@@ -1,0 +1,145 @@
+load semantics-basics-gen.maude
+
+set include BOOL off .
+
+fmod BIT-OPS is
+    sort Bit .
+    ops 0 1 : -> Bit [ctor] .
+    op _and_ : Bit Bit -> Bit [assoc comm prec 55] .
+    op _or_ : Bit Bit -> Bit [assoc comm prec 59] .
+    op _xor_ : Bit Bit -> Bit [assoc comm prec 57] .
+    op not_ : Bit -> Bit [prec 53] .
+    vars A B C : Bit .
+    eq 1 and A = A .
+    eq 0 and A = 0 .
+    eq A and A = A .
+    eq 0 xor A = A .
+    eq A xor A = 0 .
+    eq A and (B xor C) = A and B xor A and C .
+    eq not A = A xor 1 .
+    eq A or B = A and B xor A xor B .
+endfm
+
+fmod BIT is
+    ***protecting BOOL * (
+    ***  sort Bool to Bit,
+    ***  op true to 1,
+    ***  op false to 0
+    ***) .
+    protecting BIT-OPS .
+
+    sort BitV .
+    subsort Bit < BitV .
+
+    op emptyBV : -> BitV [ctor] .
+    op __ : BitV BitV -> BitV [ctor assoc id: emptyBV prec 10] .
+
+    op _and_ : BitV BitV -> BitV [ditto] . *** Revise, should be ctor
+    op _or_ : BitV BitV -> BitV [ditto] .
+    op _xor_ : BitV BitV -> BitV [ditto] .
+    op not_ : BitV -> BitV [ditto] .
+
+    vars X Y : BitV .
+    vars A B : Bit .
+
+    eq X 1 or Y 1 = ((X or Y) or 1) 0 .
+    eq X A or Y 0 = (X or Y) A .
+    eq X 0 or Y B = (X or Y) B .
+    eq X 0 or Y B = (X or Y) B .
+    eq emptyBV or Y = Y .
+    eq X or emptyBV = X .
+
+    eq X 1 and Y 1 = (X and Y) 1 .
+    eq X A and Y 0 = (X and Y) 0 .
+    eq emptyBV and emptyBV = emptyBV .
+    eq emptyBV and Y = 0 [owise] .
+    eq X and emptyBV = 0 [owise] .
+
+    eq X A xor Y A = (X xor Y) 0 .
+    eq X 0 xor Y 1 = (X xor Y) 1 .
+    eq X 1 xor Y 0 = (X xor Y) 1 .
+    eq emptyBV xor Y = Y .
+    eq X xor emptyBV = X .
+
+    eq not X 0 = (not X) 1 .
+    eq not X 1 = (not X) 0 .
+    eq not emptyBV = 1 .
+
+endfm
+
+view Bit from TRIV to BIT is
+  sort Elt to Bit .
+endv
+view BitV from TRIV to BIT is
+  sort Elt to BitV .
+endv
+
+fmod CONCRETE-BITVVAL is
+
+    ***protecting CONCRETE-VARSTATE-MOD .
+    protecting BIT .
+
+    *** NOTE: For now, value representation (BitVVal) name must correspond to sort name + "Val" 
+    sorts BitVVal BitVExp .
+    subsort BitVVal < BitVExp .
+
+    op val : BitV -> BitVVal [ctor] .
+
+    op not_ : BitVVal -> BitVVal [prec 53] .
+    op _and_ : BitVVal BitVVal -> BitVVal [gather (e E) prec 55] .
+    op _or_ : BitVVal BitVVal -> BitVVal [gather (e E) prec 57] .
+    op _xor_ : BitVVal BitVVal -> BitVVal [gather (e E) prec 59] .
+
+    op _>_ : BitVVal BitVVal -> BitVVal [prec 37] .
+    op _>_ : BitVExp BitVExp -> BitVExp [prec 37] .
+
+    op -_ : BitVExp -> BitVExp [prec 30] .
+    op _+_ : BitVExp BitVExp -> BitVExp [gather (E e) prec 33] .
+    op _-_ : BitVExp BitVExp -> BitVExp [gather (E e) prec 33] .
+
+endfm
+
+view BitVVal from TRIV to CONCRETE-BITVVAL is
+  sort Elt to BitVVal .
+endv
+
+fmod CONCRETE-FW-NORAT-BIT{State :: TRIV} is
+
+    ***protecting CONCRETE-FW-NORAT{State} .
+    protecting CONCRETE-BITVVAL .
+
+    op cbiteval : BitVExp State$Elt -> BitV [metadata "evalF"].
+
+    vars BitVExp BitVExp1 BitVExp2 : BitVExp .
+    vars BitVV BitVV1 BitVV2 : BitVVal .
+    vars BitV BitV1 BitV2 : BitV .
+    var State : State$Elt .
+
+    eq cbiteval(BitVExp1 and BitVExp2, State) = cbiteval(BitVExp1, State) and cbiteval(BitVExp2, State) .
+    eq cbiteval(BitVExp1 or BitVExp2, State) = cbiteval(BitVExp1, State) or cbiteval(BitVExp2, State) .
+    eq cbiteval(BitVExp1 xor BitVExp2, State) = cbiteval(BitVExp1, State) xor cbiteval(BitVExp2, State) .
+    eq cbiteval(not BitVExp, State) = not cbiteval(BitVExp, State) .
+    
+    ***eq cbiteval(BitVExp1 > BitVExp2, State) = cbiteval(BitVExp1, State) > cbiteval(BitVExp2, State) .  
+    ***eq cbiteval(- BitVExp1, State) = - cbiteval(IExp1, State) .
+    ***eq cbiteval(BitVExp1 + BitVExp2, State) = cbiteval(BitVExp1, State) + cbiteval(BitVExp2, State) .
+    ***eq cbiteval(BitVExp1 - BitVExp2, State) = cbiteval(BitVExp1, State) - cbiteval(BitVExp2, State) .
+
+    ***eq evalI(iv(Q), ISTR) = ISTR[Q] .
+    eq cbiteval(val(BitV), State) = BitV .
+
+endfm
+
+*** Custom value reference marker for bit-vectors
+fmod BITREF{Ref :: TRIV, State :: TRIV} is
+    protecting CONCRETE-FW-NORAT-BIT{State} .
+    subsort Ref$Elt < BitVExp .
+    var Ref : Ref$Elt . 
+    var BitV : BitV .
+    var State : State$Elt .
+    op bitresolve : Ref$Elt State$Elt -> BitVVal [metadata "rsvF"] .
+    ceq cbiteval(Ref, State) = BitV
+        if val(BitV) := bitresolve(Ref, State) .
+endfm
+
+set include BOOL on .

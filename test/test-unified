@@ -619,12 +619,18 @@ red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'St
 - Rewrites: 11888
 red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'State, 'noVal, "start(iv('y) := val(20) ; iv('i) := val(5) ; while iv('y) > iv('k) do {if iv('k) > val(10) then {iv('z) := iv('y) / iv('i) ; } iv('k) := iv('k) + val(1) ; iv('i) := iv('i) - val(1) ;})", '<_|_>['__['_:=_;['IV1:IVar, '_/_['IExp1:IExp, 'iv[''i.Sort]]], 'Prest:Program], '_|_['_`,_['_|->In_[''i.Sort, '0.IntFVP], 'ISTRSf:IStoreN], 'BSTRSf:BStoreN]], '+, unbounded, 'match, delay filter, 0, ('k, k0:IntFVP)) .
 
+*** With Python
+python3 semantics-analysis-ext.py --program "start(iv('y) := val(20) ; iv('i) := val(5) ; while iv('y) > iv('k) do {if iv('k) > val(10) then {iv('z) := iv('y) / iv('i) ; } iv('k) := iv('k) + val(1) ; iv('i) := iv('i) - val(1) ;})" --pattern "'<_|_>['__['_:=_;['IV1:IVar, '_/_['IExp1:IExp, 'iv[''i.Sort]]], 'Prest:Program], '_|_['_\`,_['_|->In_[''i.Sort, '0.IntFVP], 'ISTRSf:IStoreN], 'BSTRSf:BStoreN]]" --file "language-semantics/noRat-while-semantics-concrete.maude" --analysis "narrowing" --logic "'QF_LRA" --fold "false" --mod "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(k, IntFVP)" --sType "'+" --solN 0 --metrics
+
 ***red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'State, 'noVal, "start(if iv('x) > val(0) then{iv('x) := iv('x) ; } else { iv('x) := - iv('x) ; })", '<_|_>['nil.Program, '_|_['_|->In_[''x.Sort, '-_['Y:NzNatFVP]], 'BSTRf:BStoreN]], '+, unbounded, 'match, delay filter, 0, ('x, x0:IntFVP)) .
 ***red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'State, 'noVal, "start(if iv('x) > val(0) then{iv('x) := iv('x) ; } else { iv('x) := - iv('x) ; })", '<_|_>['nil.Program, '_|_['_|->In_[''x.Sort, '-_['Y:NzNatFVP]], 'BSTRf:BStoreN]], '+, unbounded, 'match, delay filter, 1, ('x, x0:IntFVP)) .
 
 *** With target Y:IntFVP
 red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'State, 'noVal, "start(if iv('x) > val(0) then{iv('x) := iv('x) ; } else { iv('x) := - iv('x) ; })", '<_|_>['nil.Program, '_|_['_|->In_[''x.Sort, '-_['Y:IntFVP]], 'BSTRf:BStoreN]], '+, unbounded, 'match, delay filter, 0, ('x, x0:IntFVP)) .
 red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'State, 'noVal, "start(if iv('x) > val(0) then{iv('x) := iv('x) ; } else { iv('x) := - iv('x) ; })", '<_|_>['nil.Program, '_|_['_|->In_[''x.Sort, '-_['Y:IntFVP]], 'BSTRf:BStoreN]], '+, unbounded, 'match, delay filter, 1, ('x, x0:IntFVP)) .
+
+*** With Python
+python3 semantics-analysis-ext.py --program "start(if iv('x) > val(0) then{iv('x) := iv('x) ; } else { iv('x) := - iv('x) ; })" --pattern "'<_|_>['nil.Program, '_|_['_|->In_[''x.Sort, '-_['Y:IntFVP]], 'BSTRf:BStoreN]]" --file "language-semantics/noRat-while-semantics-concrete.maude" --analysis "narrowing" --logic "'QF_LRA" --fold "false" --mod "upModule('WHILE-MAUDE, true)" --stSort "'State" --svars "(x, IntFVP)" --sType "'+" --solN 0 --metrics
 
 *** NOTE: Narrowing needs that the final state has constraint
 red in VERIFICATION-COMMANDS : searchNarrowing(upModule('WHILE-MAUDE, true), 'State, 'noVal, "start(if iv('x) > val(0) then{iv('x) := iv('x) ; } else { iv('x) := - iv('x) ; })", 'SESf:State, '+, unbounded, 'match, delay filter, 0, ('x, x0:IntFVP)) .
@@ -799,6 +805,20 @@ search < if iv('x) < val(0) then{iv('y) := val(0) ;} else {iv('y) := val(2) * iv
 
 search < if iv('x) < val(0) then{iv('y) := val(0) ;} else {iv('y) := val(2) * iv('x) ;} | ('x |->Is x:Integer | empty | empty) > {true} =>1 < P':Program | STR:Stores > {CST:Boolean} .
 
+*** To show that if initial constraints do not hold, the execution is not performed
+Maude> search < if iv('x) < val(0) then{iv('y) := val(0) ;} else {iv('y) := val(2) * iv('x) ;} | ('x |->Is x:Integer | empty | empty) > {false} =>* < P':Program | STR:Stores > {CST:Boolean} .
+search in TRANSFORMED-MOD : < if iv('x) < val((0).Zero) then{iv('y) := val((0).Zero) ;}else{iv('y) := val((2).NzNat) * iv('x) ;} | 'x |->Is x:Integer | (empty).RStoreS | (empty).BStoreS >{(false).Boolean} =>* < P':Program | STR:Stores >{CST:Boolean}
+
+Solution 1 (state 0)
+rewrites: 0
+STR:Stores --> 'x |->Is x:Integer | (empty).RStoreS | (empty).BStoreS
+P':Program --> if iv('x) < val((0).Zero) then{iv('y) := val((0).Zero) ;}else{iv('y) := val((2).NzNat) * iv('x) ;}
+CST:Boolean --> (false).Boolean
+
+No more solutions.
+
+search < iv('z) := val(10) ; if iv('x) < val(0) then{iv('y) := val(0) ;} else {iv('y) := val(2) * iv('x) ;} | ('x |->Is x:Integer | empty | empty) > {false} =>* < P':Program | STR:Stores > {CST:Boolean} .
+
 *** Loops
 search [1] startSE(start(iv('y) := val(20) ; iv('i) := val(5) ; while iv('k) < iv('y) do {if iv('k) > val(10) then {iv('z) := iv('y) / iv('i) ; } iv('k) := iv('k) + val(1) ; iv('i) := iv('i) - val(1) ;}), ('k, k0S:Integer), ((empty).IStoreS | (empty).RStoreS | (empty).BStoreS)) {(true).Boolean} =>* < IV1:IVar := IExp1:IExp / iv('i) ; Pf:Program | (ISTRf:IStoreS, 'i |->Is RES:Integer) | RSTRf:RStoreS | BSTRf:BStoreS > {CST:Boolean} s.t. (metaCheck(['REAL-INTEGER], upTerm(RES:Integer === 0))) .
 
@@ -821,3 +841,333 @@ s.t. (RES:Integer < 0)
 
 
 *** search [1] startC(start(iv('i) := val(5); while iv('k) < iv('y) do { if iv('k) > val(10) then {iv('x) := iv('k) * iv('y) ; iv('a) := iv('x) - iv('i); iv('z) := iv('y) / iv('a) ;} iv('k) := iv('k) + val(1) ; iv('i) := iv('i) * val(2) ;}), ('k, k0S:Integer) ('y, y0S:Integer)) =>* [< IV1:IVar := IExp1:IExp / iv(IV:Qid) ; Pf:Program |(ISTRf:IStore, IV:Qid |->I 0) | RSTRf:RStore | BSTRf:BStore >][SMS:State {CST:Boolean}][SMSInit:State] .
+
+
+*** Test modStoreT
+red in VERIFICATION-COMMANDS : metaReduce(upModule('MODULE-TRANSFORMER, true), 'modStoreT[upTerm('_|->I_[''x.Sort, 's_^2['0.Zero]]), ''recV.Sort, 'symb.TrType]) .
+
+*** Test generic FW
+red in META-STRUCT-TR : trWithStructs(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)) .
+
+select trWithStructs(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)) .
+
+red in META-STRUCT-TR : trWithStructs(upModule('SEM-TR, true)) .
+red in META-STRUCT-TR : metaReduce(trWithStructs(upModule('SEM-TR, true)), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb))) .
+
+upTerm(< iv('y) := val((10).Int) ; | EmptyStack | (empty).IStore | (empty).BStore > {(true).Boolean})
+
+*** These use the old trWithStructs, below there are examples with trWithStructsPrM (M is automatically imported in SEM-TR by module fusion) 
+***red in VERIFICATION-COMMANDS : metaRewrite(downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), getTerm(metaParse(downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), tokenize("< iv('y) := val((10).Int) ; | EmptyStack | (empty).IStore | (empty).BStore > {(true).Boolean}"), 'SEState)), unbounded) .
+
+***red in VERIFICATION-COMMANDS : metaRewrite(downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), upTerm(< iv('y) := val((10).Int) ; | EmptyStack | (empty).IStore | (empty).BStore > {(true).Boolean}), unbounded) .
+
+
+
+***red in VERIFICATION-COMMANDS : metaRewrite(downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), getTerm(metaParse(downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), tokenize("< iv('x) := val((-1).Int) ; if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; pop ; | EmptyStack | (empty).IStore | (empty).BStore > {(true).Boolean}"), 'SEState)), unbounded) .
+
+***red in VERIFICATION-COMMANDS : metaRewrite(downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), upTerm(< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; pop ; | EmptyStack | 'x |->I val((-1).Integer) | (empty).BStore > {(true).Boolean}), unbounded) .
+
+
+*** NOT Valid red in VERIFICATION-COMMANDS : metaSearch(downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), upTerm(< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; pop ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore > {(true).Boolean}), '_`{_`}['<_|_|_>['nil.Program, 'Sf:Stack, '_|_['ISf:IStore, 'BSf:BStore]], 'CSTf:Boolean], nil, '*, unbounded, 0) .
+
+***red in VERIFICATION-COMMANDS : metaSearch(downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), getTerm(metaParse(downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), tokenize("< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; pop ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore > {(true).Boolean}"), 'SEState)), '_`{_`}['<_|_|_>['nil.Program, 'Sf:Stack, '_|_['ISf:IStore, 'BSf:BStore]], 'CSTf:Boolean], nil, '*, unbounded, 0) .
+
+*** Without pop
+*** NOT VALID red in VERIFICATION-COMMANDS : metaSearch(downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), upTerm(< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore > {(true).Boolean}), '_`{_`}['<_|_|_>['nil.Program, 'Sf:Stack, '_|_['ISf:IStore, 'BSf:BStore]], 'CSTf:Boolean], nil, '*, unbounded, 0) .
+*** NOT VALID red in VERIFICATION-COMMANDS : metaSearch(downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), upTerm(< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore > {(true).Boolean}), '_`{_`}['<_|_|_>['nil.Program, 'Sf:Stack, '_|_['ISf:IStore, 'BSf:BStore]], 'CSTf:Boolean], nil, '*, unbounded, 1) .
+
+
+***red in VERIFICATION-COMMANDS : metaSearch(downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), getTerm(metaParse(downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), tokenize("< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore > {(true).Boolean}"), 'SEState)), '_`{_`}['<_|_|_>['nil.Program, 'Sf:Stack, '_|_['ISf:IStore, 'BSf:BStore]], 'CSTf:Boolean], nil, '*, unbounded, 0) .
+
+***red in VERIFICATION-COMMANDS : metaSearch(downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), getTerm(metaParse(downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), tokenize("< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore > {(true).Boolean}"), 'SEState)), '_`{_`}['<_|_|_>['nil.Program, 'Sf:Stack, '_|_['ISf:IStore, 'BSf:BStore]], 'CSTf:Boolean], nil, '*, unbounded, 1) .
+
+************************************************
+*** Protecting semantic module automatically ***
+************************************************
+red in VERIFICATION-COMMANDS : metaRewrite(downTerm(getTerm(metaReduce(trWithStructsPrM(upModule('SEM-TR, true), 'WHILE-MAUDE), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), getTerm(metaParse(downTerm(getTerm(metaReduce(trWithStructsPrM(upModule('SEM-TR, true), 'WHILE-MAUDE), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), tokenize("< iv('x) := val((-1).Int) ; if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; pop ; | EmptyStack | (empty).IStore | (empty).BStore > {(true).Boolean}"), 'SEState)), unbounded) .
+
+red in VERIFICATION-COMMANDS : metaSearch(downTerm(getTerm(metaReduce(trWithStructsPrM(upModule('SEM-TR, true), 'WHILE-MAUDE), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), getTerm(metaParse(downTerm(getTerm(metaReduce(trWithStructsPrM(upModule('SEM-TR, true), 'WHILE-MAUDE), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), tokenize("< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore > {(true).Boolean}"), 'SEState)), '_`{_`}['<_|_|_>['nil.Program, 'Sf:Stack, '_|_['ISf:IStore, 'BSf:BStore]], 'CSTf:Boolean], nil, '*, unbounded, 0) .
+
+red in VERIFICATION-COMMANDS : metaSearch(downTerm(getTerm(metaReduce(trWithStructsPrM(upModule('SEM-TR, true), 'WHILE-MAUDE), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), getTerm(metaParse(downTerm(getTerm(metaReduce(trWithStructsPrM(upModule('SEM-TR, true), 'WHILE-MAUDE), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), tokenize("< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore > {(true).Boolean}"), 'SEState)), '_`{_`}['<_|_|_>['nil.Program, 'Sf:Stack, '_|_['ISf:IStore, 'BSf:BStore]], 'CSTf:Boolean], nil, '*, unbounded, 1) .
+
+----- Test concolic aux functions
+red in VERIFICATION-COMMANDS : metaReduce(downTerm(getTerm(metaReduce(trWithStructsPrM(upModule('SEM-TR, true), 'WHILE-MAUDE), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), '$apply-SMTassignment['upTerm[getTerm(metaParse(downTerm(getTerm(metaReduce(trWithStructsPrM(upModule('SEM-TR, true), 'WHILE-MAUDE), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), tokenize("< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore > {(true).Boolean}"), 'SEState))], '_<--_['p:Integer, '1.Integer]]) .
+
+red in VERIFICATION-COMMANDS : metaReduce(downTerm(getTerm(metaReduce(trWithStructsPrM(upModule('SEM-TR, true), 'WHILE-MAUDE), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), 'initialize-def['_`[_`][''_`{_`}.Sort, '_`,_['_`[_`][     ''<_|_|_>.Sort, '_`,_['_`[_`][''__.Sort, '_`,_['_`[_`][     ''if_then`{_`}else`{_`}.Sort, '_`,_['_`[_`][''_>_.Sort, '_`,_['_`[_`][     ''iv.Sort, '''x.Sort.Constant], '_`[_`][''val.Sort, ''0.Zero.Constant]]],     '_`[_`][''pushI_;.Sort, '_`[_`][''iv.Sort, '''x.Sort.Constant]], '_`[_`][     ''pushI_;.Sort, '_`[_`][''-_.Sort, '_`[_`][''iv.Sort,     '''x.Sort.Constant]]]]], '_`[_`][''_:=_;.Variable, '_`,_['_`[_`][''iv.Sort,     '''y.Sort.Constant], ''iheadST.IHeadST.Constant]]]],     ''EmptyStack.Stack.Constant, '_`[_`][''_|_.Sort, '_`,_['_`[_`][     ''_|->I_.Sort, '_`,_['''x.Sort.Constant, '_`[_`][''val.Sort,     ''p:Integer.Variable]]], ''empty.BStore.Constant]]]],     ''true.Boolean.Constant]]]) .
+
+red in VERIFICATION-COMMANDS : metaReduce(downTerm(getTerm(metaReduce(trWithStructsPrM(upModule('SEM-TR, true), 'WHILE-MAUDE), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), 'subT['_`[_`][''_`{_`}.Sort, '_`,_['_`[_`][     ''<_|_|_>.Sort, '_`,_['_`[_`][''__.Sort, '_`,_['_`[_`][     ''if_then`{_`}else`{_`}.Sort, '_`,_['_`[_`][''_>_.Sort, '_`,_['_`[_`][     ''iv.Sort, '''x.Sort.Constant], '_`[_`][''val.Sort, ''0.Zero.Constant]]],     '_`[_`][''pushI_;.Sort, '_`[_`][''iv.Sort, '''x.Sort.Constant]], '_`[_`][     ''pushI_;.Sort, '_`[_`][''-_.Sort, '_`[_`][''iv.Sort,     '''x.Sort.Constant]]]]], '_`[_`][''_:=_;.Variable, '_`,_['_`[_`][''iv.Sort,     '''y.Sort.Constant], ''iheadST.IHeadST.Constant]]]],     ''EmptyStack.Stack.Constant, '_`[_`][''_|_.Sort, '_`,_['_`[_`][     ''_|->I_.Sort, '_`,_['''x.Sort.Constant, '_`[_`][''val.Sort,     ''p:Integer.Variable]]], ''empty.BStore.Constant]]]],     ''true.Boolean.Constant]], ''p:Integer.Variable, '_`[_`][''s_.Sort,     ''0.Zero.Constant]]) .
+-----
+
+*** Narrowing over transformed transformation
+red in VERIFICATION-COMMANDS : metaNarrowingSearch(downTerm(getTerm(metaReduce(trWithStructsPrM(upModule('SEM-TR, true), 'WHILE-MAUDE), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, narrowing)))), err:Module), getTerm(metaParse(downTerm(getTerm(metaReduce(trWithStructsPrM(upModule('SEM-TR, true), 'WHILE-MAUDE), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, narrowing)))), err:Module), tokenize("< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:IntFVP) | (empty).BStore >"), 'State)), '<_|_|_>['nil.Program, 'Sf:Stack, '_|_['ISf:IStore, 'BSf:BStore]], '*, unbounded, 'match, delay filter, 0) .
+
+*** Using narrowing with custom theory for BitVectors
+***red in VERIFICATION-COMMANDS : metaNarrowingSearch(downTerm(getTerm(metaReduceMetaMod(upModule('SEM-TR, true), 'WHILE-MAUDE, 'BIT-NRW-CONVERSION, 'transformModSymb['upModule[''WHILE-MAUDE.Sort, 'true.Bool], ''State.Sort, ''placeholderVal.Sort, 'narrowing.TrType])), err:Module), getTerm(metaParse(downTerm(getTerm(metaReduceMetaMod(upModule('SEM-TR, true), 'WHILE-MAUDE, 'BIT-NRW-CONVERSION, 'transformModSymb['upModule[''WHILE-MAUDE.Sort, 'true.Bool], ''State.Sort, ''placeholderVal.Sort, 'narrowing.TrType])), err:Module), tokenize("< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:IntFVP) | (empty).BStore >"), 'State)), '<_|_|_>['nil.Program, 'Sf:Stack, '_|_['ISf:IStore, 'BSf:BStore]], '*, unbounded, 'match, delay filter, 0) .
+
+*** Using BitVectors in the actual semantics
+red in VERIFICATION-COMMANDS : metaNarrowingSearch(downTerm(getTerm(metaReduceMetaMod(upModule('SEM-TR, true), 'WHILE-MAUDE, 'BIT-NRW-CONVERSION, 'transformModSymb['upModule[''WHILE-MAUDE.Sort, 'true.Bool], ''State.Sort, ''placeholderVal.Sort, 'narrowing.TrType])), err:Module), getTerm(metaParse(downTerm(getTerm(metaReduceMetaMod(upModule('SEM-TR, true), 'WHILE-MAUDE, 'BIT-NRW-CONVERSION, 'transformModSymb['upModule[''WHILE-MAUDE.Sort, 'true.Bool], ''State.Sort, ''placeholderVal.Sort, 'narrowing.TrType])), err:Module), tokenize("< if iv('x) > val((0).Int) then { pushI iv('x) ; pushBV val((1).Bit (1).Bit (1).Bit) ; } else { pushI - iv('x) ; pushBV val((1).Bit (0).Bit (0).Bit) ; } bitv('y) := bitheadST ; | EmptyStack | 'x |->I val(p:IntFVP) | (empty).BStore | (empty).BVStore >"), 'State)), '<_|_|_>['nil.Program, 'Sf:Stack, '_|_|_['ISf:IStore, 'BSf:BStore, 'BVSf:BVStore]], '*, unbounded, 'match, delay filter, 0) .
+
+'cbitevalFVP['bitheadST.BitHeadST, '<_|_|_>['_:=_;['bitv[''y.Sort], 'bitheadST.BitHeadST], 'ielem['val['@1:NzNatFVP]], '_|_|_['_|->I_[''x.Sort, 'val['@1:NzNatFVP]], 'empty.BStore, 'empty.BVStore]]]
+
+red in VERIFICATION-COMMANDS : metaReduce(downTerm(getTerm(metaReduceMetaMod(upModule('SEM-TR, true), 'WHILE-MAUDE, 'BIT-NRW-CONVERSION, 'transformModSymb['upModule[''WHILE-MAUDE.Sort, 'true.Bool], ''State.Sort, ''placeholderVal.Sort, 'narrowing.TrType])), err:Module), 'cbitevalFVP['bitheadST.BitHeadST, '<_|_|_>['_:=_;['bitv[''y.Sort], 'bitheadST.BitHeadST], '_$_['bitelem['val['__['1.BitFVP, '0.BitFVP, '0.BitFVP]]], 'ielem['val['0.NatFVP]]], '_|_|_['_|->I_[''x.Sort, 'val['0.NatFVP]], 'empty.BStore, 'empty.BVStore]]]) .
+
+
+red in VERIFICATION-COMMANDS : metaReduce(downTerm(getTerm(metaReduceMetaMod(upModule('SEM-TR, true), 'WHILE-MAUDE, 'BIT-NRW-CONVERSION, 'transformModSymb['upModule[''WHILE-MAUDE.Sort, 'true.Bool], ''State.Sort, ''placeholderVal.Sort, 'narrowing.TrType])), err:Module), 'bitresolve['bitheadST.BitHeadST, '<_|_|_>['_:=_;['bitv[''y.Sort], 'bitheadST.BitHeadST], '_$_['bitelem['val['__['1.BitFVP, '0.BitFVP, '0.BitFVP]]], 'ielem['val['0.NatFVP]]], '_|_|_['_|->I_[''x.Sort, 'val['0.NatFVP]], 'empty.BStore, 'empty.BVStore]]]) .
+
+'cbitevalFVP['bitheadST.BitHeadST, '<_|_|_>['_:=_;['bitv[''y.Sort], 'bitheadST.BitHeadST], '_$_['bitelem['val['__['1.BitFVP, '0.BitFVP, '0.BitFVP]]], 'ielem['val['0.NatFVP]]], '_|_|_['_|->I_[''x.Sort, 'val['0.NatFVP]], 'empty.BStore, 'empty,BVStore]]]
+
+cbitevalFVP(bitheadST, < bitv('y) := bitheadST ; | ielem(val(@1:NzNatFVP)) | 'x |->I val(@1:NzNatFVP) | empty | empty >)
+
+red sbeval(bheadST, < bv('y) := bheadST ; | ielem(val(@1:NzNatFVP)) | 'x |->I val(@1:NzNatFVP) | empty | empty >) .
+
+red sbeval(bheadST, < bv('y) := bheadST ; | belem(val((tt).BoolFVP)) $ ielem(val(@1:NzNatFVP)) | 'x |->I val(@1:NzNatFVP) | empty | empty >) .
+
+red cbitevalFVP(bitheadST, < bitv('y) := bitheadST ; | bitelem(val((1).BitFVP (0).BitFVP (1).BitFVP)) $ ielem(val(@1:NzNatFVP)) | 'x |->I val(@1:NzNatFVP) | empty | empty >) .
+
+'modCond['val['BitV:BitV] := 'bitresolve['Ref:BVVar, 'State:State], ''placeholder.Sort, 'narrowing.TrType]
+
+red in VERIFICATION-COMMANDS : metaReduce(trWithStructsDataTPrM(upModule('SEM-TR, true), 'WHILE-MAUDE, 'BIT-NRW-CONVERSION), 'modCond['_:=_['_`[_`][''val.Sort, ''VT:BitV.Variable], '_`[_`][''bitresolve.Sort, '_`,_[''Ref:BitHeadST.Variable, ''State:State.Variable]]], ''placeholder.Sort, 'narrowing.TrType]) .
+
+Warning: <automatic>: variable BitV:BitVFVP is used before it is bound in equation:
+ceq cbitevalFVP(Ref:BVVar, State:State) = BitV:BitVFVP if val(BitV:BitV) := bitresolve(Ref:BVVar, State:State) .
+Warning: <automatic>: variable BitV:BitVFVP is used before it is bound in equation:
+ceq cbitevalFVP(Ref:BitHeadST, State:State) = BitV:BitVFVP if val(BitV:BitV) := bitresolve(Ref:BitHeadST, State:State) .
+
+ceq 'cbiteval['Ref:BVVar, 'State:State] = 'BitV:BitV if 'val['BitV:BitV] := 'bitresolve['Ref:BVVar, 'State:State] [none] .
+-> [CAUSE]
+ceq modSEOpIds('cbiteval)[modStructTRec((T1:Term, NeTL:NeTermList), ValOp:Qid,
+    TrId:TrType)] = trVal(V:Variable, TrId:TrType) if modCond(EqC:EqCondition,
+    ValOp:Qid, TrId:TrType) [AttrSet:AttrSet] . .
+EquationSet:EquationSet --> (none).EquationSet
+T1:Term --> 'Ref:BVVar
+NeTL:NeTermList --> 'State:State
+V:Variable --> 'BitV:BitV
+EqC:EqCondition --> 'val['BitV:BitV] := 'bitresolve['Ref:BVVar, 'State:State]
+AttrSet:AttrSet --> (none).AttrSet
+ValOp:Qid --> 'placeholder
+--
+"BitV:BitVFVP"
+*********** equation
+(built-in equation for symbol qid)
+qid("BitV:BitVFVP")
+--->
+'BitV:BitVFVP
+*********** equation
+eq modCond(Cond:Condition, ValOp:Qid, TrId:TrType) = Cond:Condition [owise] .
+Cond:Condition --> 'val['BitV:BitV] := 'bitresolve['Ref:BVVar, 'State:State]
+ValOp:Qid --> 'placeholder
+TrId:TrType --> (narrowing).TrType
+modCond('val['BitV:BitV] := 'bitresolve['Ref:BVVar, 'State:State],
+    'placeholder, narrowing)
+--->
+'val['BitV:BitV] := 'bitresolve['Ref:BVVar, 'State:State]
+*********** equation
+(built-in equation for symbol metaReduce)
+
+red in VERIFICATION-COMMANDS : metaReduce(trWithStructsDataTPrM(upModule('SEM-TR, true), 'WHILE-MAUDE, 'BIT-NRW-CONVERSION), 'modSEEqs['ceq_=_if_`[_`].['_`[_`][''cbiteval.Sort, '_`,_[''Ref:BVVar.Variable, ''State:State.Variable]], ''BitV:BitV.Variable, '_:=_['_`[_`][''val.Sort, ''BitV:BitV.Variable], '_`[_`][''bitresolve.Sort, '_`,_[''Ref:BVVar.Variable, ''State:State.Variable]]], 'none.AttrSet], ''placeholder.Sort, 'narrowing.TrType]) .
+
+(current)
+'_:=_['_`[_`][''val.Sort, ''BitV:BitV.Variable], '_`[_`][''bitresolve.Sort, '_`,_[''Ref:BVVar.Variable, ''State:State.Variable]]]
+
+vs
+(Target)
+'_:=_['_`[_`][''val.Sort, ''VT:BitV.Variable], '_`[_`][''bitresolve.Sort, '_`,_[''Ref:BitHeadST.Variable, ''State:State.Variable]]]
+
+'_:=_['_`[_`][''val.Sort, ''BitV:BitV.Variable], '_`[_`][''bitresolve.Sort, '_`,_[''Ref:BitHeadST.Variable, ''State:State.Variable]]]
+
+'modCond['_:=_['_`[_`][''val.Sort, ''VT:BitV.Variable], '_`[_`][''bitresolve.Sort, '_`,_[''Ref:BitHeadST.Variable, ''State:State.Variable]]], ''placeholder.Sort, 'narrowing.TrType]
+
+red in VERIFICATION-COMMANDS : metaReduce(trWithStructsDataTPrM(upModule('SEM-TR, true), 'WHILE-MAUDE, 'BIT-NRW-CONVERSION), 'modCond['_:=_['_`[_`][''val.Sort, ''BitV:BitV.Variable], '_`[_`][''bitresolve.Sort, '_`,_[''Ref:BVVar.Variable, ''State:State.Variable]]], ''placeholder.Sort, 'narrowing.TrType]) .
+
+red in VERIFICATION-COMMANDS : metaReduce(trWithStructsDataTPrM(upModule('SEM-TR, true), 'WHILE-MAUDE, 'BIT-NRW-CONVERSION), 'modCond['_:=_['_`[_`][''val.Sort, ''BitV:BitV.Variable], '_`[_`][''bitresolve.Sort, '_`,_[''Ref:BitHeadST.Variable, ''State:State.Variable]]], ''placeholder.Sort, 'narrowing.TrType]) .
+----
+red in VERIFICATION-COMMANDS : downTerm(getTerm(metaReduce(trWithStructsDataTPrM(upModule('SEM-TR, true), 'WHILE-MAUDE, 'BIT-NRW-CONVERSION), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, narrowing)))), err:Module) .
+
+red in VERIFICATION-COMMANDS : downTerm(getTerm(metaReduceMetaMod(upModule('SEM-TR, true), 'WHILE-MAUDE, upModule('BIT-NRW-CONVERSION, true), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, narrowing)))), err:Module) .
+
+
+->This one to get the actual tranformed module
+red in VERIFICATION-COMMANDS : downTerm(getTerm(metaReduceMetaMod(upModule('SEM-TR, true), 'WHILE-MAUDE, 'BIT-NRW-CONVERSION, 'transformModSymb['upModule[''WHILE-MAUDE.Sort, 'true.Bool], ''State.Sort, ''placeholderVal.Sort, 'narrowing.TrType])), err:Module) .
+
+-> To get the transfomer module
+red in VERIFICATION-COMMANDS : trWithStructsDataTPrM(upModule('SEM-TR, true), 'WHILE-MAUDE, 'BIT-NRW-CONVERSION) .
+
+
+red in VERIFICATION-COMMANDS : metaReduce(downTerm(getTerm(metaReduceMetaMod(upModule('SEM-TR, true), 'WHILE-MAUDE, 'BIT-NRW-CONVERSION, 'transformModSymb['upModule[''WHILE-MAUDE.Sort, 'true.Bool], ''State.Sort, ''placeholderVal.Sort, 'narrowing.TrType])), err:Module), 'cbitevalFVP['val['__['1.Bit, '0.Bit, '1.Bit]], 'State:State]) .
+rewrites: 9184 in 157ms cpu (157ms real) (58496 rewrites/second)
+result ResultPair: {'__['1.BitFVP, '0.BitFVP, '1.BitFVP], 'BitVFVP}
+
+*** cbitevalFVP proof of concept
+red in VERIFICATION-COMMANDS : metaNarrowingSearch(downTerm(getTerm(metaReduceMetaMod(upModule('SEM-TR, true), 'WHILE-MAUDE, 'BIT-NRW-CONVERSION, 'transformModSymb['upModule[''WHILE-MAUDE.Sort, 'true.Bool], ''State.Sort, ''placeholderVal.Sort, 'narrowing.TrType])), err:Module), '_or_['cbitevalFVP['val['__['1.Bit, '0.Bit, '0.Bit]], 'State:State], '__['1.BitFVP, 'p:BitVFVP]], '__['1.BitFVP, '1.BitFVP, 'q:BitFVP, '1.BitFVP], '!, unbounded, 'match, delay filter, 0) .
+
+red in VERIFICATION-COMMANDS : metaNarrowingSearch(downTerm(getTerm(metaReduceMetaMod(upModule('SEM-TR, true), 'WHILE-MAUDE, 'BIT-NRW-CONVERSION, 'transformModSymb['upModule[''WHILE-MAUDE.Sort, 'true.Bool], ''State.Sort, ''placeholderVal.Sort, 'narrowing.TrType])), err:Module), '_or_['cbitevalFVP['val['__['1.Bit, '0.Bit, '0.Bit]], 'State:State], '__['1.BitFVP, 'p:BitVFVP]], '__['1.BitFVP, 'q:BitVFVP, '1.BitFVP], '!, unbounded, 'match, delay filter, 0) .
+
+-> Target
+eq 'modSEEqs['__['EquationSet:EquationSet, 'eq_=_`[_`].['_`[_`][
+    ''cbeval.Sort, '_`,_['T1:Term, 'NeTL:NeTermList]], 'MVar:Variable,
+    'AttrSet:AttrSet]], 'ValOp:Qid, 'TrId:TrType] = '__['eq_=_`[_`].['_`[_`][
+    'modSEOpIds[''cbeval.Sort], 'modStructTRec['_`,_['T1:Term,
+    'NeTL:NeTermList], 'ValOp:Qid, 'TrId:TrType]], 'convert['MVar:Variable,
+    'getType['MVar:Variable], 'TrId:TrType], 'AttrSet:AttrSet], 'modSEEqs[
+    'EquationSet:EquationSet, 'ValOp:Qid, 'TrId:TrType]] [none] .
+
+  eq 'modSEEqs['__['EquationSet:EquationSet, 'ceq_=_if_`[_`].['_`[_`][
+    ''cbeval.Sort, '_`,_['T1:Term, 'NeTL:NeTermList]], 'MVar:Variable,
+    'EqC:EqCondition, 'AttrSet:AttrSet]], 'ValOp:Qid, 'TrId:TrType] = '__[
+    'modSEEqs['EquationSet:EquationSet, 'ValOp:Qid, 'TrId:TrType],
+    'ceq_=_if_`[_`].['_`[_`]['modSEOpIds[''cbeval.Sort], 'modStructTRec['_`,_[
+    'T1:Term, 'NeTL:NeTermList], 'ValOp:Qid, 'TrId:TrType]], 'trVal[
+    'MVar:Variable, 'TrId:TrType], 'modCond['EqC:EqCondition, 'ValOp:Qid,
+    'TrId:TrType], 'AttrSet:AttrSet]] [none] .
+
+
+    eq patchEvalSESTR(eq 'cbeval[NeTL]   = T2 [AttrSet] ., ValOp, TrId)        = (eq modSEOpIds('cbeval)[modStructTRec(NeTL, ValOp, TrId)] = modStructTRec(T2, ValOp, TrId) [AttrSet] .) .
+
+    eq patchEvalSESTR(ceq 'cbeval[NeTL]  = T2 if EqC [AttrSet] ., ValOp, TrId) = (ceq modSEOpIds('cbeval)[modStructTRec(NeTL, ValOp, TrId)] = modStructTRec(T2, ValOp, TrId) if modCond(EqC, ValOp, TrId) [AttrSet] .) .
+
+    eq convertNarrowing(MConst, 'Bool) = 'toBoolFVP[MConst] .
+    eq convertNarrowing(MVar, 'Bool) = 'toBoolFVP[MVar] .
+
+eq 'modCond['_:=_['_`[_`][''val.Sort, ''B:Bool.Variable], '_`[_`][
+    ''bresolve.Sort, 'NeTL:NeTermList]], 'ValOp:Qid, 'TrId:TrType] = '_:=_[
+    '_`[_`][''val.Sort, 'trVal[''B:Bool.Variable, 'TrId:TrType]], '_`[_`][
+    ''bresolve.Sort, 'modStructTRec['NeTL:NeTermList, 'ValOp:Qid,
+    'TrId:TrType]]] [none] .
+
+  eq 'trVal['_`[_`][''val.Sort, ''B:Bool.Variable], 'TrId:TrType] = '_`[_`][''val.Sort, 'convert[''B:Bool.Variable, ''Bool.Sort, 'TrId:TrType]] [none] .
+
+
+red in VERIFICATION-COMMANDS : fuseMods(upModule('WHILE-MAUDE, true), upModule('SEM-TR, true)) .
+red in VERIFICATION-COMMANDS : getEqs(upModule('WHILE-MAUDE, true)) .
+red in VERIFICATION-COMMANDS : getOps(upModule('WHILE-MAUDE, true)) .
+
+red in VERIFICATION-COMMANDS : fuseMods(upModule('WHILE-MAUDE, true), fuseMods(upModule('SEM-TR, true), upModule('BIT-NRW-CONVERSION, true))) .
+
+red in VERIFICATION-COMMANDS : metaReduce(trWithStructsDataTPrM(upModule('SEM-TR, true), 'WHILE-MAUDE, upModule('BIT-NRW-CONVERSION, true)), upTerm(modOpSigSE(op 'val : 'BitV -> 'BitVVal [ctor] ., 'State, 'placeholder, narrowing))) .
+
+red in VERIFICATION-COMMANDS : metaReduce(trWithStructsDataTPrM(upModule('SEM-TR, true), 'WHILE-MAUDE, upModule('BIT-NRW-CONVERSION, true)), upTerm(toNRWSorts('BitV))) .
+
+*** Test of previous eq insertions
+red in VERIFICATION-COMMANDS : metaReduce(trWithStructsDataTPrM(upModule('SEM-TR, true), 'WHILE-MAUDE, upModule('BIT-NRW-CONVERSION, true)), upTerm(subSEVarSorts('ST:Stack, 'Stack, narrowing))) .
+
+red in VERIFICATION-COMMANDS : metaReduce(downTerm(getTerm(metaReduce(trWithStructsDataTPrM(upModule('SEM-TR, true), 'WHILE-MAUDE, upModule('BIT-NRW-CONVERSION, true)), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, narrowing)))), err:Module), upTerm(modOpSigSE(op 'val : 'BitV -> 'BitVVal [ctor] ., 'State, 'placeholder, narrowing))) .
+
+red in VERIFICATION-COMMANDS : metaReduce(trWithStructsDataTPrM(upModule('SEM-TR, true), 'WHILE-MAUDE, upModule('BIT-NRW-CONVERSION, true)), upTerm(toNrw('BitV))) .
+
+op 'val : 'BitV -> 'BitVVal [ctor] .
+'op_:_->_`[_`].[''val.Sort, ''BitV.Sort, ''BitVVal.Sort,
+    'ctor.Attr]
+
+red in VERIFICATION-COMMANDS : metaReduce(trWithStructsDataTPrM(upModule('SEM-TR, true), 'WHILE-MAUDE, upModule('BIT-NRW-CONVERSION, true)), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, narrowing))) .
+----
+
+
+*** Test with symbolic value in initial stack
+red in VERIFICATION-COMMANDS : metaNarrowingSearch(downTerm(getTerm(metaReduce(trWithStructsPrM(upModule('SEM-TR, true), 'WHILE-MAUDE), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, narrowing)))), err:Module), getTerm(metaParse(downTerm(getTerm(metaReduce(trWithStructsPrM(upModule('SEM-TR, true), 'WHILE-MAUDE), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, narrowing)))), err:Module), tokenize("< iv('x) := iheadST ; pop ; if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | ielem(val(p:IntFVP)) | (empty).IStore | (empty).BStore >"), 'State)), '<_|_|_>['nil.Program, 'Sf:Stack, '_|_['ISf:IStore, 'BSf:BStore]], '*, unbounded, 'match, delay filter, 0) .
+
+*** With MaudeSE
+python3 semantics-analysis-ext.py --program "< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore >" --pattern "'<_|_|_>['nil.Program, 'Sf:Stack, '_|_['ISf:IStore, 'BSf:BStore]]" --file "language-semantics/noRat-gen-stack-machine.maude" --analysis "maude-se" --sType "'*" --logic "'QF_LRA" --fold "false" --mod "'WHILE-MAUDE" --stSort "'State" --solN 1 --svars "(var1, Int)"
+
+
+*** Concolic generic transform
+red in VERIFICATION-COMMANDS : downTerm(getTerm(metaReduce(trWithStructsPrM(upModule('SEM-TR, true), 'WHILE-MAUDE), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, conc)))), err:Module) .
+
+*** Use with no-bitvector semantics
+red in VERIFICATION-COMMANDS : metaSearch(downTerm(getTerm(metaReduce(trWithStructsPrM(upModule('SEM-TR, true), 'WHILE-MAUDE), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, conc)))), err:Module), '`[_`]`[_`]`[_`]['<_|_|_>['__['if_then`{_`}else`{_`}['_>_['iv[''x.Sort], 'val['0.Zero]], 'pushI_;['iv[''x.Sort]], 'pushI_;['-_['iv[''x.Sort]]]], '_:=_;['iv[''y.Sort], 'iheadST.IHeadST]], 'EmptyStack.Stack, '_|_['_|->I_[''x.Sort, 'val['0.Zero]], 'empty.BStore]], '_`{_`}['<_|_|_>['__['if_then`{_`}else`{_`}['_>_['iv[''x.Sort], 'val['0.Zero]], 'pushI_;['iv[''x.Sort]], 'pushI_;['-_['iv[''x.Sort]]]], '_:=_;['iv[''y.Sort], 'iheadST.IHeadST]], 'EmptyStack.Stack, '_|_['_|->I_[''x.Sort, 'val['p:Integer]], 'empty.BStore]], 'true.Boolean], '<_|_|_>['__['if_then`{_`}else`{_`}['_>_['iv[''x.Sort], 'val['0.Zero]], 'pushI_;['iv[''x.Sort]], 'pushI_;['-_['iv[''x.Sort]]]], '_:=_;['iv[''y.Sort], 'iheadST.IHeadST]], 'EmptyStack.Stack, '_|_['_|->I_[''x.Sort, 'val['p:Integer]], 'empty.BStore]]], '`[_`]`[_`]`[_`]['Sc:State, 'Ss:SEState, 'Sis:State], nil, '!, unbounded, 1) .
+
+*** [init-CState(upTerm(< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore >), true)][< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore > {true}][< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore >]
+
+*** [init-CState(upTerm(< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore >), p:Integer > 0)][< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore > {true}][< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore >]
+
+*** Simplified with default values
+*** Rewrite test with maude_shell and concolic tr
+*** rew [< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val((0).Int) | (empty).BStore >][< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore > {true}][< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore >]
+
+search [< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val((0).Int) | (empty).BStore >][< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore > {true}][< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore >] =>! [Sc:State][Ss:SEState][Sis:State]
+
+Advisory: could not find sort Sort in meta-module REAL-INTEGER.
+- Solution: in sieval ceqs depending on iresolves, we have to make sure we resolve symbolic variables with their symbolic value (no the symbolic representation of the concrete)
+- To do this, execute sieval with the symbolic state, not the concrete
+
+search [< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val((0).Int) | (empty).BStore >][< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore > {true}][< if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore >] =>* [Sc:State][Ss:SEState][Sis:State]
+
+*** With maude_shell
+select VERIFICATION-COMMANDS .
+select downTerm(getTerm(metaReduce(trWithStructsPrM(upModule('SEM-TR, true), 'WHILE-MAUDE), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module) .
+Maude> search < if iv('x) > val((0).Int) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore > {(true).Boolean} =>! S:State {CST:Boolean} .
+search in TRANSFORMED-MOD : < if iv('x) > val((0).Zero) then{pushI iv('x) ;}else{pushI - iv('x) ;} iv('y) := iheadST ; | EmptyStack | 'x |->I val(p:Integer) | (empty).BStore >{(true).Boolean} =>! S:State{CST:Boolean}
+
+Solution 1 (state 5)
+rewrites: 57
+S:State --> < nil | ielem(val(p:Integer)) | ('x |->I val(p:Integer), 'y |->I val(p:Integer)) | (empty).BStore >
+CST:Boolean --> (true).Boolean and p:Integer > (0).Integer
+
+Solution 2 (state 6)
+rewrites: 57
+S:State --> < nil | ielem(val(- p:Integer)) | ('x |->I val(p:Integer), 'y |->I val(- p:Integer)) | (empty).BStore >
+CST:Boolean --> (true).Boolean and not p:Integer > (0).Integer
+
+No more solutions.
+-------
+
+red in VERIFICATION-COMMANDS : metaReduce(downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), '_|->I_[''x.Sort, 'val['1.Integer]]) .
+
+red in VERIFICATION-COMMANDS : downTerm(downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module), '<_|_|_>['_:=_;['iv[''y.Sort], 'val['s_^10['0.Zero]]], 'EmptyStack.Stack, '_|_['empty.IStore, 'empty.BStore]]) .
+
+reduce in VERIFICATION-COMMANDS : metaRewrite(downTerm(getTerm(metaReduce(
+    trWithStructs(upModule('SEM-TR, true)), upTerm(transformModSymb(upModule(
+    'WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module),
+    upTerm(< pushI val(10) ; if iv('x) > val(0) then{pushI iv('x) ;}else{pushI
+    - iv('x) ;} iv('y) := iheadST ; pop ; | EmptyStack | 'x |->I val(-1) |
+    empty >), unbounded) .
+rewrites: 5094 in 124ms cpu (124ms real) (41080 rewrites/second)
+result ResultPair: {'<_|_|_>['__['pushI_;['val['s_^10['0.Zero]]],
+    'if_then`{_`}else`{_`}['_>_['iv[''x.Sort], 'val['0.Zero]], 'pushI_;['iv[
+    ''x.Sort]], 'pushI_;['-_['iv[''x.Sort]]]], '_:=_;['iv[''y.Sort],
+    'iheadST.IHeadST], 'pop`;.Inst], 'EmptyStack.Stack, '_|_['_|->I_[''x.Sort,
+    'val['-_['s_['0.Zero]]]], 'empty.BStore]], 'State}
+
+
+*** Get the transformed module using the transformed (adapted) transformation 
+red in META-STRUCT-TR : downTerm(getTerm(metaReduce(trWithStructs(upModule('SEM-TR, true)), upTerm(transformModSymb(upModule('WHILE-MAUDE, true), 'State, 'placeholderVal, symb)))), err:Module) .
+
+*** NOTE: It appears that rl are well translated but not crl
+***       - See below that variables are correctly marked as symbolic and sieval is used
+***       - However, 'toBoolean['cbeval[...]] is used in crl condition instead of sbeval
+load language-semantics/noRat-gen-stack-machine.maude
+pr WHILE-MAUDE . (in SEM-TR module)
+  rl '_`{_`}['<_|_|_>['__['pushI_;['IExp:IExp], 'P:Program], 'STS:Stack,
+    'STRS:Stores], 'Constraints:Boolean] => '_`{_`}['<_|_|_>['P:Program, '_$_[
+    'ielem['val['sieval['IExp:IExp, '<_|_|_>['__['pushI_;['IExp:IExp],
+    'P:Program], 'STS:Stack, 'STRS:Stores]]]], 'STS:Stack], 'STRS:Stores],
+    'Constraints:Boolean] [label('pushIS)] .
+  crl '_`{_`}['<_|_|_>['__['if_then`{_`}else`{_`}['BExp:BExp, 'P1:Program,
+    'P2:Program], 'P:Program], 'STS:Stack, 'STRS:Stores], 'Constraints:Boolean]
+    => '_`{_`}['<_|_|_>['__['P1:Program, 'P:Program], 'STS:Stack,
+    'STRS:Stores], 'Constraints':Boolean] if 'Constraints':Boolean := '_and_[
+    'Constraints:Boolean, 'toBoolean['cbeval['BExp:BExp, '<_|_|_>['__[
+    'if_then`{_`}else`{_`}['BExp:BExp, 'P1:Program, 'P2:Program], 'P:Program],
+    'ST:Stack, 'STR:Stores]]]] /\ 'metaCheck['fmod_is_sorts_.____endfm[
+    ''REAL-INTEGER.Sort, '__['protecting_.[''INTEGER.Sort], 'protecting_.[
+    ''REAL.Sort]], 'none.EmptyQidSet, 'none.SubsortDeclSet, '__[
+    'op_:_->_`[_`].[''isInteger.Sort, ''Real.Sort, ''Boolean.Sort, 'special[
+    'id-hook[''SMT_Symbol.Sort, ''isInteger.Sort]]], 'op_:_->_`[_`].[
+    ''toInteger.Sort, ''Real.Sort, ''Integer.Sort, 'special['id-hook[
+    ''SMT_Symbol.Sort, ''toInteger.Sort]]], 'op_:_->_`[_`].[''toReal.Sort,
+    ''Integer.Sort, ''Real.Sort, 'special['id-hook[''SMT_Symbol.Sort,
+    ''toReal.Sort]]]], 'none.MembAxSet, 'none.EquationSet], 'upTerm[
+    'Constraints':Boolean]] = 'true.Bool [label('if-thenS)] .
+
+*** FIXed now appears sbeval on symb conditions
+*** New PROBLEM (add toInteger to result):
+  ceq 'sieval['Ref:IHeadST, 'State:State] = 'I:Int if 'val['I:Int] :=
+    'iresolve['Ref:IHeadST, 'State:State] [none] .
+  ceq 'sieval['Ref:IVar, 'State:State] = 'I:Int if 'val['I:Int] := 'iresolve[
+    'Ref:IVar, 'State:State] [none] .
+
+
+----
+Operators to extend with custom datatype
+
+toNRWSorts
+convertNarrowing

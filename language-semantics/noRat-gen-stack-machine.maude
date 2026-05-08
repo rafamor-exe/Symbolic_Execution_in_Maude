@@ -1,0 +1,334 @@
+load ../semantics-basics/semantics-basics-gen.maude
+load ../semantics-basics/semantics-bitvector-gen.maude
+
+fmod CONCRETE-VAR-MOD is
+
+    protecting QID .
+    protecting CONCRETE-VARSTATE-MOD .
+    protecting CONCRETE-BITVVAL .
+
+    sorts IVar BVar BVVar .
+
+    op iv : Qid -> IVar [ctor] .
+    op bv : Qid -> BVar [ctor] .
+    op bitv : Qid -> BVVar [ctor] .
+
+endfm
+
+view IVar from TRIV to CONCRETE-VAR-MOD is
+  sort Elt to IVar .
+endv
+view BVar from TRIV to CONCRETE-VAR-MOD is
+  sort Elt to BVar .
+endv
+view BVVar from TRIV to CONCRETE-VAR-MOD is
+  sort Elt to BVVar .
+endv
+
+fmod STACK is
+
+    protecting CONCRETE-VAR-MOD .
+
+    sorts Stack StackElem NeStack IHeadST BHeadST BitHeadST .
+    subsorts NeStack < Stack .
+    subsorts StackElem < NeStack .
+    subsort IHeadST < IExp .
+    subsort BHeadST < BExp .
+    subsort BitHeadST < BitVExp .
+
+    *** Stack definition
+    op EmptyStack : -> Stack [ctor] .
+    op _$_ : StackElem Stack -> NeStack [ctor id: EmptyStack format (d ni d d)] .
+
+    op ielem : IVal -> StackElem [ctor] .
+    op belem : BVal -> StackElem [ctor] .
+    op bitelem : BitVVal -> StackElem [ctor] .
+
+    op iheadST : -> IHeadST [ctor] .
+    op bheadST : -> BHeadST [ctor] .
+    op bitheadST : -> BitHeadST [ctor] .
+
+endfm
+
+view IHeadST from TRIV to STACK is
+  sort Elt to IHeadST .
+endv
+view BHeadST from TRIV to STACK is
+  sort Elt to BHeadST .
+endv
+view BitHeadST from TRIV to STACK is
+  sort Elt to BitHeadST .
+endv
+view Stack from TRIV to STACK is
+  sort Elt to Stack .
+endv
+view NeStack from TRIV to STACK is
+  sort Elt to NeStack .
+endv
+
+fmod WHILE-LANG-INSTS-MOD is
+
+    protecting STACK .
+
+    sort Inst .
+
+    op skip ; : -> Inst [ctor prec 20] .
+    op _ := _ ; : IVar IExp -> Inst [ctor prec 20] .
+    op _ := _ ; : BVar BExp -> Inst [ctor prec 20] .
+    op _ := _ ; : BVVar BitVExp -> Inst [ctor prec 20] .
+
+    op pushB _ ; : BExp -> Inst [ctor prec 20] .
+    op pushBV _ ; : BitVExp -> Inst [ctor prec 20] .
+    op pushI _ ; : IExp -> Inst [ctor prec 20] .
+    op pop ; : -> Inst [ctor prec 20] .
+
+endfm
+
+view Inst from TRIV to WHILE-LANG-INSTS-MOD is
+  sort Elt to Inst .
+endv
+
+fmod WHILE-LANG-BLOCK-MOD is
+
+    protecting WHILE-LANG-INSTS-MOD .
+    protecting LIST{Inst} * (sort List{Inst} to Program) .
+
+    op if _ then {_} else {_} : BExp Program Program -> Inst [ctor prec 20] .
+    op if _ then {_} : BExp Program -> Inst [prec 20] .
+
+    op while _ do {_} : BExp Program -> Inst [ctor prec 20] .
+
+    var B : BExp .
+    var P1 : Program .
+
+    eq if B then {P1} = if B then {P1} else {nil} .
+
+endfm
+
+fmod WHILE-STATE is
+    protecting WHILE-LANG-BLOCK-MOD .
+    protecting STACK .
+    *** TODO: How to identify value structures (e.g. stacks, stores, etc.)?
+    ***         - Needed for concolic (distinguish concrete and symbolic structures (cannot use same variable))
+    ***         - Maybe not needed for symbolic? Just modify cXeval to sXeval sig and definitions
+    ***           to return symbolic type (unwrap resolve results)
+    protecting MAP{Qid, IVal} * (sort Map{Qid, IVal} to IStore) * (op _|->_ to _|->I_ ) .
+    protecting MAP{Qid, BVal} * (sort Map{Qid, BVal} to BStore) * (op _|->_ to _|->B_ ) .
+    protecting MAP{Qid, BitVVal} * (sort Map{Qid, BitVVal} to BVStore) * (op _|->_ to _|->BV_ ) .
+    protecting MAP{Qid, RVal} * (sort Map{Qid, RVal} to RStore) * (op _|->_ to _|->R_ ) .
+
+    sorts Stores State .
+
+    op < _ | _ | _ > : Program Stack Stores -> State [ctor] . 
+    op errState : -> State [ctor] .
+
+    var P : Program .
+    vars STR STR2 : Stores .
+    vars ST ST2 : Stack . 
+
+    op _|_ : IStore BStore -> Stores [ctor] .
+    op _|_|_ : IStore BStore BVStore -> Stores [ctor] .
+    ***op _|_|_ : IStore RStore BStore -> Stores [ctor] .
+    op emptyStoresN : -> Stores [ctor] .
+    eq emptyStoresN = (empty | empty) .
+
+    *** Auxiliary getter and setters must be user-defined (possibly many structures of the same type)
+    *** This will not be necessary anymore when concolic execution is generalized
+    *** - We will only update symbolic terms (not specific structures)
+
+    ***op getStore : State -> Stores .
+    ***eq getStore(< P | ST | STR >) = STR .
+***
+    ***op updateStore : State Stores -> State .
+    ***eq updateStore(< P | ST | STR >, STR2) = < P | ST | STR2 > .
+***
+    ***op getStack : State -> Stack .
+    ***eq getStack(< P | ST | STR >) = ST .
+***
+    ***op updateStack : State Stack -> State .
+    ***eq updateStack(< P | ST | STR >, ST2) = < P | ST2 | STR > .
+endfm
+
+view State from TRIV to WHILE-STATE is
+  sort Elt to State .
+endv
+view Stores from TRIV to WHILE-STATE is
+  sort Elt to Stores .
+endv
+view IStore from TRIV to WHILE-STATE is
+  sort Elt to IStore .
+endv
+view BStore from TRIV to WHILE-STATE is
+  sort Elt to BStore .
+endv
+view BVStore from TRIV to WHILE-STATE is
+  sort Elt to BVStore .
+endv
+
+fmod WHILE-BASICS is    
+    protecting WHILE-STATE .
+    protecting CONCRETE-FW-NORAT{State} .
+    protecting CONCRETE-FW-NORAT-BIT{State} .
+    protecting DATATYPE{BitV} .
+    protecting STRUCT{Stack} .
+    ***protecting STRUCT{NeStack} .
+    protecting STRUCT{IStore} .
+    protecting STRUCT{BStore} .
+    protecting STRUCT{BVStore} .
+    protecting STRUCT{Stores} .
+    protecting IREF{IVar, State} .
+    protecting BREF{BVar, State} .
+    protecting BITREF{BVVar, State} .
+    protecting IREF{IHeadST, State} .
+    protecting BREF{BHeadST, State} .
+    protecting BITREF{BitHeadST, State} .
+endfm
+
+mod WHILE-MAUDE is
+
+    protecting WHILE-BASICS .
+
+    var IVar : IVar .
+    var BVar : BVar .
+    vars BExp BExp2 : BExp .
+    var BitVExp : BitVExp .
+    vars P P1 P2 : Program .
+    vars STR STR2 : Stores .
+    var ISTR : IStore .
+    var BSTR : BStore .
+    var BVSTR : BVStore .
+    var IExp : IExp .
+    var Q : Qid .
+    var State : State .
+    var I : Int .
+    var B : Bool .
+    vars ST ST2 : Stack .
+    var STElem : StackElem .
+    var IVal : IVal .
+    var BVal : BVal .
+    var BitVVal : BitVVal .
+
+    op start : Program -> State .
+    eq start(P) = < P | EmptyStack | ((empty).IStore | (empty).BStore) > .
+
+    rl [skip] : 
+        < skip ; P | ST | STR >
+        =>
+        < P | ST | STR > .
+
+    rl [assign-I] : 
+        < iv(Q) := IExp ; P | ST | (ISTR | BSTR | BVSTR) >
+        =>
+        < P | ST | (insert(Q, val(cieval(IExp, < iv(Q) := IExp ; P | ST | (ISTR | BSTR | BVSTR) >)), ISTR) | BSTR | BVSTR) > .
+
+    rl [assign-B] : 
+        < bv(Q) := BExp ; P | ST | (ISTR | BSTR | BVSTR) >
+        =>
+        < P | ST | (ISTR | insert(Q, val(cbeval(BExp, < bv(Q) := BExp ; P | ST | (ISTR | BSTR | BVSTR) >)), BSTR) | BVSTR) > .
+
+    rl [assign-BitV] : 
+        < bitv(Q) := BitVExp ; P | ST | (ISTR | BSTR | BVSTR) >
+        =>
+        < P | ST | (ISTR | BSTR | insert(Q, val(cbiteval(BitVExp, < bitv(Q) := BitVExp ; P | ST | (ISTR | BSTR | BVSTR) >)), BVSTR)) > .
+
+    crl [if-then] : 
+        < if BExp then { P1 } else { P2 } P | ST | STR >
+        =>
+        < P1 P | ST | STR >
+        if cbeval(BExp, < if BExp then { P1 } else { P2 } P | ST | STR >) .
+
+    crl [if-else] : 
+        < if BExp then { P1 } else { P2 } P | ST | STR >
+        =>
+        < P2 P | ST | STR >
+        if not cbeval(BExp, < if BExp then { P1 } else { P2 } P | ST | STR >) .
+
+    crl [while-loop] : 
+        < while BExp do { P1 } P | ST | STR >
+        =>
+        < P1 while BExp do { P1 } P | ST | STR >
+        if cbeval(BExp, < while BExp do { P1 } P | ST | STR >) .
+        
+    crl [while-exit] : 
+        < while BExp do { P1 } P | ST | STR >
+        =>
+        < P | ST | STR >
+        if not cbeval(BExp, < while BExp do { P1 } P | ST | STR >) .
+    
+    rl [pushB] :
+        < pushB BExp ; P | ST | STR >
+        =>
+        < P | belem(val(cbeval(BExp, < pushB BExp ; P | ST | STR >))) $ ST | STR > .
+
+    rl [pushBV] :
+        < pushBV BitVExp ; P | ST | STR >
+        =>
+        < P | bitelem(val(cbiteval(BitVExp, < pushBV BitVExp ; P | ST | STR >))) $ ST | STR > .
+    
+    rl [pushI] :
+        < pushI IExp ; P | ST | STR >
+        =>
+        < P | ielem(val(cieval(IExp, < pushI IExp ; P | ST | STR >))) $ ST | STR > .
+    
+    rl [pop] :
+        < pop ; P | STElem $ ST | STR >
+        =>
+        < P | ST | STR > .
+
+    *** Auxiliary
+
+    ***op getStore : State -> Stores .
+    ***eq getStore(< P | ST | STR >) = STR .
+***
+    ***op updateStore : State Stores -> State .
+    ***eq updateStore(< P | ST | STR >, STR2) = < P | ST | STR2 > .
+***
+    ***op getIStore : Stores -> IStore .
+    ***eq getIStore(ISTR | BSTR | BVSTR) = ISTR .
+***
+    ***op getBStore : Stores -> BStore .
+    ***eq getBStore(ISTR | BSTR | BVSTR) = BSTR .
+***
+    ***op emptyStoresN : -> Stores [ctor] .
+    ***eq emptyStoresN = (empty | empty) .
+
+    ***op getStack : State -> Stack .
+    ***eq getStack(< P | ST | STR >) = ST .
+***
+    ***op updateStack : State Stack -> State .
+    ***eq updateStack(< P | ST | STR >, ST2) = < P | ST2 | STR > .
+
+    *** User defined references
+    eq bresolve(bv(Q), < P | ST | (ISTR | BSTR | BVSTR) >) = BSTR[Q] .
+    eq bitresolve(bitv(Q), < P | ST | (ISTR | BSTR | BVSTR) >) = BVSTR[Q] .
+    eq iresolve(iv(Q), < P | ST | (ISTR | BSTR | BVSTR) >) = ISTR[Q] .
+
+    eq bresolve(bheadST, < P | belem(BVal) $ ST | STR >) = BVal .
+    eq bitresolve(bitheadST, < P | bitelem(BitVVal) $ ST | STR >) = BitVVal .
+    eq iresolve(iheadST, < P | ielem(IVal) $ ST | STR >) = IVal .
+
+endm
+
+mod EXAMPLE is
+
+    protecting WHILE-MAUDE .
+    pr META-LEVEL .
+
+	ops ex1 ex2 ex3 : -> Program .
+
+	eq ex1 = if iv('x) > val(1)
+	                 then { iv('x) := iv('x) + val(3) ; }
+	                 else { iv('x) := val(7) ; } .
+
+	eq ex2 = if iv('x) > val(0)
+					then { iv('x) := iv('x) ; }
+					else { iv('x) := - iv('x) ; } .
+    
+    eq ex3 = if iv('x) > val(0)
+					then { pushI iv('x) ; }
+					else { pushI - iv('x) ; } 
+             iv('y) := iheadST ;
+             pop ; .
+    *** Example: rew < ex3 | EmptyStack | 'x |->I val(-1) | empty > .
+    *** Example: rew < if iv('x) > val(0) then { pushI iv('x) ; } else { pushI - iv('x) ; }  iv('y) := iheadST ; pop ; | EmptyStack | 'x |->I val(-1) | empty > .
+endm

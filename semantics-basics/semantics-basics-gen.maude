@@ -1,0 +1,124 @@
+fmod CONCRETE-VARSTATE-MOD is
+
+    protecting CONVERSION .
+
+    sorts IVal BVal IExp BExp RVal .
+    subsort BVal < BExp .
+    subsort IVal < IExp .
+    subsort IVal < RVal .
+
+    op val : Int -> IVal [ctor] .
+    op val : Bool -> BVal [ctor] .
+    op val : Rat -> RVal [ctor] .
+
+    vars B B1 B2 : Bool .
+    vars I I1 I2 : Int .
+
+    op -_ : IVal -> IVal [prec 30] .
+    op _+_ : IVal IVal -> IVal [gather (E e) prec 33] .
+    op _-_ : IVal IVal -> IVal [gather (E e) prec 33] .
+
+    op not_ : BVal -> BVal [prec 53] .
+    op _and_ : BVal BVal -> BVal [gather (e E) prec 55] .
+    op _or_ : BVal BVal -> BVal [gather (e E) prec 57] .
+    op _xor_ : BVal BVal -> BVal [gather (e E) prec 59] .
+    op _implies_ : BVal BVal -> BVal [gather (e E) prec 61] .
+
+    op _>_ : IVal IVal -> BVal [prec 37] .
+
+    op _>_ : IExp IExp -> BExp [prec 37] .
+
+    op -_ : IExp -> IExp [prec 30] .
+    op _+_ : IExp IExp -> IExp [gather (E e) prec 33] .
+    op _-_ : IExp IExp -> IExp [gather (E e) prec 33] .
+
+endfm
+
+view IVal from TRIV to CONCRETE-VARSTATE-MOD is
+  sort Elt to IVal .
+endv
+view BVal from TRIV to CONCRETE-VARSTATE-MOD is
+  sort Elt to BVal .
+endv
+view RVal from TRIV to CONCRETE-VARSTATE-MOD is
+  sort Elt to RVal .
+endv
+
+fmod CONCRETE-FW-NORAT{State :: TRIV} is
+
+    protecting CONCRETE-VARSTATE-MOD .
+
+    op _/\_ : BExp BExp -> BExp [ctor assoc] .
+
+    op _/_ : IVal IVal -> IVal [gather (E e) prec 31] .
+    op _/_ : IExp IExp -> IExp [gather (E e) prec 31] .
+
+    ***op evalI : IExp IStore -> Int .
+    ***op eval : IExp IStore -> Int .
+    ***op eval : BExp Stores -> Bool .
+    op cbeval : BExp State$Elt -> Bool [metadata "evalF"] .
+    op cieval : IExp State$Elt -> Int [metadata "evalF"] .
+
+    vars IExp IExp1 IExp2 : IExp .
+    vars BExp1 BExp2 BExp : BExp .
+    vars IV IV1 IV2 : IVal .
+    vars BV BV1 BV2 : BVal .
+    vars I I1 I2 : Int .
+    vars B B1 B2 : Bool .
+    var State : State$Elt .
+
+    ***eq eval(IExp, ISTR) = evalI(IExp, ISTR) .
+
+    eq cbeval(BExp1 /\ BExp2, State) = cbeval(BExp1, State) and cbeval(BExp2, State) .
+    eq cbeval(not BExp, State) = not cbeval(BExp, State) .
+    
+    eq cbeval(IExp1 > IExp2, State) = cieval(IExp1, State) > cieval(IExp2, State) .
+    ***eq eval(bv(Q), (ISTR | BSTR)) = BSTR[Q] .
+    eq cbeval(val(B), State) = B .
+    
+    eq cieval(- IExp1, State) = - cieval(IExp1, State) .
+    eq cieval(IExp1 + IExp2, State) = cieval(IExp1, State) + cieval(IExp2, State) .
+    eq cieval(IExp1 - IExp2, State) = cieval(IExp1, State) - cieval(IExp2, State) .
+
+    ***eq evalI(iv(Q), ISTR) = ISTR[Q] .
+    eq cieval(val(I), State) = I .
+
+    eq not not BExp = BExp .
+
+endfm
+
+*** Integer value reference marker
+fmod IREF{Ref :: TRIV, State :: TRIV} is
+    protecting CONCRETE-FW-NORAT{State} .
+    subsort Ref$Elt < IExp .
+    var Ref : Ref$Elt . 
+    var I : Int .
+    var State : State$Elt .
+    op iresolve : Ref$Elt State$Elt -> IVal .
+    ceq cieval(Ref, State) = I
+        if val(I) := iresolve(Ref, State) .
+endfm
+
+*** Boolean value reference marker
+fmod BREF{Ref :: TRIV, State :: TRIV} is
+    protecting CONCRETE-FW-NORAT{State} .
+    subsort Ref$Elt < BExp .
+    var Ref : Ref$Elt .
+    var B : Bool .
+    var State : State$Elt .
+    op bresolve : Ref$Elt State$Elt -> BVal .
+    ceq cbeval(Ref, State) = B
+        if val(B) := bresolve(Ref, State) .
+endfm
+
+*** Struct marker
+fmod STRUCT{VStruct :: TRIV} is
+    sort Struct .
+    op struct : VStruct$Elt -> Struct [ctor metadata "vstruct"] .
+endfm
+
+*** Custom data type marker
+fmod DATATYPE{DataT :: TRIV} is
+    sort DataType .
+    op datatype : DataT$Elt -> DataType [ctor metadata "datatype"] .
+endfm
