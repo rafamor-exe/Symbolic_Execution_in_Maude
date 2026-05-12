@@ -81,6 +81,8 @@ fmod WHILE-LANG-INSTS-MOD is
     op pushBV _ ; : BitVExp -> Inst [ctor prec 20] .
     op pushI _ ; : IExp -> Inst [ctor prec 20] .
     op pop ; : -> Inst [ctor prec 20] .
+    op stAnd ; : -> Inst [ctor prec 20] .
+    op stXor ; : -> Inst [ctor prec 20] .
 
 endfm
 
@@ -206,7 +208,7 @@ mod WHILE-MAUDE is
     var STElem : StackElem .
     var IVal : IVal .
     var BVal : BVal .
-    var BitVVal : BitVVal .
+    vars BitVVal BitVVal2 : BitVVal .
 
     op start : Program -> State .
     eq start(P) = < P | EmptyStack | ((empty).IStore | (empty).BStore) > .
@@ -274,7 +276,25 @@ mod WHILE-MAUDE is
         < pop ; P | STElem $ ST | STR >
         =>
         < P | ST | STR > .
-
+    
+    *** NOTE: The same rule can be defined with the reference language
+    ***rl [stAnd] :
+    ***    < stAnd ; P | bitelem(BitVVal) $ bitelem(BitVVal2) $ ST | STR >
+    ***    =>
+    ***    < P | bitelem(val(cbiteval(bitheadST, < stAnd ; P | bitelem(BitVVal) $ ST | STR >) and cbiteval(bitheadST, < stAnd ; P | bitelem(BitVVal2) $ ST | STR >))) $ ST | STR > .
+    ***rl [stXor] :
+    ***    < stXor ; P | bitelem(BitVVal) $ bitelem(BitVVal2) $ ST | STR >
+    ***    =>
+    ***    < P | bitelem(val(cbiteval(bitheadST, < stXor ; P | bitelem(BitVVal) $ ST | STR >) xor cbiteval(bitheadST, < stXor ; P | bitelem(BitVVal2) $ ST | STR >))) $ ST | STR > .
+    rl [stAnd] :
+        < stAnd ; P | bitelem(BitVVal2) $ bitelem(BitVVal) $ ST | STR >
+        =>
+        < P | bitelem(val(cbiteval(BitVVal and BitVVal2, < stAnd ; P | bitelem(BitVVal2) $ bitelem(BitVVal) $ ST | STR >))) $ ST | STR > .
+    rl [stXor] :
+        < stXor ; P | bitelem(BitVVal2) $ bitelem(BitVVal) $ ST | STR >
+        =>
+        < P | bitelem(val(cbiteval(BitVVal xor BitVVal2, < stXor ; P | bitelem(BitVVal2) $ bitelem(BitVVal) $ ST | STR >))) $ ST | STR > .
+    
     *** Auxiliary
 
     ***op getStore : State -> Stores .

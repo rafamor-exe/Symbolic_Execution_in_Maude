@@ -970,7 +970,10 @@ fmod STRUCT-TR is
                                                                               'V:Variable, 'AttrSet:AttrSet], 
                                                                   'EquationSet:EquationSet], 'ValOp:Qid, 'TrId:TrType]  
                                                               = '__['eq_=_`[_`].['_`[_`]['modSEOpIds[upTerm(EvQid)], 'modStructTRec['_`,_['T1:Term, 'NeTL:NeTermList], 'ValOp:Qid, 'TrId:TrType]], 
-                                                                              'convert['V:Variable, 'getType['V:Variable], 'TrId:TrType], 'AttrSet:AttrSet], 
+                                                                              'convert['V:Variable, 'getType['V:Variable], 'TrId:TrType], 'AttrSet:AttrSet],
+                                                                    *** Include symbolic eval to unwrap symbolic semantic values
+                                                                    'eq_=_`[_`].['_`[_`]['modSEOpIds[upTerm(EvQid)], 'modStructTRec['_`,_['_`[_`][''val.Sort, 'subSEVarSorts['V:Variable, 'getType['V:Variable], 'TrId:TrType]], 'NeTL:NeTermList], 'ValOp:Qid, 'TrId:TrType]], 
+                                                                              'subSEVarSorts['V:Variable, 'getType['V:Variable], 'TrId:TrType], 'AttrSet:AttrSet],
                                                                   'modSEEqs['EquationSet:EquationSet, 'ValOp:Qid, 'TrId:TrType]] [none] .)
                                                 (eq 'modSEEqs['__['ceq_=_if_`[_`].['_`[_`][upTerm(EvQid), '_`,_['T1:Term, 'NeTL:NeTermList]], 
                                                                               'V:Variable, 'EqC:EqCondition, 'AttrSet:AttrSet], 

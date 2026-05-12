@@ -192,12 +192,12 @@ mod WHILE-MAUDE is
     rl [assign-I] : 
         < iv(Q) := IExp ; P | ST | (ISTR | BSTR) >
         =>
-        < P | ST | (insert(Q, val(cieval(IExp, < iv(Q) := IExp ; P | ST | (ISTR | BSTR) >)), ISTR) | BSTR | BVSTR) > .
+        < P | ST | (insert(Q, val(cieval(IExp, < iv(Q) := IExp ; P | ST | (ISTR | BSTR) >)), ISTR) | BSTR) > .
 
     rl [assign-B] : 
         < bv(Q) := BExp ; P | ST | (ISTR | BSTR) >
         =>
-        < P | ST | (ISTR | insert(Q, val(cbeval(BExp, < bv(Q) := BExp ; P | ST | (ISTR | BSTR) >)), BSTR) | BVSTR) > .
+        < P | ST | (ISTR | insert(Q, val(cbeval(BExp, < bv(Q) := BExp ; P | ST | (ISTR | BSTR) >)), BSTR)) > .
 
     crl [if-then] : 
         < if BExp then { P1 } else { P2 } P | ST | STR >
