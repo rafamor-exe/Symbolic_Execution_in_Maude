@@ -1,0 +1,193 @@
+load semantics-basics-gen.maude
+load semantics-bitvector-gen.maude
+
+set include BOOL off .
+
+fmod STDL is
+    protecting BIT-OPS .
+    protecting BOOL .
+    ***protecting NAT .
+
+    sorts Stdl ZWLH .
+    subsort Bit ZWLH < Stdl .
+
+    ops Z W L H : -> ZWLH [ctor] .
+    ops U X - : -> Stdl [ctor] .
+
+    op _and_ : Stdl Stdl -> Stdl [ditto] . *** Revise, should be ctor
+    op _or_ : Stdl Stdl -> Stdl [ditto] .
+    op _xor_ : Stdl Stdl -> Stdl [ditto] .
+    op not_ : Stdl -> Stdl [ditto] .
+    op _nor_ : Stdl Stdl -> Stdl [assoc comm] .
+    op _xnor_ : Stdl Stdl -> Stdl [assoc comm] .
+    op _nand_ : Stdl Stdl -> Stdl [assoc comm] .
+    op _=_ : Stdl Stdl -> Bool .
+    op _/=_ : Stdl Stdl -> Bool .
+
+    vars A B : Stdl .
+    vars Bit Bit2 : Bit .
+    var ZWLH : ZWLH .
+
+    eq 1 and H = 1 .
+    eq H and 1 = 1 .
+    eq H and H = 1 .
+    eq 0 and A = 0 .
+    eq L and A = 0 .
+    eq A and 0 = 0 .
+    eq A and L = 0 .
+    eq U and A = round(A) .
+    eq A and U = round(A) .
+    eq A and B = X [owise] .
+
+    eq 1 or A = 1 .
+    eq H or A = 1 .
+    eq A or 1 = 1 .
+    eq A or H = 1 .
+    eq 0 or L = 0 .
+    eq L or 0 = 0 .
+    eq L or L = 0 .
+    eq U or A = round(A) .
+    eq A or U = round(A) .
+    eq A or B = X [owise] .
+
+    eq 1 xor L = 1 .
+    eq L xor 1 = 1 .
+    eq 1 xor H = 0 .
+    eq H xor 1 = 0 .
+    eq H xor H = 0 .
+    eq 0 xor L = 0 .
+    eq L xor 0 = 0 .
+    eq L xor L = 0 .
+    eq U xor A = U .
+    eq A xor U = U .
+    eq A xor B = X [owise] .
+
+    eq not U = U .
+    eq not L = 1 .
+    eq not H = 0 .
+    eq not A = X [owise] .
+
+    eq A nand B = not (A and B) .
+    eq A nor B = not (A or B) .
+    eq A xnor B = not (A xor B) .
+
+    op round : Stdl -> Stdl .
+    eq round(Bit) = Bit .
+    eq round(H) = 1 .
+    eq round(L) = 0 .
+    eq round(A) = U [owise] .
+
+    eq (A = A) = true .
+    eq (A = B) = false [owise] .
+    eq (A /= B) = not (A = B) .
+
+    op resolveStdl : Stdl Stdl -> Stdl .
+    eq resolveStdl(U, A) = U .
+    eq resolveStdl(A, U) = U .
+    eq resolveStdl(0, ZWLH) = 0 .
+    eq resolveStdl(ZWLH, 0) = 0 .
+    eq resolveStdl(1, ZWLH) = 1 .
+    eq resolveStdl(ZWLH, 1) = 1 .
+    eq resolveStdl(Z, ZWLH) = ZWLH .
+    eq resolveStdl(ZWLH, Z) = ZWLH .
+    eq resolveStdl(W, ZWLH) = W .
+    eq resolveStdl(ZWLH, W) = W .
+    eq resolveStdl(L, H) = W .
+    eq resolveStdl(H, L) = W .
+    eq resolveStdl(A, B) = X [owise] .
+
+endfm
+
+view Stdl from TRIV to STDL is
+  sort Elt to Stdl .
+endv
+
+fmod BITVAL is
+
+  protecting STDL .
+  protecting CONCRETE-EXP .
+
+  sort BitVal .
+  op val : Bit -> BitVal [ctor] .
+
+  op _=_ : BitVal BitVal -> BVal [gather (e E) prec 59] .
+  op _/=_ : BitVal BitVal -> BVal [gather (e E) prec 59] .
+  op _<_ : BitVal BitVal -> BVal [gather (e E) prec 59] .
+  op _<=_ : BitVal BitVal -> BVal [gather (e E) prec 59] .
+  op _>_ : BitVal BitVal -> BVal [gather (e E) prec 59] .
+  op _>=_ : BitVal BitVal -> BVal [gather (e E) prec 59] .
+
+endfm
+
+fmod CONCRETE-STDLVAL is
+
+    ***protecting CONCRETE-EXP .
+    protecting BITVAL .
+
+    *** NOTE: For now, value representation (StdlVal) name must correspond to sort name + "Val" 
+    sorts StdlVal StdlExp .
+    subsort BitVal < StdlVal < StdlExp .
+
+    op val : Stdl -> StdlVal [ctor] .
+
+    op not_ : StdlVal -> StdlVal [prec 53] .
+    op _and_ : StdlVal StdlVal -> StdlVal [assoc comm gather (e E) prec 55] .
+    op _or_ : StdlVal StdlVal -> StdlVal [assoc comm gather (e E) prec 57] .
+    op _xor_ : StdlVal StdlVal -> StdlVal [assoc comm gather (e E) prec 59] .
+    op _nand_ : StdlVal StdlVal -> StdlVal [assoc comm gather (e E) prec 59] .
+    op _nor_ : StdlVal StdlVal -> StdlVal [assoc comm gather (e E) prec 59] .
+    op _xnor_ : StdlVal StdlVal -> StdlVal [assoc comm gather (e E) prec 59] .
+    op _=_ : StdlVal StdlVal -> BVal [ditto] .
+    op _/=_ : StdlVal StdlVal -> BVal [ditto] .
+
+endfm
+
+view StdlVal from TRIV to CONCRETE-STDLVAL is
+  sort Elt to StdlVal .
+endv
+
+fmod CONCRETE-FW-NORAT-STDL{State :: TRIV} is
+
+    protecting CONCRETE-FW-NORAT{State} .
+    protecting CONCRETE-STDLVAL .
+
+    op cstdleval : StdlExp State$Elt -> Stdl [metadata "evalF"].
+
+    vars StdlExp StdlExp1 StdlExp2 : StdlExp .
+    vars StdlV StdlV1 StdlV2 : StdlVal .
+    vars BitV BitV1 BitV2 : BitVal .
+    vars Stdl Stdl1 Stdl2 : Stdl .
+    var State : State$Elt .
+
+    eq cstdleval(StdlExp1 and StdlExp2, State) = cstdleval(StdlExp1, State) and cstdleval(StdlExp2, State) .
+    eq cstdleval(StdlExp1 or StdlExp2, State) = cstdleval(StdlExp1, State) or cstdleval(StdlExp2, State) .
+    eq cstdleval(StdlExp1 xor StdlExp2, State) = cstdleval(StdlExp1, State) xor cstdleval(StdlExp2, State) .
+    eq cstdleval(not StdlExp, State) = not cstdleval(StdlExp, State) .
+    eq cstdleval(StdlExp1 nand StdlExp2, State) = cstdleval(StdlExp1, State) nand cstdleval(StdlExp2, State) .
+    eq cstdleval(StdlExp1 nor StdlExp2, State) = cstdleval(StdlExp1, State) nor cstdleval(StdlExp2, State) .
+    eq cstdleval(StdlExp1 xnor StdlExp2, State) = cstdleval(StdlExp1, State) xnor cstdleval(StdlExp2, State) .
+    eq cbeval(StdlV1 = StdlV2, State) = cstdleval(StdlV1, State) = cstdleval(StdlV2, State) .
+    eq cbeval(StdlV1 /= StdlV2, State) = cstdleval(StdlV1, State) /= cstdleval(StdlV2, State) .
+ 
+    eq cbeval(BitV1 < BitV2, State) = cstdleval(BitV1, State) < cstdleval(BitV2, State) .
+    eq cbeval(BitV1 <= BitV2, State) = cstdleval(BitV1, State) <= cstdleval(BitV2, State) .
+    eq cbeval(BitV1 > BitV2, State) = cstdleval(BitV1, State) > cstdleval(BitV2, State) .
+    eq cbeval(BitV1 >= BitV2, State) = cstdleval(BitV1, State) >= cstdleval(BitV2, State) .
+
+    eq cstdleval(val(Stdl), State) = Stdl .
+
+endfm
+
+*** Custom value reference marker for bit-vectors
+fmod STDLREF{Ref :: TRIV, State :: TRIV} is
+    protecting CONCRETE-FW-NORAT-STDL{State} .
+    subsort Ref$Elt < StdlExp .
+    var Ref : Ref$Elt . 
+    var Stdl : Stdl .
+    var State : State$Elt .
+    op stdlresolve : Ref$Elt State$Elt -> StdlVal [metadata "rsvF"] .
+    ceq cstdleval(Ref, State) = Stdl
+        if val(Stdl) := stdlresolve(Ref, State) .
+endfm
+
+set include BOOL on .

@@ -1,4 +1,4 @@
-fmod CONCRETE-VARSTATE-MOD is
+fmod CONCRETE-EXP is
 
     protecting CONVERSION .
 
@@ -34,19 +34,19 @@ fmod CONCRETE-VARSTATE-MOD is
 
 endfm
 
-view IVal from TRIV to CONCRETE-VARSTATE-MOD is
+view IVal from TRIV to CONCRETE-EXP is
   sort Elt to IVal .
 endv
-view BVal from TRIV to CONCRETE-VARSTATE-MOD is
+view BVal from TRIV to CONCRETE-EXP is
   sort Elt to BVal .
 endv
-view RVal from TRIV to CONCRETE-VARSTATE-MOD is
+view RVal from TRIV to CONCRETE-EXP is
   sort Elt to RVal .
 endv
 
 fmod CONCRETE-FW-NORAT{State :: TRIV} is
 
-    protecting CONCRETE-VARSTATE-MOD .
+    protecting CONCRETE-EXP .
 
     op _/\_ : BExp BExp -> BExp [ctor assoc] .
 

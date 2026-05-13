@@ -4,7 +4,7 @@ load ../semantics-basics/semantics-bitvector-gen.maude
 fmod CONCRETE-VAR-MOD is
 
     protecting QID .
-    protecting CONCRETE-VARSTATE-MOD .
+    protecting CONCRETE-EXP .
     protecting CONCRETE-BITVVAL .
 
     sorts IVar BVar BVVar .

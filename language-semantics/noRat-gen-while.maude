@@ -3,7 +3,7 @@ load ../semantics-basics/semantics-basics-gen.maude
 fmod CONCRETE-VAR-MOD is
 
     protecting QID .
-    protecting CONCRETE-VARSTATE-MOD .
+    protecting CONCRETE-EXP .
 
     sorts Var IVar BVar .
     subsort IVar BVar < Var .

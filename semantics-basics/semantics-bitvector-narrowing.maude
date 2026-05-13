@@ -7,6 +7,11 @@ fmod BIT-FVP is
 		op true to 1,
 		op false to 0
 	) .
+	protecting BOOL-FVP * (
+		sort Bool to BoolFVP,
+		op true to tt,
+		op false to ff
+	) .
 
 	sort BitVFVP .
 	subsort BitFVP < BitVFVP .
@@ -18,10 +23,18 @@ fmod BIT-FVP is
 	op _or_ : BitVFVP BitVFVP -> BitVFVP [ctor ditto] .
 	op _xor_ : BitVFVP BitVFVP -> BitVFVP [ditto] .
 	op not_ : BitVFVP -> BitVFVP [ditto] .
+
+    op _=_ : BitFVP BitFVP -> BoolFVP .
+    op _/=_ : BitFVP BitFVP -> BoolFVP .
+	op _<_ : BitFVP BitFVP -> BoolFVP .
+    op _<=_ : BitFVP BitFVP -> BoolFVP .
+    op _>_ : BitFVP BitFVP -> BoolFVP .
+    op _>=_ : BitFVP BitFVP -> BoolFVP .
 	
 	vars X Y : BitVFVP .
 	vars A B : BitFVP .
 
+	*** TODO: Should include [owise] in corresponding cases (if any)?
 	eq X 0 or Y 0 = (X or Y) 0 [variant] .
 	eq X A or Y 1 = (X or Y) 1 [variant] .
 	eq X 1 or Y B = (X or Y) 1 [variant] .
@@ -62,6 +75,18 @@ fmod BIT-FVP is
 	***q:BitFVP --> 1
 	***#1:BitVFVP --> %1:BitFVP 1 1
 
+	eq (A = A) = tt [variant] .
+    eq (A = B) = ff [owise variant] .
+    eq (A /= B) = not (A = B) [variant] .
+    eq (0 < 1) = tt [variant] .
+    eq (A < B) = ff [owise variant] .
+    eq (0 <= B) = tt [variant] .
+    eq (A <= B) = ff [owise variant] .
+    eq (1 > 0) = tt [variant] .
+    eq (A > B) = ff [owise variant] .
+    eq (1 >= B) = tt [variant] .
+    eq (A >= B) = ff [owise variant] .
+
 endfm
 
 view BitFVP from TRIV to BIT-FVP is
@@ -88,9 +113,9 @@ fmod BIT-NRW-CONVERSION is
     eq toBitVFVP((1).Bit BitV) = toBitVFVP((1).Bit) toBitVFVP(BitV) [owise] .
 endfm
 
-fmod TEST is
-
-	pr META-LEVEL .
-	pr BIT-NRW-CONVERSION .
-
-endfm
+***fmod TEST is
+***
+***	pr META-LEVEL .
+***	pr BIT-NRW-CONVERSION .
+***
+***endfm

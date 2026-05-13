@@ -1,4 +1,4 @@
-fmod CONCRETE-VARSTATE-MOD is
+fmod CONCRETE-EXP is
 
     protecting CONVERSION .
 
@@ -26,17 +26,17 @@ fmod CONCRETE-VARSTATE-MOD is
 
 endfm
 
-view IVal from TRIV to CONCRETE-VARSTATE-MOD is
+view IVal from TRIV to CONCRETE-EXP is
   sort Elt to IVal .
 endv
-view BVal from TRIV to CONCRETE-VARSTATE-MOD is
+view BVal from TRIV to CONCRETE-EXP is
   sort Elt to BVal .
 endv
 
 fmod CONCRETE-VAR-MOD is
 
     protecting QID .
-    protecting CONCRETE-VARSTATE-MOD .
+    protecting CONCRETE-EXP .
 
     sorts Var IVar BVar .
     subsort IVar BVar < Var .

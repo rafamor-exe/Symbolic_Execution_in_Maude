@@ -1,0 +1,130 @@
+load semantics-basics-narrowing.maude
+load semantics-bitvector-narrowing.maude
+load semantics-std_logic-gen.maude
+
+fmod STDL-FVP is
+	protecting BIT-FVP .
+  protecting BOOL-FVP * (
+		sort Bool to BitFVP,
+		op true to tt,
+		op false to ff
+	) .
+
+	sorts StdlFVP ZWLHFVP .
+	subsort BitFVP ZWLHFVP < StdlFVP .
+
+  ops Z W L H : -> ZWLHFVP [ctor] .
+  ops U X - : -> StdlFVP [ctor] .
+
+	op _and_ : StdlFVP StdlFVP -> StdlFVP [ditto] . *** Revise, should be ctor?
+	op _or_ : StdlFVP StdlFVP -> StdlFVP [ctor ditto] .
+	op _xor_ : StdlFVP StdlFVP -> StdlFVP [ditto] .
+	op not_ : StdlFVP -> StdlFVP [ditto] .
+  op _nor_ : StdlFVP StdlFVP -> StdlFVP [assoc comm] .
+  op _xnor_ : StdlFVP StdlFVP -> StdlFVP [assoc comm] .
+  op _nand_ : StdlFVP StdlFVP -> StdlFVP [assoc comm] .
+  op _=_ : StdlFVP StdlFVP -> BoolFVP [ditto] .
+  op _/=_ : StdlFVP StdlFVP -> BoolFVP [ditto] .
+
+  vars A B : StdlFVP .
+  var BitFVP : BitFVP .
+  var ZWLHFVP : ZWLHFVP .
+
+  *** NOTE: Using [owise] to avoid erroneous variable matching/application of equation due to order
+  eq 1 and H = 1 [variant] .
+  eq H and 1 = 1 [variant] .
+  eq H and H = 1 [variant] .
+  eq 0 and A = 0 [variant] .
+  eq L and A = 0 [variant] .
+  eq A and 0 = 0 [variant] .
+  eq A and L = 0 [variant] .
+  eq U and A = round(A) [variant] .
+  eq A and U = round(A) [variant] .
+  eq A and B = X [owise variant] .
+
+  eq 1 or A = 1 [variant] .
+  eq H or A = 1 [variant] .
+  eq A or 1 = 1 [variant] .
+  eq A or H = 1 [variant] .
+  eq 0 or L = 0 [variant] .
+  eq L or 0 = 0 [variant] .
+  eq L or L = 0 [variant] .
+  eq U or A = round(A) [variant].
+  eq A or U = round(A) [variant].
+  eq A or B = X [owise variant] .
+
+  eq 1 xor L = 1 [variant] .
+  eq L xor 1 = 1 [variant] .
+  eq 1 xor H = 0 [variant] .
+  eq H xor 1 = 0 [variant] .
+  eq H xor H = 0 [variant] .
+  eq 0 xor L = 0 [variant] .
+  eq L xor 0 = 0 [variant] .
+  eq L xor L = 0 [variant] .
+  eq U xor A = U [variant] .
+  eq A xor U = U [variant] .
+  eq A xor B = X [owise variant] .
+
+  eq not U = U [variant] .
+  eq not L = 1 [variant] .
+  eq not H = 0 [variant] .
+  eq not A = X [owise variant] .
+
+  eq A nand B = not (A and B) [variant].
+  eq A nor B = not (A or B) [variant] .
+  eq A xnor B = not (A xor B) [variant] .
+
+  op round : StdlFVP -> StdlFVP .
+  eq round(BitFVP) = BitFVP [variant].
+  eq round(H) = 1 [variant] .
+  eq round(L) = 0 [variant] .
+  eq round(A) = U [owise variant] .
+
+  eq (A = A) = tt [variant] .
+  eq (A = B) = ff [owise variant] .
+  eq (A /= B) = not (A = B) [variant] .
+
+  op resolveStdl : StdlFVP StdlFVP -> StdlFVP .
+  eq resolveStdl(U, A) = U [variant].
+  eq resolveStdl(A, U) = U [variant].
+  eq resolveStdl(0, ZWLHFVP) = 0 [variant].
+  eq resolveStdl(ZWLHFVP, 0) = 0 [variant].
+  eq resolveStdl(1, ZWLHFVP) = 1 [variant].
+  eq resolveStdl(ZWLHFVP, 1) = 1 [variant].
+  eq resolveStdl(Z, ZWLHFVP) = ZWLHFVP [variant].
+  eq resolveStdl(ZWLHFVP, Z) = ZWLHFVP [variant].
+  eq resolveStdl(W, ZWLHFVP) = W [variant] .
+  eq resolveStdl(ZWLHFVP, W) = W [variant] .
+  eq resolveStdl(L, H) = W [variant] .
+  eq resolveStdl(H, L) = W [variant] .
+  eq resolveStdl(A, B) = X [owise variant] .
+
+endfm
+
+view StdlFVP from TRIV to STDL-FVP is
+  sort Elt to StdlFVP .
+endv
+
+fmod STDL-NRW-CONVERSION is
+	pr STDL .
+  pr STDL-FVP .
+
+  op toStdlFVP : Stdl -> StdlFVP [metadata "convF"] .
+
+	eq toStdlFVP((0).Bit) = (0).BitFVP .
+  eq toStdlFVP((1).Bit) = (1).BitFVP .
+  eq toStdlFVP((Z).Stdl) = (Z).StdlFVP .
+  eq toStdlFVP((W).Stdl) = (W).StdlFVP .
+  eq toStdlFVP((L).Stdl) = (L).StdlFVP .
+  eq toStdlFVP((H).Stdl) = (H).StdlFVP .
+  eq toStdlFVP((U).Stdl) = (U).StdlFVP .
+  eq toStdlFVP((X).Stdl) = (X).StdlFVP .
+  eq toStdlFVP((-).Stdl) = (-).StdlFVP .
+endfm
+
+***fmod TEST is
+***
+***	pr META-LEVEL .
+***	pr STDL-NRW-CONVERSION .
+***
+***endfm
