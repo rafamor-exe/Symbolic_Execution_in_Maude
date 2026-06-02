@@ -30,7 +30,7 @@ fmod STDL-FVP is
   var BitFVP : BitFVP .
   var ZWLHFVP : ZWLHFVP .
 
-  *** NOTE: Using [owise] to avoid erroneous variable matching/application of equation due to order
+  *** AND table
   eq 1 and H = 1 [variant] .
   eq H and 1 = 1 [variant] .
   eq H and H = 1 [variant] .
@@ -40,8 +40,46 @@ fmod STDL-FVP is
   eq A and L = 0 [variant] .
   eq U and A = round(A) [variant] .
   eq A and U = round(A) [variant] .
-  eq A and B = X [owise variant] .
 
+  eq 1 and Z = X [variant] .
+  eq 1 and W = X [variant] .
+  eq 1 and X = X [variant] .
+  eq 1 and - = X [variant] .
+  eq Z and 1 = X [variant] .
+  eq W and 1 = X [variant] .
+  eq X and 1 = X [variant] .
+  eq - and 1 = X [variant] .
+
+  eq H and Z = X [variant] .
+  eq H and W = X [variant] .
+  eq H and X = X [variant] .
+  eq H and - = X [variant] .
+  eq Z and H = X [variant] .
+  eq W and H = X [variant] .
+  eq X and H = X [variant] .
+  eq - and H = X [variant] .
+  
+  eq Z and Z = X [variant] .
+  eq Z and W = X [variant] .
+  eq Z and X = X [variant] .
+  eq Z and - = X [variant] .
+  eq W and Z = X [variant] .
+  eq X and Z = X [variant] .
+  eq - and Z = X [variant] .
+
+  eq W and W = X [variant] .
+  eq W and X = X [variant] .
+  eq W and - = X [variant] .
+  eq X and W = X [variant] .
+  eq - and W = X [variant] .
+
+  eq X and X = X [variant] .
+  eq X and - = X [variant] .
+  eq - and X = X [variant] .
+
+  eq - and - = X [variant] .
+
+  *** OR table
   eq 1 or A = 1 [variant] .
   eq H or A = 1 [variant] .
   eq A or 1 = 1 [variant] .
@@ -51,24 +89,125 @@ fmod STDL-FVP is
   eq L or L = 0 [variant] .
   eq U or A = round(A) [variant].
   eq A or U = round(A) [variant].
-  eq A or B = X [owise variant] .
+  ***eq A or B = X [owise variant] .
+  eq 0 or Z = X [variant] .
+  eq 0 or W = X [variant] .
+  eq 0 or X = X [variant] .
+  eq 0 or - = X [variant] .
+  eq Z or 0 = X [variant] .
+  eq W or 0 = X [variant] .
+  eq X or 0 = X [variant] .
+  eq - or 0 = X [variant] .
 
+  eq L or Z = X [variant] .
+  eq L or W = X [variant] .
+  eq L or X = X [variant] .
+  eq L or - = X [variant] .
+  eq Z or L = X [variant] .
+  eq W or L = X [variant] .
+  eq X or L = X [variant] .
+  eq - or L = X [variant] .
+  
+  eq Z or Z = X [variant] .
+  eq Z or W = X [variant] .
+  eq Z or X = X [variant] .
+  eq Z or - = X [variant] .
+  eq W or Z = X [variant] .
+  eq X or Z = X [variant] .
+  eq - or Z = X [variant] .
+
+  eq W or W = X [variant] .
+  eq W or X = X [variant] .
+  eq W or - = X [variant] .
+  eq X or W = X [variant] .
+  eq - or W = X [variant] .
+
+  eq X or X = X [variant] .
+  eq X or - = X [variant] .
+  eq - or X = X [variant] .
+
+  eq - or - = X [variant] .
+
+  *** XOR table
   eq 1 xor L = 1 [variant] .
   eq L xor 1 = 1 [variant] .
   eq 1 xor H = 0 [variant] .
   eq H xor 1 = 0 [variant] .
   eq H xor H = 0 [variant] .
+  eq 0 xor H = 1 [variant] .
+  eq H xor 0 = 1 [variant] .
   eq 0 xor L = 0 [variant] .
   eq L xor 0 = 0 [variant] .
   eq L xor L = 0 [variant] .
+  eq L xor H = 1 [variant] .
+  eq H xor L = 1 [variant] .
   eq U xor A = U [variant] .
   eq A xor U = U [variant] .
-  eq A xor B = X [owise variant] .
+  ***eq A xor B = X [owise variant] .
+  eq 1 xor Z = X [variant] .
+  eq 1 xor W = X [variant] .
+  eq 1 xor X = X [variant] .
+  eq 1 xor - = X [variant] .
+  eq Z xor 1 = X [variant] .
+  eq W xor 1 = X [variant] .
+  eq X xor 1 = X [variant] .
+  eq - xor 1 = X [variant] .
+
+  eq 0 xor Z = X [variant] .
+  eq 0 xor W = X [variant] .
+  eq 0 xor X = X [variant] .
+  eq 0 xor - = X [variant] .
+  eq Z xor 0 = X [variant] .
+  eq W xor 0 = X [variant] .
+  eq X xor 0 = X [variant] .
+  eq - xor 0 = X [variant] .
+
+  eq L xor Z = X [variant] .
+  eq L xor W = X [variant] .
+  eq L xor X = X [variant] .
+  eq L xor - = X [variant] .
+  eq Z xor L = X [variant] .
+  eq W xor L = X [variant] .
+  eq X xor L = X [variant] .
+  eq - xor L = X [variant] .
+
+  eq H xor Z = X [variant] .
+  eq H xor W = X [variant] .
+  eq H xor X = X [variant] .
+  eq H xor - = X [variant] .
+  eq Z xor H = X [variant] .
+  eq W xor H = X [variant] .
+  eq X xor H = X [variant] .
+  eq - xor H = X [variant] .
+
+  eq Z xor Z = X [variant] .
+  eq Z xor W = X [variant] .
+  eq Z xor X = X [variant] .
+  eq Z xor - = X [variant] .
+  eq W xor Z = X [variant] .
+  eq X xor Z = X [variant] .
+  eq - xor Z = X [variant] .
+
+  eq W xor W = X [variant] .
+  eq W xor X = X [variant] .
+  eq W xor - = X [variant] .
+  eq X xor W = X [variant] .
+  eq - xor W = X [variant] .
+
+  eq X xor X = X [variant] .
+  eq X xor - = X [variant] .
+  eq - xor X = X [variant] .
+
+  eq - xor - = X [variant] .
+
 
   eq not U = U [variant] .
   eq not L = 1 [variant] .
   eq not H = 0 [variant] .
-  eq not A = X [owise variant] .
+  eq not Z = X [variant] .
+  eq not W = X [variant] .
+  eq not X = X [variant] .
+  eq not - = X [variant] .
 
   eq A nand B = not (A and B) [variant].
   eq A nor B = not (A or B) [variant] .
@@ -78,26 +217,60 @@ fmod STDL-FVP is
   eq round(BitFVP) = BitFVP [variant].
   eq round(H) = 1 [variant] .
   eq round(L) = 0 [variant] .
-  eq round(A) = U [owise variant] .
+  eq round(Z) = U [variant] .
+  eq round(W) = U [variant] .
+  eq round(U) = U [variant] .
+  eq round(X) = U [variant] .
+  eq round(-) = U [variant] .
 
-  eq (A = A) = tt [variant] .
-  eq (A = B) = ff [owise variant] .
+  ***eq (A = A) = tt [variant] .
+  ***eq (A = B) = ff [owise variant] .
+  eq (0 = 0) = tt [variant] .
+	eq (1 = 1) = tt [variant] .
+  eq (Z = Z) = tt [variant] .
+  eq (L = L) = tt [variant] .
+  eq (H = H) = tt [variant] .
+  eq (U = U) = tt [variant] .
+  eq (X = X) = tt [variant] .
+  eq (- = -) = tt [variant] .
+  eq (0 = 1) = ff [variant] .
+  eq (1 = 0) = ff [variant] .
+  eq (BitFVP = ZWLHFVP) = ff [variant] .
+  eq (ZWLHFVP = BitFVP) = ff [variant] .
+  eq (BitFVP = U) = ff [variant] .
+  eq (U = BitFVP) = ff [variant] .
+  eq (BitFVP = X) = ff [variant] .
+  eq (X = BitFVP) = ff [variant] .
+  eq (BitFVP = -) = ff [variant] .
+  eq (- = BitFVP) = ff [variant] .
+  eq (ZWLHFVP = U) = ff [variant] .
+  eq (U = ZWLHFVP) = ff [variant] .
+  eq (ZWLHFVP = X) = ff [variant] .
+  eq (X = ZWLHFVP) = ff [variant] .
+  eq (ZWLHFVP = -) = ff [variant] .
+  eq (- = ZWLHFVP) = ff [variant] .
   eq (A /= B) = not (A = B) [variant] .
 
   op resolveStdl : StdlFVP StdlFVP -> StdlFVP .
-  eq resolveStdl(U, A) = U [variant].
-  eq resolveStdl(A, U) = U [variant].
-  eq resolveStdl(0, ZWLHFVP) = 0 [variant].
-  eq resolveStdl(ZWLHFVP, 0) = 0 [variant].
-  eq resolveStdl(1, ZWLHFVP) = 1 [variant].
-  eq resolveStdl(ZWLHFVP, 1) = 1 [variant].
-  eq resolveStdl(Z, ZWLHFVP) = ZWLHFVP [variant].
-  eq resolveStdl(ZWLHFVP, Z) = ZWLHFVP [variant].
+  eq resolveStdl(U, A) = U [variant] .
+  eq resolveStdl(A, U) = U [variant] .
+  eq resolveStdl(0, ZWLHFVP) = 0 [variant] .
+  eq resolveStdl(ZWLHFVP, 0) = 0 [variant] .
+  eq resolveStdl(1, ZWLHFVP) = 1 [variant] .
+  eq resolveStdl(ZWLHFVP, 1) = 1 [variant] .
+  eq resolveStdl(Z, ZWLHFVP) = ZWLHFVP [variant] .
+  eq resolveStdl(ZWLHFVP, Z) = ZWLHFVP [variant] .
   eq resolveStdl(W, ZWLHFVP) = W [variant] .
   eq resolveStdl(ZWLHFVP, W) = W [variant] .
   eq resolveStdl(L, H) = W [variant] .
   eq resolveStdl(H, L) = W [variant] .
-  eq resolveStdl(A, B) = X [owise variant] .
+  ***eq resolveStdl(A, B) = X [owise variant] .
+  eq resolveStdl(X, A) = X [variant] .
+  eq resolveStdl(A, X) = X [variant] .
+  eq resolveStdl(-, A) = X [variant] .
+  eq resolveStdl(A, -) = X [variant] .
+  eq resolveStdl(0, 1) = X [variant] .
+  eq resolveStdl(1, 0) = X [variant] .
 
 endfm
 

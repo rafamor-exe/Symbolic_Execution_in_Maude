@@ -55,9 +55,13 @@ fmod STDL is
     eq 1 xor H = 0 .
     eq H xor 1 = 0 .
     eq H xor H = 0 .
+    eq 0 xor H = 1 .
+    eq H xor 0 = 1 .
     eq 0 xor L = 0 .
     eq L xor 0 = 0 .
     eq L xor L = 0 .
+    eq L xor H = 1 .
+    eq H xor L = 1 .
     eq U xor A = U .
     eq A xor U = U .
     eq A xor B = X [owise] .
@@ -119,26 +123,31 @@ fmod BITVAL is
 
 endfm
 
+view BitVal from TRIV to BITVAL is
+  sort Elt to BitVal .
+endv
+
 fmod CONCRETE-STDLVAL is
 
     ***protecting CONCRETE-EXP .
     protecting BITVAL .
 
     *** NOTE: For now, value representation (StdlVal) name must correspond to sort name + "Val" 
-    sorts StdlVal StdlExp .
+    sorts StdlVal StdlExp . *** BitExp .
     subsort BitVal < StdlVal < StdlExp .
+    ***subsort BitVal < BitExp < StdlExp .
 
     op val : Stdl -> StdlVal [ctor] .
 
-    op not_ : StdlVal -> StdlVal [prec 53] .
-    op _and_ : StdlVal StdlVal -> StdlVal [assoc comm gather (e E) prec 55] .
-    op _or_ : StdlVal StdlVal -> StdlVal [assoc comm gather (e E) prec 57] .
-    op _xor_ : StdlVal StdlVal -> StdlVal [assoc comm gather (e E) prec 59] .
-    op _nand_ : StdlVal StdlVal -> StdlVal [assoc comm gather (e E) prec 59] .
-    op _nor_ : StdlVal StdlVal -> StdlVal [assoc comm gather (e E) prec 59] .
-    op _xnor_ : StdlVal StdlVal -> StdlVal [assoc comm gather (e E) prec 59] .
-    op _=_ : StdlVal StdlVal -> BVal [ditto] .
-    op _/=_ : StdlVal StdlVal -> BVal [ditto] .
+    op not_ : StdlExp -> StdlExp [prec 53] .
+    op _and_ : StdlExp StdlExp -> StdlExp [assoc comm gather (e E) prec 55] .
+    op _or_ : StdlExp StdlExp -> StdlExp [assoc comm gather (e E) prec 57] .
+    op _xor_ : StdlExp StdlExp -> StdlExp [assoc comm gather (e E) prec 59] .
+    op _nand_ : StdlExp StdlExp -> StdlExp [assoc comm gather (e E) prec 59] .
+    op _nor_ : StdlExp StdlExp -> StdlExp [assoc comm gather (e E) prec 59] .
+    op _xnor_ : StdlExp StdlExp -> StdlExp [assoc comm gather (e E) prec 59] .
+    op _=_ : StdlExp StdlExp -> BVal [ditto] .
+    op _/=_ : StdlExp StdlExp -> BVal [ditto] .
 
 endfm
 
@@ -151,7 +160,7 @@ fmod CONCRETE-FW-NORAT-STDL{State :: TRIV} is
     protecting CONCRETE-FW-NORAT{State} .
     protecting CONCRETE-STDLVAL .
 
-    op cstdleval : StdlExp State$Elt -> Stdl [metadata "evalF"].
+    op cstdleval : StdlExp State$Elt -> Stdl [metadata "evalF"] .
 
     vars StdlExp StdlExp1 StdlExp2 : StdlExp .
     vars StdlV StdlV1 StdlV2 : StdlVal .
@@ -189,5 +198,16 @@ fmod STDLREF{Ref :: TRIV, State :: TRIV} is
     ceq cstdleval(Ref, State) = Stdl
         if val(Stdl) := stdlresolve(Ref, State) .
 endfm
+
+***fmod VHDLSTDLREF{Ref :: TRIV, Time :: TRIV, State :: TRIV} is
+***    protecting CONCRETE-FW-NORAT-STDL{State} .
+***    subsort Ref$Elt < StdlExp .
+***    var Ref : Ref$Elt . 
+***    var Stdl : Stdl .
+***    var State : State$Elt .
+***    op stdlresolve : Ref$Elt State$Elt -> StdlVal [metadata "rsvF"] .
+***    ceq cstdleval(Ref, State) = Stdl
+***        if val(Stdl) := stdlresolve(Ref, State) .
+***endfm
 
 set include BOOL on .
