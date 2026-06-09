@@ -35,8 +35,8 @@ fmod STDL is
     eq L and A = 0 .
     eq A and 0 = 0 .
     eq A and L = 0 .
-    eq U and A = round(A) .
-    eq A and U = round(A) .
+    eq U and A = roundAnd(A) .
+    eq A and U = roundAnd(A) .
     eq A and B = X [owise] .
 
     eq 1 or A = 1 .
@@ -46,8 +46,8 @@ fmod STDL is
     eq 0 or L = 0 .
     eq L or 0 = 0 .
     eq L or L = 0 .
-    eq U or A = round(A) .
-    eq A or U = round(A) .
+    eq U or A = roundOr(A) .
+    eq A or U = roundOr(A) .
     eq A or B = X [owise] .
 
     eq 1 xor L = 1 .
@@ -75,11 +75,15 @@ fmod STDL is
     eq A nor B = not (A or B) .
     eq A xnor B = not (A xor B) .
 
-    op round : Stdl -> Stdl .
-    eq round(Bit) = Bit .
-    eq round(H) = 1 .
-    eq round(L) = 0 .
-    eq round(A) = U [owise] .
+    op roundAnd : Stdl -> Stdl .
+    eq roundAnd(0) = 0 .
+    eq roundAnd(L) = 0 .
+    eq roundAnd(A) = U [owise] .
+
+    op roundOr : Stdl -> Stdl .
+    eq roundOr(1) = 1 .
+    eq roundOr(H) = 1 .
+    eq roundOr(A) = U [owise] .
 
     eq (A = A) = true .
     eq (A = B) = false [owise] .

@@ -38,8 +38,8 @@ fmod STDL-FVP is
   eq L and A = 0 [variant] .
   eq A and 0 = 0 [variant] .
   eq A and L = 0 [variant] .
-  eq U and A = round(A) [variant] .
-  eq A and U = round(A) [variant] .
+  eq U and A = roundAnd(A) [variant] .
+  eq A and U = roundAnd(A) [variant] .
 
   eq 1 and Z = X [variant] .
   eq 1 and W = X [variant] .
@@ -87,8 +87,8 @@ fmod STDL-FVP is
   eq 0 or L = 0 [variant] .
   eq L or 0 = 0 [variant] .
   eq L or L = 0 [variant] .
-  eq U or A = round(A) [variant].
-  eq A or U = round(A) [variant].
+  eq U or A = roundOr(A) [variant].
+  eq A or U = roundOr(A) [variant].
   ***eq A or B = X [owise variant] .
   eq 0 or Z = X [variant] .
   eq 0 or W = X [variant] .
@@ -213,15 +213,27 @@ fmod STDL-FVP is
   eq A nor B = not (A or B) [variant] .
   eq A xnor B = not (A xor B) [variant] .
 
-  op round : StdlFVP -> StdlFVP .
-  eq round(BitFVP) = BitFVP [variant].
-  eq round(H) = 1 [variant] .
-  eq round(L) = 0 [variant] .
-  eq round(Z) = U [variant] .
-  eq round(W) = U [variant] .
-  eq round(U) = U [variant] .
-  eq round(X) = U [variant] .
-  eq round(-) = U [variant] .
+  op roundAnd : StdlFVP -> StdlFVP .
+  eq roundAnd(0) = 0 [variant].
+  eq roundAnd(L) = 0 [variant] .
+  eq roundAnd(1) = U [variant] .
+  eq roundAnd(H) = U [variant] .
+  eq roundAnd(Z) = U [variant] .
+  eq roundAnd(W) = U [variant] .
+  eq roundAnd(U) = U [variant] .
+  eq roundAnd(X) = U [variant] .
+  eq roundAnd(-) = U [variant] .
+
+  op roundOr : StdlFVP -> StdlFVP .
+  eq roundOr(1) = 1 [variant].
+  eq roundOr(H) = 1 [variant] .
+  eq roundOr(0) = U [variant] .
+  eq roundOr(L) = U [variant] .
+  eq roundOr(Z) = U [variant] .
+  eq roundOr(W) = U [variant] .
+  eq roundOr(U) = U [variant] .
+  eq roundOr(X) = U [variant] .
+  eq roundOr(-) = U [variant] .
 
   ***eq (A = A) = tt [variant] .
   ***eq (A = B) = ff [owise variant] .
