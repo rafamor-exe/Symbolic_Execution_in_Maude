@@ -84,6 +84,9 @@ fmod WHILE-LANG-INSTS-MOD is
     op stAnd ; : -> Inst [ctor prec 20] .
     op stXor ; : -> Inst [ctor prec 20] .
 
+    op haltIf0 ; : -> Inst [ctor prec 20] .
+    op halt ; : -> Inst [ctor prec 20] .
+
 endfm
 
 view Inst from TRIV to WHILE-LANG-INSTS-MOD is
@@ -98,12 +101,16 @@ fmod WHILE-LANG-BLOCK-MOD is
     op if _ then {_} else {_} : BExp Program Program -> Inst [ctor prec 20] .
     op if _ then {_} : BExp Program -> Inst [prec 20] .
 
+    op if is1Odd then {_} else {_} : Program Program -> Inst [ctor prec 20] .
+    op if is1Odd then {_} : Program -> Inst [prec 20] .
+
     op while _ do {_} : BExp Program -> Inst [ctor prec 20] .
 
     var B : BExp .
     var P1 : Program .
 
     eq if B then {P1} = if B then {P1} else {nil} .
+    eq if is1Odd then {P1} = if is1Odd then {P1} else {nil} .
 
 endfm
 
@@ -171,6 +178,8 @@ fmod WHILE-BASICS is
     protecting WHILE-STATE .
     protecting CONCRETE-FW-NORAT{State} .
     protecting CONCRETE-FW-NORAT-BIT{State} .
+    protecting DATATYPE{Bool} .
+    protecting DATATYPE{Int} .
     protecting DATATYPE{BitV} .
     protecting STRUCT{Stack} .
     ***protecting STRUCT{NeStack} .
@@ -295,6 +304,39 @@ mod WHILE-MAUDE is
         =>
         < P | bitelem(val(cbiteval(BitVVal xor BitVVal2, < stXor ; P | bitelem(BitVVal2) $ bitelem(BitVVal) $ ST | STR >))) $ ST | STR > .
     
+    crl [ifis1Odd-then] : 
+        < if is1Odd then { P1 } else { P2 } P | bitelem(BitVVal) $ ST | STR >
+        =>
+        < P1 P | bitelem(BitVVal) $ ST | STR >
+        if cbeval(val(is1Odd(BitVVal, < nil | bitelem(BitVVal) $ ST | STR >)) = val(1), < nil | bitelem(BitVVal) $ ST | STR >) .
+
+    crl [ifis1Odd-else] : 
+        < if is1Odd then { P1 } else { P2 } P | bitelem(BitVVal) $ ST | STR >
+        =>
+        < P2 P | bitelem(BitVVal) $ ST | STR >
+        if not cbeval(val(is1Odd(BitVVal, < nil | bitelem(BitVVal) $ ST | STR >)) = val(1), < nil | bitelem(BitVVal) $ ST | STR >) .
+
+    *** Test rule to check if_then_else_fi operator on rules (does not generate symbolic path, as the condition is not represented as a rule condition)
+    *** TODO: The problem is how to evaluate a val structure that we have set to be symbolic as a Maude type?
+    ***         - Why would anyone want to use cbeval in an if_then_else_fi and not as a symbolic condition
+    ***rl [haltIf0] :
+    ***    < haltIf0 ; P | ielem(IVal) $ ST | STR >
+    ***    =>
+    ***    if cbeval(not (IVal > val(0)), < haltIf0 ; P | ielem(IVal) $ ST | STR >) then
+    ***        < halt ; P | ielem(IVal) $ ST | STR >
+    ***    else
+    ***        < P | ielem(IVal) $ ST | STR >
+    ***    fi .
+
+    *** Test if_then_else_fi in eq
+    ***op test : IVal -> Bool .
+    ***eq test(val(I)) = 
+    ***    if I == 0 then
+    ***        true
+    ***    else
+    ***        false
+    ***    fi .
+    
     *** Auxiliary
 
     ***op getStore : State -> Stores .
@@ -326,6 +368,9 @@ mod WHILE-MAUDE is
     eq bresolve(bheadST, < P | belem(BVal) $ ST | STR >) = BVal .
     eq bitresolve(bitheadST, < P | bitelem(BitVVal) $ ST | STR >) = BitVVal .
     eq iresolve(iheadST, < P | ielem(IVal) $ ST | STR >) = IVal .
+
+    ***eq is1Odd(bitv(Q), State) = is1Odd(bitresolve(bitv(Q), State), State) .
+    ***eq is1Odd(bitheadST, State) = is1Odd(bitresolve(bitheadST, State), State) .
 
 endm
 

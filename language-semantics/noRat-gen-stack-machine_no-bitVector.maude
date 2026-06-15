@@ -151,6 +151,8 @@ fmod WHILE-BASICS is
     protecting CONCRETE-FW-NORAT{State} .
     protecting STRUCT{Stack} .
     ***protecting STRUCT{NeStack} .
+    protecting DATATYPE{Bool} .
+    protecting DATATYPE{Int} .
     protecting STRUCT{IStore} .
     protecting STRUCT{BStore} .
     protecting STRUCT{Stores} .

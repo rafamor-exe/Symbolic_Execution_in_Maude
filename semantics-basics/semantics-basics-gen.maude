@@ -94,7 +94,7 @@ fmod IREF{Ref :: TRIV, State :: TRIV} is
     var Ref : Ref$Elt . 
     var I : Int .
     var State : State$Elt .
-    op iresolve : Ref$Elt State$Elt -> IVal .
+    op iresolve : Ref$Elt State$Elt -> IVal [metadata "rsvF"] .
     ceq cieval(Ref, State) = I
         if val(I) := iresolve(Ref, State) .
 endfm
@@ -106,7 +106,7 @@ fmod BREF{Ref :: TRIV, State :: TRIV} is
     var Ref : Ref$Elt .
     var B : Bool .
     var State : State$Elt .
-    op bresolve : Ref$Elt State$Elt -> BVal .
+    op bresolve : Ref$Elt State$Elt -> BVal [metadata "rsvF"] .
     ceq cbeval(Ref, State) = B
         if val(B) := bresolve(Ref, State) .
 endfm

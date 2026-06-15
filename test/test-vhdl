@@ -1,0 +1,311 @@
+*** Maybe infinite because it tries to rewrite internal parameter state in isStable???
+rew run(
+  (
+    (entity "example_and" is
+      port (("A" : in  'std_logic ;)  ("B" : in  'std_logic ;) ("C" : in  'std_logic ;)  ) ;
+    end "example_and" ) ;
+    (architecture "behaviour" of "example_and" is nop ;
+      begin (
+         (Stdlsg("B") <=| (val((0).Bit) or Stdlsg("A"))) ;
+         (Stdlsg("C") <=| (val((0).Bit) or Stdlsg("B"))) ;
+      )
+    end "behaviour" );
+  ), nil) .
+
+
+rew [1] run(
+  (
+    (entity "example_and" is
+      port (("A" : in  'std_logic ;)  ("B" : in  'std_logic ;) ("C" : in  'std_logic ;)  ) ;
+    end "example_and" ) ;
+    (architecture "behaviour" of "example_and" is nop ;
+      begin (
+         (Stdlsg("B") <=| (val((0).Bit) or Stdlsg("A"))) ;
+         (Stdlsg("C") <=| (val((0).Bit) or Stdlsg("B"))) ;
+      )
+    end "behaviour" );
+  ), nil) .
+
+
+search run(
+  (
+    (entity "example_and" is
+      port (("A" : in  'std_logic ;)  ("B" : in  'std_logic ;) ("C" : in  'std_logic ;)  ) ;
+    end "example_and" ) ;
+    (architecture "behaviour" of "example_and" is nop ;
+      begin (
+         (Stdlsg("B") <=| (val((0).Bit) or Stdlsg("A"))) ;
+         (Stdlsg("C") <=| (val((0).Bit) or Stdlsg("B"))) ;
+      )
+    end "behaviour" );
+  ), nil) =>! State:VHDLCompleteSim .
+
+
+search [1] run(
+  (
+    (entity "example_and" is
+      port (("A" : in  'std_logic ;)  ("B" : in  'std_logic ;) ("C" : in  'std_logic ;)  ) ;
+    end "example_and" ) ;
+    (architecture "behaviour" of "example_and" is nop ;
+      begin (
+         (Stdlsg("B") <=| (val((0).Bit) or Stdlsg("A"))) ;
+         (Stdlsg("C") <=| (val((0).Bit) or Stdlsg("B")) after (1000000 fs)) ;
+      )
+    end "behaviour" );
+  ), nil) =>! State:VHDLCompleteSim .
+
+search run(
+  (
+    (entity "example_and" is
+      port (("A" : in  'std_logic ;)  ("B" : in  'std_logic ;) ("C" : in  'std_logic ;)  ) ;
+    end "example_and" ) ;
+    (architecture "behaviour" of "example_and" is nop ;
+      begin (
+         (Stdlsg("B") <=| (val((0).Bit) or Stdlsg("A"))) ;
+         (if ((Stdlsg("B") xor Stdlsg("A")) = val(1)) then
+          (Stdlsg("C") <=| (val((0).Bit) or Stdlsg("B"))) ;
+          else
+          (Stdlsg("A") <=| (val((1).Bit)) ;)
+         end if) ;
+      )
+    end "behaviour" );
+  ), nil) =>! State:VHDLCompleteSim .
+
+
+  reduce in VHDLMOD : cbeval((Stdlsg("A") xor Stdlsg("B")) = val(1), 0 ns, < clk(0 ns) [prev: clk(0 ns)] | nil >< nil || nil > << empty | empty | {sgName Stdlsg("A"), time 0 ns} |->Stdl val(U), {sgName Stdlsg("B"), time 0 ns} |->Stdl val(U), {sgName Stdlsg("B"), time 0 ns + delta(1)} |->Stdl val(0), {sgName
+    Stdlsg("C"), time 0 ns} |->Stdl val(U) | empty | empty | empty | empty | empty | empty | empty | empty | empty >> # < sw(Stdlsg("A")) |-> {in $ ('std_logic).StdlType}, sw(Stdlsg("B")) |-> {in $ ('std_logic).StdlType}, sw(Stdlsg("C")) |-> {in $ ('std_logic).StdlType} >{repeat: sw(Stdlsg("A")) |->
+    false, sw(Stdlsg("B")) |-> true, sw(Stdlsg("C")) |-> false}{wholeExec: {scheduledInst: time 0 ns, inst Stdlsg("B") <=| inertial (val((0).Bit) or Stdlsg("A")) after ((0).Zero ns) ;} {scheduledInst: time 0 ns, inst (if (Stdlsg("A") xor Stdlsg("B")) = val(1) then Stdlsg("C") <=| inertial (val((
+    0).Bit) or Stdlsg("B")) after ((0).Zero ns) ; null else (Stdlsg("A") <=| inertial val((1).Bit) after ((0).Zero ns) ;) end if) ;}}!{inputChangeSimCtrl: false, 0 ns}) .
+
+
+rew run(
+  (
+    (entity "example_and" is
+      port (("A" : in  'std_logic ;)  ("B" : inout  'std_logic ;) ("C" : inout  'std_logic ;)  ) ;
+    end "example_and" ) ;
+    (architecture "behaviour" of "example_and" is 
+      (
+        signal "A" : bit := val(0) ;
+      )
+      begin (
+          process sw(Stdlsg("A")) begin
+            (
+              (Stdlsg("B") <=| (val(0) or Stdlsg("A"))) ;
+              (Stdlsg("C") <=| (val(0) or Stdlsg("B"))) ;
+            )
+          end process ;
+      )
+    end "behaviour" );
+  ), nil) .
+
+*** Listen A
+search run(
+  (
+    (entity "example_and" is
+      port (("A" : in  'std_logic ;)  ("B" : inout  'std_logic ;) ("C" : inout  'std_logic ;)  ) ;
+    end "example_and" ) ;
+    (architecture "behaviour" of "example_and" is 
+      (
+        signal "A" : 'std_logic := val(0) ;
+      )
+      begin (
+          process sw(Stdlsg("A")) begin
+            (
+              (Stdlsg("B") <=| (val(0) or Stdlsg("A"))) ;
+              (Stdlsg("C") <=| (val(0) or Stdlsg("B"))) ;
+            )
+          end process ;
+      )
+    end "behaviour" );
+  ), nil) =>! State:VHDLCompleteSim .
+
+*** Listen B
+search run(
+  (
+    (entity "example_and" is
+      port (("A" : in  'std_logic ;)  ("B" : inout  'std_logic ;) ("C" : inout  'std_logic ;)  ) ;
+    end "example_and" ) ;
+    (architecture "behaviour" of "example_and" is 
+      (
+        signal "A" : 'std_logic := val(0) ;
+      )
+      begin (
+          process sw(Stdlsg("B")) begin
+            (
+              (Stdlsg("B") <=| (val(0) or Stdlsg("A"))) ;
+              (Stdlsg("C") <=| (val(0) or Stdlsg("B"))) ;
+            )
+          end process ;
+      )
+    end "behaviour" );
+  ), nil) =>! State:VHDLCompleteSim .
+
+
+search [1] run(  (    (entity "example_and" is      port (("A" : in  'std_logic ;)  ("B" : inout  'std_logic ;) ("C" : inout  'std_logic ;)  ) ;    end "example_and" ) ;    (architecture "behaviour" of "example_and" is       (        signal "A" : 'std_logic := val((0).Bit) ;      )      begin (          process sw(Stdlsg("A")) begin            (              (                if (Stdlsg("A") = val((1).Bit)) then                (                  (Stdlsg("B") <=| (val((0).Bit) or Stdlsg("A"))) ;                  (Stdlsg("C") <=| (val((0).Bit) or Stdlsg("B"))) ;                )                end if              ) ;            )          end process ;      )    end "behaviour" );  ), ({scheduledEvent: time (5 ns), args {sgName Stdlsg("A"), value val((1).Bit)}} {scheduledEvent: time (5 ns), args {sgName Stdlsg("B"), value val((1).Bit)}})) =>! v:VHDLCompleteSim .
+
+
+
+search run(
+      (
+            (entity "multiple_delays" is
+                  port (("A" : in  'std_logic ;)  ("B" : inout  'std_logic ;) ("C" : inout  'std_logic ;)  ) ;    end "multiple_delays" ) ;
+    (architecture "behaviour" of "multiple_delays" is
+           (
+                    signal "A" : 'std_logic := val((0).Bit) ;
+           )
+        begin (
+            process nil begin
+                (
+                  (
+                    if (Stdlsg("A") = val((1).Bit)) then
+                    (
+                      (Stdlsg("B") <=| (Stdlsg("A"))) ;
+                      (Stdlsg("C") <=| (Stdlsg("B"))) ;
+                    )
+                    else
+                    (
+                    (Stdlsg("A") <=| val((1).Bit) after (5 ns)) ;
+                    (Stdlsg("A") <=| val((0).Bit) after (1 ns)) ;
+                    (Stdlsg("B") <=| val((0).Bit) after (6 ns)) ;
+                    (Stdlsg("C") <=| val((0).Bit) after (7 ns)) ;
+                    )
+                    end if
+                   ) ;
+                )
+            end process ;
+        )
+    end "behaviour" );
+  )) =>! [run] < SimClock:SimClock | nil >< nil || nil > STR:ValueStores # DescSTR:DescStores {repeat: SgChangeSTR:SgChgStore}{wholeExec: WholeExec:List{ScheduledInst}} InputChangeSimCtrl:InputChangeSimCtrl .
+
+
+*** Expected result:
+
+parse-entity
+parse-port
+parse-get-port-sg
+parse-get-port-sg
+parse-get-port-sg
+nop
+parse-exit-block
+parse-exit-block
+parse-architecture
+parse-signal
+parse-decl-sg
+nop
+parse-exit-block
+parse-exit-block
+parse-process
+parse-exit-block
+process
+if-then
+assign-sg-val-sch
+assign-sg-val-sch
+assign-sg-val-sch
+assign-sg-val-sch
+end-sim-cycle-nextEv
+end-sim-cycle-nextEv
+process
+if-then
+assign-sg-val-sch
+assign-sg-val-sch
+end-sim-cycle-delta
+process
+if-then
+assign-sg-val-sch
+assign-sg-val-sch
+end-sim-cycle-delta
+process
+if-then
+assign-sg-val-sch
+assign-sg-val-sch
+end-sim-cycle-nextEv
+process
+if-then
+assign-sg-val-sch
+assign-sg-val-sch
+end-sim-cycle-delta
+process
+if-then
+assign-sg-val-sch
+assign-sg-val-sch
+end-sim-cycle-delta
+process
+if-then
+assign-sg-val-sch
+assign-sg-val-sch
+end-sim-cycle-nextEv-last
+process
+if-then
+assign-sg-val-sch
+assign-sg-val-sch
+end-sim-cycle-delta
+process
+if-then
+assign-sg-val-sch
+assign-sg-val-sch
+
+*** First 2 assignment to A should be discarded:
+search run(
+      (
+            (entity "multiple_delays" is
+                  port (("A" : in  'std_logic ;)  ("B" : inout  'std_logic ;) ("C" : inout  'std_logic ;)  ) ;    end "multiple_delays" ) ;
+    (architecture "behaviour" of "multiple_delays" is
+           (
+                    signal "A" : 'std_logic := val((0).Bit) ;
+           )
+        begin (
+            process nil begin
+                (
+                  (
+                    if (Stdlsg("A") = val((1).Bit)) then
+                    (
+                      (Stdlsg("B") <=| (Stdlsg("A"))) ;
+                      (Stdlsg("C") <=| (Stdlsg("B"))) ;
+                    )
+                    else
+                    (
+                    (Stdlsg("A") <=| val((1).Bit) after (3 ns)) ;
+                    (Stdlsg("A") <=| val((0).Bit) after (4 ns)) ;
+                    (Stdlsg("A") <=| val((1).Bit) after (5 ns)) ;
+                    (Stdlsg("B") <=| val((0).Bit) after (6 ns)) ;
+                    (Stdlsg("C") <=| val((0).Bit) after (7 ns)) ;
+                    )
+                    end if
+                   ) ;
+                )
+            end process ;
+        )
+    end "behaviour" );
+  )) =>! [run] < SimClock:SimClock | nil >< nil || nil > STR:ValueStores # DescSTR:DescStores {repeat: SgChangeSTR:SgChgStore}{wholeExec: WholeExec:List{ScheduledInst}} InputChangeSimCtrl:InputChangeSimCtrl .
+
+search run(
+      (
+            (entity "multiple_delays" is
+                  port (("A" : in  'std_logic ;)  ("B" : inout  'std_logic ;) ("C" : inout  'std_logic ;) ("D" : inout  'std_logic ;)  ) ;    end "multiple_delays" ) ;
+    (architecture "behaviour" of "multiple_delays" is
+           (
+                    signal "A" : 'std_logic := val((0).Bit) ;
+           )
+        begin (
+            process nil begin
+                (
+                  (
+                    if (Stdlsg("A") = val((1).Bit)) then
+                    (
+                      (Stdlsg("B") <=| (Stdlsg("A"))) ;
+                      (Stdlsg("C") <=| (Stdlsg("B"))) ;
+                    )
+                    else
+                    (
+                    (Stdlsg("A") <=| val((1).Bit) after (3 ns)) ;
+                    (Stdlsg("A") <=| (Stdlsg("D") xor Stdlsg("A")) after (5 ns)) ;
+                    (Stdlsg("B") <=| val((0).Bit) after (6 ns)) ;
+                    (Stdlsg("C") <=| val((0).Bit) after (7 ns)) ;
+                    )
+                    end if
+                   ) ;
+                )
+            end process ;
+        )
+    end "behaviour" );
+  )) =>! [run] < SimClock:SimClock | nil >< nil || nil > STR:ValueStores # DescSTR:DescStores {repeat: SgChangeSTR:SgChgStore}{wholeExec: WholeExec:List{ScheduledInst}} InputChangeSimCtrl:InputChangeSimCtrl .

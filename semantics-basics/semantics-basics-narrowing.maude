@@ -87,3 +87,48 @@ fmod INT-FVP is
 endfm
 
 set include BOOL on .
+
+fmod NARROWING-BASICS is
+    protecting INT-FVP * (
+        sort Bool to BoolFVP,
+        sort Int to IntFVP,
+        sort Nat to NatFVP,
+        sort NzNat to NzNatFVP,
+        op true to tt,
+        op false to ff
+      ) .
+endfm
+
+*** Create views for FVP types
+view IntFVP from TRIV to NARROWING-BASICS is
+  sort Elt to IntFVP .
+endv
+view BoolFVP from TRIV to NARROWING-BASICS is
+  sort Elt to BoolFVP .
+endv
+
+fmod NARROWING-CONVERSION is
+    pr NARROWING-BASICS .
+    pr META-LEVEL .
+    pr LEXICAL .
+    pr CONVERSION .
+
+    op toIntFVP : Int -> IntFVP [metadata "convF"] .
+    op toBoolFVP : Bool -> BoolFVP [metadata "convF"] .
+    op errIntFVP : -> IntFVP [ctor] .
+
+    var I      : Int .
+    var MConst : Constant .
+
+    eq toIntFVP(0) = (0).IntFVP .
+    eq toIntFVP(1) = (1).IntFVP .
+    eq toIntFVP(I) = toIntFVP(I + (- 1)) + (1).IntFVP [owise] .
+    ***eq toIntFVP(I) = downTerm(getTerm(metaParse(['NARROWING-BASICS], tokenize(string(I, 10)), 'IntFVP)), errIntFVP) .
+    eq toBoolFVP(true) = tt .
+    eq toBoolFVP(false) = ff .
+
+    op trBool : Constant -> Constant .
+    eq trBool('true.Bool) = 'tt.BoolFVP .
+    eq trBool('false.Bool) = 'ff.BoolFVP .
+    eq trBool(MConst) = MConst [owise] .
+endfm

@@ -56,6 +56,12 @@ fmod BIT-FVP is
 	eq not X 1 = (not X) 0 [variant] .
 	eq not emptyBV = 1 [variant] .
 
+	***eq (emptyBV = emptyBV) = tt [variant] .
+	***eq (X 0 = Y 0) = (X = Y) [variant] .
+	***eq (X 1 = Y 1) = (X = Y) [variant] .
+    ***eq (X 0 = Y 1) = ff [variant] .
+    ***eq (X 1 = Y 0) = ff [variant] .
+
 	***Maude> vu-narrow in BIT-FVP : (1 p:BitVFVP) or (1 0 0) =>! 1 1 q:BitFVP 1 .
 	***Solution 1
 	***rewrites: 28 in 3ms cpu (2ms real) (9333 rewrites/second)
@@ -75,17 +81,19 @@ fmod BIT-FVP is
 	***q:BitFVP --> 1
 	***#1:BitVFVP --> %1:BitFVP 1 1
 
-	eq (A = A) = tt [variant] .
-    eq (A = B) = ff [owise variant] .
-    eq (A /= B) = not (A = B) [variant] .
-    eq (0 < 1) = tt [variant] .
-    eq (A < B) = ff [owise variant] .
-    eq (0 <= B) = tt [variant] .
-    eq (A <= B) = ff [owise variant] .
-    eq (1 > 0) = tt [variant] .
-    eq (A > B) = ff [owise variant] .
-    eq (1 >= B) = tt [variant] .
-    eq (A >= B) = ff [owise variant] .
+	eq (0 = 0) = tt [variant] .
+	eq (1 = 1) = tt [variant] .
+    eq (0 = 1) = ff [variant] .
+    eq (1 = 0) = ff [variant] .
+    ***eq (A /= B) = not (A = B) [variant] .
+    ***eq (0 < 1) = tt [variant] .
+    ***eq (A < B) = ff [owise variant] .
+    ***eq (0 <= B) = tt [variant] .
+    ***eq (A <= B) = ff [owise variant] .
+    ***eq (1 > 0) = tt [variant] .
+    ***eq (A > B) = ff [owise variant] .
+    ***eq (1 >= B) = tt [variant] .
+    ***eq (A >= B) = ff [owise variant] .
 
 endfm
 

@@ -19,7 +19,6 @@ def get_args():
 
     parser.add_argument("--analysis", action="store", help="Type of analysis to perform (e.g.: maude-se, concolic)", default="")
     parser.add_argument("--stSort", action="store", help="State sort", default="'State")
-    parser.add_argument("--valOp", action="store", help="Internal value operator in semantics (different from syntax 'val)", default="'placeholderVal")
     parser.add_argument("--sCond", action="store", help="Search conditions", default="nil")
     parser.add_argument("--sType", action="store", help="Search type", default="'!")
     parser.add_argument("--bound", action="store", help="Search bound", default="unbounded")
@@ -86,7 +85,6 @@ if __name__ == '__main__':
             t = f"""searchMaudeSESimple(
                         {args.mod},
                         {args.stSort},
-                        {args.valOp},
                         "{args.program}",
                         {args.pattern},
                         upTerm({symbCond}) = 'true.Boolean /\\ {args.sCond},
@@ -100,28 +98,28 @@ if __name__ == '__main__':
             print(t)
             print(f"Rewrites: {n_rew}")
             print("---------")
-            #print("With path:")
-            #path = f"""searchPathMaudeSE(" \
-            #                        {args.mod},
-            #                        {args.stSort},
-            #                        {args.valOp},
-            #                        "{args.program}",
-            #                        {args.pattern},
-            #                        upTerm({symbCond}) = 'true.Boolean /\\ {args.sCond},
-            #                        {args.sType},
-            #                        {args.bound},
-            #                        {args.solN},
-            #                        {args.logic},
-            #                        {args.fold},
-            #                        {svPairs})"""
-            #path = mod.parseTerm(path)
-            #path.reduce()
-            #print(path)
+            if args.path:
+                print("With path:")
+                path = f"""searchMaudeSESimplePath(" \
+                                        {args.mod},
+                                        {args.stSort},
+                                        "{args.program}",
+                                        {args.pattern},
+                                        upTerm({symbCond}) = 'true.Boolean /\\ {args.sCond},
+                                        {args.sType},
+                                        {args.bound},
+                                        {args.solN},
+                                        {args.logic},
+                                        {args.fold})""" # ,{svPairs}
+
+                path = mod.parseTerm(path)
+                path.reduce()
+                print(path)
         else:
             print("---------")
             print("Only measure search rewrites")
             start = time.time()
-            t_mod = f"transformModSymb({args.mod}, {args.stSort}, {args.valOp}, maudeSE)"
+            t_mod = f"transformModSymb({args.mod}, {args.stSort}, maudeSE)"
             t_mod = mod.parseTerm(t_mod)
             t_mod.reduce()
             mod_time = time.time()
@@ -135,7 +133,7 @@ if __name__ == '__main__':
             t_search = f"""metaSmtSearch({t_mod},
                                         'startSE[{t_0}, searchSubVarConst(upTerm({svPairs}), maudeSE),'_|_|_['empty.IStoreS, 'empty.RStoreS, 'empty.BStoreS]],
                                         {args.pattern},
-                                        modCond(upTerm({symbCond}) = 'true.Boolean /\\ {args.sCond}, {args.valOp}, maudeSE),
+                                        modCond(upTerm({symbCond}) = 'true.Boolean /\\ {args.sCond}, maudeSE),
                                         {args.sType},
                                         {args.bound},
                                         {args.solN},
@@ -182,7 +180,6 @@ if __name__ == '__main__':
                 t = f"""searchConcolic(
                                    {args.mod},
                                    {args.stSort},
-                                   {args.valOp},
                                    "{args.program}",
                                    {args.pattern},
                                    {args.sCond},
@@ -200,7 +197,6 @@ if __name__ == '__main__':
                     path = f"""searchPathConcolic(
                                            {args.mod},
                                            {args.stSort},
-                                           {args.valOp},
                                            "{args.program}",
                                            {args.pattern},
                                            {args.sCond},
@@ -216,7 +212,7 @@ if __name__ == '__main__':
                 print("---------")
                 print("Only measure search rewrites")
                 start = time.time()
-                t_mod = f"transformModSymb({args.mod}, {args.stSort}, {args.valOp}, conc)"
+                t_mod = f"transformModSymb({args.mod}, {args.stSort}, conc)"
                 t_mod = mod.parseTerm(t_mod)
                 t_mod.reduce()
                 mod_time = time.time()
@@ -256,7 +252,7 @@ if __name__ == '__main__':
         print("---------")
         print("Only measure search rewrites")
         start = time.time()
-        t_mod = f"transformModSymb({args.mod}, {args.stSort}, {args.valOp}, symb)"
+        t_mod = f"transformModSymb({args.mod}, {args.stSort}, symb)"
         t_mod = mod.parseTerm(t_mod)
         t_mod.reduce()
         mod_time = time.time()
@@ -295,7 +291,7 @@ if __name__ == '__main__':
         print("---------")
         print("Only measure search rewrites")
         start = time.time()
-        t_mod = f"transformModSymb({args.mod}, {args.stSort}, {args.valOp}, narrowing)"
+        t_mod = f"transformModSymb({args.mod}, {args.stSort}, narrowing)"
         t_mod = mod.parseTerm(t_mod)
         t_mod.reduce()
         mod_time = time.time()

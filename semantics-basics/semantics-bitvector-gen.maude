@@ -29,7 +29,7 @@ fmod BIT-OPS is
 
     eq (A = A) = true .
     eq (A = B) = false [owise] .
-    eq (A /= B) = not (A = B) .
+    ***eq (A /= B) = not (A = B) .
     eq (0 < 1) = true .
     eq (A < B) = false [owise] .
     eq (0 <= B) = true .
@@ -46,6 +46,7 @@ fmod BIT is
     ***  op true to 1,
     ***  op false to 0
     ***) .
+    protecting CONCRETE-EXP .
     protecting BIT-OPS .
     ***protecting NAT .
 
@@ -59,6 +60,7 @@ fmod BIT is
     op _or_ : BitV BitV -> BitV [ditto] .
     op _xor_ : BitV BitV -> BitV [ditto] .
     op not_ : BitV -> BitV [ditto] .
+    op _=_ : BitV BitV -> Bool [ditto] .
     ***op _>_ : BitV BitV -> Bool .
 
     vars X Y : BitV .
@@ -87,6 +89,9 @@ fmod BIT is
     eq not X 1 = (not X) 0 .
     eq not emptyBV = 1 .
 
+    ***eq (X A = Y A) = X = Y .
+    ***eq (X A = Y B) = false [owise] .
+
     *** TODO: Maybe restrict to fixed-sized bitvectors...
     ***eq 1 X > A Y = length(X) >= length(Y) .
     ***eq 0 X > 1 Y = false or (length(X) >= length(Y)) .
@@ -108,7 +113,6 @@ endv
 
 fmod CONCRETE-BITVVAL is
 
-    ***protecting CONCRETE-EXP .
     protecting BIT .
 
     *** NOTE: For now, value representation (BitVVal) name must correspond to sort name + "Val" 
@@ -121,6 +125,7 @@ fmod CONCRETE-BITVVAL is
     op _and_ : BitVVal BitVVal -> BitVVal [gather (e E) prec 55] .
     op _or_ : BitVVal BitVVal -> BitVVal [gather (e E) prec 57] .
     op _xor_ : BitVVal BitVVal -> BitVVal [gather (e E) prec 59] .
+    op _=_ : BitVVal BitVVal -> BVal [gather (e E) prec 59] .
 
     ***op _>_ : BitVVal BitVVal -> BVal [prec 37] .
     ***op _>_ : BitVExp BitVExp -> BExp [prec 37] .
@@ -137,14 +142,19 @@ endv
 
 fmod CONCRETE-FW-NORAT-BIT{State :: TRIV} is
 
-    ****protecting CONCRETE-FW-NORAT{State} .
+    protecting CONCRETE-FW-NORAT{State} .
     protecting CONCRETE-BITVVAL .
 
-    op cbiteval : BitVExp State$Elt -> BitV [metadata "evalF"].
+    op cbiteval : BitVExp State$Elt -> BitV [metadata "evalF"] .
+    
+    *** Test multiple eval functions
+    *** Check whether the number of bits with value 1 is pair
+    op is1Odd : BitVExp State$Elt -> BitV [metadata "evalF"] .
 
     vars BitVExp BitVExp1 BitVExp2 : BitVExp .
     vars BitVV BitVV1 BitVV2 : BitVVal .
     vars BitV BitV1 BitV2 : BitV .
+    vars Bit Bit2 : Bit .
     ***vars B1 B2 : Bit .
     var State : State$Elt .
 
@@ -166,6 +176,14 @@ fmod CONCRETE-FW-NORAT-BIT{State :: TRIV} is
     ***eq evalI(iv(Q), ISTR) = ISTR[Q] .
     eq cbiteval(val(BitV), State) = BitV .
 
+    eq cbeval(BitVExp1 = BitVExp2, State) = (cbiteval(BitVExp1, State) = cbiteval(BitVExp2, State)) .
+
+
+    *** red in WHILE-MAUDE : is1Odd(bitv('a), < P:Program | ST:Stack | (ISTR:IStore | BSTR:BStore | (BVSTR:BVStore, 'a |->BV val(1 1 0 0 1))) >) .
+    *** red in WHILE-MAUDE : is1Odd(val(1 1 1 0 0 1), ST:State) .
+    eq is1Odd(val(emptyBV), State) = cbiteval(val(emptyBV), State) .
+    eq is1Odd(val(Bit BitV2), State) = cbiteval(val(Bit) xor val(is1Odd(val(BitV2), State)), State) .
+
 endfm
 
 *** Custom value reference marker for bit-vectors
@@ -178,6 +196,8 @@ fmod BITREF{Ref :: TRIV, State :: TRIV} is
     op bitresolve : Ref$Elt State$Elt -> BitVVal [metadata "rsvF"] .
     ceq cbiteval(Ref, State) = BitV
         if val(BitV) := bitresolve(Ref, State) .
+    
+    eq is1Odd(Ref, State) = is1Odd(bitresolve(Ref, State), State) .
 endfm
 
 set include BOOL on .
