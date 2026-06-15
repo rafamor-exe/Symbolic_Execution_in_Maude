@@ -1,8 +1,6 @@
 load semantics-basics/smt-conversion.maude
 load semantics-basics/semantics-basics-narrowing.maude
 
-*** Test transformer with while language module
-***load language-semantics/while-semantics-concrete.maude
 ***set trace on .
 
 *** Create views for SMT types
@@ -29,11 +27,6 @@ fmod SMT-CONNECTION is
     pr SMT-CONVERSION .
     pr PAIRSVAR .
 
-    *** Import stores as map structures that map variables to SMT types
-    ***protecting MAP{Qid, Integer} * (sort Map{Qid, Integer} to IStoreS) * (op _|->_ to _|->Is_ ) .
-    ***protecting MAP{Qid, Real}    * (sort Map{Qid, Real} to RStoreS)    * (op _|->_ to _|->Rs_ ) .
-    ***protecting MAP{Qid, Boolean} * (sort Map{Qid, Boolean} to BStoreS) * (op _|->_ to _|->Bs_ ) .
-
     sort AssignmentSMT .
 
     *** Define an satisfying assignment returned by the SMT hook
@@ -56,9 +49,6 @@ endfm
 fmod NARROWING-FMOD is
     pr NARROWING-CONVERSION .
     pr PAIRSVAR .
-    *** Import stores as map structures that map variables to FVP types
-    ***protecting MAP{Qid, IntFVP}  * (sort Map{Qid, IntFVP}  to IStoreN) * (op _|->_ to _|->In_ ) .
-    ***protecting MAP{Qid, BoolFVP} * (sort Map{Qid, BoolFVP} to BStoreN) * (op _|->_ to _|->Bn_ ) .
 
     *** Narrowing variable initialization pair
     op _,_ : Qid IntFVP  -> PairSVar [ctor] .
@@ -70,21 +60,15 @@ fmod SMT-AND-NARROWING is
     pr NARROWING-FMOD .
 endfm
 
-
 fmod SEM-TR is
     pr STRING-OPS .
     pr SMT-AND-NARROWING .
-
-    ***
-    ***pr WHILE-MAUDE .
-    ***op _{_} : State Boolean -> SEState [ctor] .
-    ***op val : Integer -> IVal [ctor] .
 
     sorts TrType NonNrw .
     subsort NonNrw < TrType .
     
     *** Define the transformation types
-    ops symb conc maudeSE : -> NonNrw [ctor] . ***clconc
+    ops symb conc maudeSE : -> NonNrw [ctor] .
     op narrowing : -> TrType [ctor] .
 
     vars InstId StateOp PrOp OpId ModId Q ValOp X Y EvalQ : Qid .
@@ -148,12 +132,6 @@ fmod SEM-TR is
     *** Construct a symbolic mirror of a given a term. Transform all its Maude variables to use SMT types and stores, and change their name
     op symbMirror : Term -> Term .
     eq symbMirror(T1) = modStructTRec(T1, symb) .
-    
-    *** Construct a symbolic mirror of a given a term. Transform all its Maude variables to use SMT types and stores, and change their name
-    ***op symbMirror : Term Qid RlSide -> Term .
-    ***eq symbMirror(T1, RlSide) = modVal(modStructTRec(T1, symb), RlSide) .
-    ***op nrwMirror : Term Qid RlSide -> Term .
-    ***eq nrwMirror(T1, RlSide) = modVal(modStructTRec(T1, narrowing), RlSide) .
 
     *** Transform teh rules for a pure symbolic analysis without MaudeSE. For now, rule conditions must be of the form: eval(B, STR) = true
     *** The function symbMirror creates a symbolic mirror of the concrete state
@@ -333,79 +311,31 @@ fmod SEM-TR is
     eq isNil?(T1 := T2) = false .
     eq isNil?(Cond1 /\ Cond2) = false [owise] .
 
-    ***op rlToClConcolic : RuleSet Qid -> RuleSet .
-    ***eq rlToClConcolic(none, StateOp) = none .
-    ***eq rlToClConcolic(rl T1 => T2 [AttrSet] . RlSet, StateOp) = rlToConcolic(rl T1 => T2 [AttrSet] . RlSet, StateOp)
-    ***                                                               rlToClConcolic(RlSet, StateOp) .
-    ***ceq rlToClConcolic(crl T1 => T2 if Cond [label(InstId) AttrSet] . RlSet, StateOp) = (crl '`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}[stateVar(StateOp), 'Constraints:Boolean], 'STRInit:Stores]
-    ***                                                                                      =>
-    ***                                                                                      '`[_`]`[_`]`[_`]`[_`][T2, '_`{_`}[stateVar(StateOp), 'Constraints':Boolean], 'STRInit:Stores]
-    ***                                                                                      if 'Constraints':Boolean := '_and_['Constraints:Boolean, subT(Tcond, 'STR:Stores, 'getStore[stateVar(StateOp)])]
-    ***                                                                                      /\ 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm[Tcond]] = 'true.Bool
-    ***                                                                                      [label(InstId) AttrSet] .)
-    ***                                                                                      rlToConcolic(RlSet, StateOp)
-    ***    if (Tcond = 'true.Boolean) := Cond .
-    
-    ***op inclClConcCrl : Qid -> RuleSet .
-    ***eq inclClConcCrl(StateOp) = (crl '`[_`]`[_`]`[_`]`[_`][T1, '_`{_`}[stateVar(StateOp), 'Constraints:Boolean], 'STRInit:Stores]
-    ***                                =>
-    ***                                '`[_`]`[_`]`[_`]`[_`][subT('updateProgram[T2, 'getProgram[stateVar(StateOp)]], 'STR:Stores, 'init-CStore['STRInit:Stores, 'Constraints':Boolean]),
-    ***                                                            '_`{_`}['updateStore[stateVar(StateOp), 'STRInit:Stores], 'Constraints':Boolean], '_+_['N:Nat, 's_['0.Nat]], 'STRInit:Stores]
-    ***                                if 'metaCheck[upTerm(upModule('REAL-INTEGER, false)), 'upTerm['Constraints:Boolean]] = 'true.Bool
-    ***                                [label(qid("re-exec")) AttrSet] .)
-
-    ***op modSEImports : ImportList -> ImportList .
-    ***eq modSEImports(ImportList) = ImportList .
-    ***eq modSEImports(nil) = nil .
-    ***eq modSEImports((protecting 'MAP{X, Y} .) ImportList) = (protecting 'MAP{X, Y} .) 
-    ***                                                        (protecting 'MAP{X, toSMTSorts(Y)} .) 
-    ***                                                        modSEImports(ImportList) .
-    ***eq modSEImports(Import ImportList) = Import modSEImports(ImportList) [owise] .
-
-    ***op inclSEImports : ImportList -> ImportList .
-    ***eq inclSEImports(ImportList) = ImportList . ***modSEImports(ImportList)
-                                   ***(protecting 'MAP{'Var, 'Integer} * (sort 'Map`{'Var`,'Integer`} to 'IStoreS) * (op '_|->_ to '_|->Is_ [ctor]) .)
-                                   ***(protecting 'MAP{'Var, 'Real} * (sort 'Map`{'Var`,'Real`} to 'RStoreS) * (op '_|->_ to '_|->Rs_ [ctor]) .)
-                                   ***(protecting 'MAP{'Var, 'Boolean} * (sort 'Map`{'Var`,'Boolean`} to 'BStoreS) * (op '_|->_ to '_|->Bs_ [ctor]) .)
-                                   ***(protecting 'REAL-INTEGER .)
-                                   ***(protecting 'META-LEVEL .)
-                                   ***(protecting 'SMT-CONNECTION .)
-                                   ***(protecting 'SE-LOCS-MOD .)
-                                   ***(protecting 'LIST{'Location} * (sort 'List`{Location`} to 'Path) .)
-                                   ***(protecting 'LIST{'PairVarValue} .)
-                                   ***(protecting 'LIST{'Inst} * (sort 'List`{Inst`} to 'Program) .)
-
     *** Include new sorts for symbolic/concolic execution states
     op inclSESorts : SortSet -> SortSet .
     eq inclSESorts(SortSet) = SortSet ; 'SEState ; 'ConstrainedStart ; 'ConcolicState .
 
+    *** Transform sort name depending on tr type
     op trSorts : TypeList TrType -> TypeList .
     eq trSorts(TL, narrowing) = toNRWSorts(TL) .
     eq trSorts(TL, TrId) = toSMTSorts(TL) [owise] .
 
-    *** Transform a list of Maude types to their symbolic representation
+    *** Transform a list of Maude types to their symbolic representation.
+    *** [NOTE] This function is not extended as SMT structures take the same sort name as concrete
     op toSMTSorts : TypeList -> TypeList .
     eq toSMTSorts(nil)        = nil .
     eq toSMTSorts('Bool TL)   = 'Boolean toSMTSorts(TL) .
     eq toSMTSorts('Int TL)    = 'Integer toSMTSorts(TL) .
     eq toSMTSorts('Rat TL)    = 'Real toSMTSorts(TL) .
     eq toSMTSorts('Zero TL)   = 'Integer toSMTSorts(TL) .
-    ***eq toSMTSorts('IStore TL) = 'IStoreS toSMTSorts(TL) .
-    ***eq toSMTSorts('RStore TL) = 'RStoreS toSMTSorts(TL) .
-    ***eq toSMTSorts('BStore TL) = 'BStoreS toSMTSorts(TL) .
     eq toSMTSorts(T TL) = T toSMTSorts(TL) [owise] .
 
     *** TODO: Maybe fuse with toSMTSorts and dissambiguate with TypeTr annotation at the level
-    *** Transform a list of Maude types to their narrowing representation
+    *** Transform a list of Maude types to their narrowing representation. 
+    *** [NOTE] This function is extended for imported datatypes by the 2nd level transformation
+    *** Example of extension: eq toNRWSorts('Int TL) = 'IntFVP toNRWSorts(TL)
     op toNRWSorts : TypeList -> TypeList .
-    eq toNRWSorts(nil)        = nil .
-    --- eq toNRWSorts('Bool TL)   = 'BoolFVP toNRWSorts(TL) .
-    --- eq toNRWSorts('Int TL)    = 'IntFVP toNRWSorts(TL) .
-    --- eq toNRWSorts('Zero TL)   = 'IntFVP toNRWSorts(TL) .
-    *** TODO: Remove
-    ***eq toNRWSorts('BitV TL)   = 'BitVFVP toNRWSorts(TL) .
-    ***eq toNRWSorts('IStore TL) = 'IStoreN toNRWSorts(TL) .
-    ***eq toNRWSorts('BStore TL) = 'BStoreN toNRWSorts(TL) .
+    eq toNRWSorts(nil)  = nil .
     eq toNRWSorts(T TL) = T toNRWSorts(TL) [owise] .
 
     *** Append an "S" to an input Qid to represent its symbolic representation
@@ -428,26 +358,20 @@ fmod SEM-TR is
     eq trOps((op Q : TL -> T [AttrSet] .), TrId) = (op Q : trSorts(TL, TrId) -> trSorts(T, TrId) [AttrSet] .) .
 
     *** The transformation for symbolic execution transforms the eval functions and the semantic value wrapper to use SMT types and changes the function names
+    *** [NOTE] This function is heavily extended for custom structures and imported datatypes by the 2nd level transformation
+    *** Example of extension: eq modOpSigSE((op 'cbeval : TL -> T [AttrSet] .) OpDeclSet, StateOp, TrId)  = trOps(op modSEOpIds('cbeval) : TL -> T [AttrSet] ., TrId)
+    ***                                                                                                     modOpSigSE(OpDeclSet, StateOp, TrId)
     op modOpSigSE : OpDeclSet Qid TrType -> OpDeclSet .
     eq modOpSigSE(none, StateOp, TrId) = none .
-    *** NOTE: ValOp represents a wrapper for a semantically-relevant value, not syntax 'val
     eq modOpSigSE((op Q : NeTypeL -> StateOp [ctor AttrSet] .) OpDeclSet, StateOp, narrowing) = (op Q : NeTypeL -> StateOp [ctor AttrSet] .)
                                                                                                         (op extNrwSt(Q) : NeTypeL 'BoolFVP -> StateOp [ctor AttrSet] .)
                                                                                                         (op extNrwSt(Q) : NeTypeL 'Bool -> StateOp [ctor AttrSet] .)
                                                                                                         modOpSigSE(OpDeclSet, StateOp, narrowing) . 
-    ***eq modOpSigSE((op ValOp : TL -> T [AttrSet] .) OpDeclSet, StateOp, TrId)   = trOps(op ValOp : TL -> T [AttrSet] ., TrId)
-    ***                                                                            modOpSigSE(OpDeclSet, StateOp, TrId) . 
     eq modOpSigSE((op 'val : T -> T' [ctor AttrSet] .) OpDeclSet, StateOp, TrId) = (op 'val : trSorts(T, TrId) -> T' [ctor AttrSet] .)
                                                                                               ***(op extNrwSt(Q) : NeTypeL 'BoolFVP -> StateOp [ctor AttrSet] .)
-                                                                                              modOpSigSE(OpDeclSet, StateOp, TrId) . 
-    ***eq modOpSigSE((op 'eval : TL -> T [AttrSet] .) OpDeclSet, StateOp, TrId)   = trOps(op toSymb('eval) : TL -> T [AttrSet] ., TrId)
-    ***                                                                            modOpSigSE(OpDeclSet, StateOp, TrId) . 
+                                                                                    modOpSigSE(OpDeclSet, StateOp, TrId) . 
     eq modOpSigSE((op Q : TL -> T [metadata("evalF") AttrSet] .) OpDeclSet, StateOp, TrId)  = trOps(op modSEOpIds(Q) : TL -> T [metadata("evalF") AttrSet] ., TrId)
                                                                                 modOpSigSE(OpDeclSet, StateOp, TrId) . 
-    ***eq modOpSigSE((op 'creval : TL -> T [AttrSet] .) OpDeclSet, StateOp, TrId)  = trOps(op modSEOpIds('creval) : TL -> T [AttrSet] ., TrId)
-    ***                                                                            modOpSigSE(OpDeclSet, StateOp, TrId) . 
-    ***eq modOpSigSE((op 'cbeval : TL -> T [AttrSet] .) OpDeclSet, StateOp, TrId)  = trOps(op modSEOpIds('cbeval) : TL -> T [AttrSet] ., TrId)
-    ***                                                                            modOpSigSE(OpDeclSet, StateOp, TrId) .
     eq modOpSigSE(OpDecl OpDeclSet, StateOp, TrId) = OpDecl modOpSigSE(OpDeclSet, StateOp, TrId) [owise] .
 
     *** The transformation for concolic execution duplicates the operator declarations and 
@@ -463,14 +387,6 @@ fmod SEM-TR is
                             (op '_where_ : StateOp 'Boolean -> 'ConstrainedStart [ctor] .)
                             *** Define the concolic dual state core constructor and its extension to keep track of initial programs
                             (op '`[_`]`[_`]`[_`] : StateOp 'SEState StateOp -> 'ConcolicState [ctor] .)
-                            *** TODO: This should not "contain" a State, it should "extend" it (at the same term level)
-                            ***   - Do it at modOp level
-                            *** (op '_`[_`] : StateOp 'BoolFVP -> StateOp [ctor] .)                            
-                            *** Construct the symbolic Stores structure with the three symbolic stores
-                            ***(op '_|_|_ : 'IStoreS 'RStoreS 'BStoreS -> 'Stores [ctor] .)
-                            ***(op '_|_ : 'IStoreS 'BStoreS -> 'Stores [ctor] .)
-                            *** Construct the FVP-typed store Stores structure for narrowing
-                            ***(op '_|_ : 'IStoreN 'BStoreN -> 'Stores [ctor] .)
                             *** Initialize the input concrete stores with the symbolic stores and
                             *** values satisfying Boolean constrains retrieved from the SMT hook 
                             (op 'init-CState : 'Term 'Boolean -> StateOp [none] .)
@@ -490,7 +406,6 @@ fmod SEM-TR is
                             *** Substitute a term t2 by t1 in t0
                             (op 'subT : 'TermList 'Term 'Term -> 'Term [none] .)
                             (op 'errS : nil -> StateOp [ctor] .)
-                            ***(op 'size : 'Boolean -> 'Nat [none] .)
                             *** Create a concolic dual state with the concrete and symbolic state objects, and the symbolic variable-value pairs
                             (op 'startC : StateOp 'PairSVarL -> 'ConcolicState [none] .)
                             *** Create a concolic dual state with initial constraints
@@ -505,51 +420,45 @@ fmod SEM-TR is
     *** Transform operator declarations depending on the transformation type
     op modSEOps : OpDeclSet Qid TrType -> OpDeclSet .
     eq modSEOps(OpDeclSet, StateOp, conc) = modOpSigConc(OpDeclSet, StateOp, conc)
-                                                   inclSEOps(StateOp) .
+                                            inclSEOps(StateOp) .
     *** NOTE: modified to keep concrete definitions when added narrowing to maintain old unchanged definitions
     eq modSEOps(OpDeclSet, StateOp, TrId) = modOpSigConc(OpDeclSet, StateOp, TrId)
-                                                   inclSEOps(StateOp) [owise] .
+                                            inclSEOps(StateOp) [owise] .
 
     *** Transform operator ids to their symbolic representation
+    *** [NOTE] This function is extended for eval functions by the 2nd level transformation
+    *** Example of extension: eq modSEOpIds('cieval) = toSymb('cieval) .
     op modSEOpIds : Qid -> Qid .
     eq modSEOpIds('_==_)  = '_===_ .
     eq modSEOpIds('_=/=_) = '_=/==_ . 
     eq modSEOpIds('_quo_) = '_div_ . 
     eq modSEOpIds('rat)   = 'toReal . 
-    ***eq modSEOpIds('eval)  = toSymb('eval) .
-    --- eq modSEOpIds('cieval) = 'sieval .
-    --- eq modSEOpIds('creval) = 'sreval .
-    --- eq modSEOpIds('cbeval) = 'sbeval .
     eq modSEOpIds(Q) = Q [owise] .
 
     *** Transform a variable to use SMT type and use a new symbolic name
+    *** [NOTE] This function is extended for imported datatypes by the 2nd level transformation
+    *** Example of extension: eq subSEVarSorts(V, 'Int, TrId) = qid(string(getName(V)) + ":" + string(trSorts('Int, TrId)))
     op subSEVarSorts : Variable Qid TrType -> Variable .
-    --- eq subSEVarSorts(V, 'Int, TrId) = qid(string(getName(V)) + ":" + string(trSorts('Int, TrId))) .
-    --- eq subSEVarSorts(V, 'Zero, TrId) = qid(string(getName(V)) + ":" + string(trSorts('Int, TrId))) .
     eq subSEVarSorts(V, 'Rat, TrId) = qid(string(getName(V)) + ":" + string(trSorts('Rat, TrId))) .
-    --- eq subSEVarSorts(V, 'Bool, TrId) = qid(string(getName(V)) + ":" + string(trSorts('Bool, TrId))) .
     eq subSEVarSorts(V, Q, TrId) = V [owise] .
 
     *** Transform a constant's type to SMT
+    *** [NOTE] This function is extended for imported datatypes by the 2nd level transformation
+    *** Example of extension: eq subSEConstSortsT(C, 'Int, TrId) = qid(string(getName(C)) + "." + string(trSorts('Int, TrId)))
     op subSEConstSortsT : Constant Type TrType -> Constant .
-    --- eq subSEConstSortsT(C, 'Int, TrId) = qid(string(getName(C)) + "." + string(trSorts('Int, TrId))) .
-    --- eq subSEConstSortsT(C, 'Zero, TrId) = qid(string(getName(C)) + "." + string(trSorts('Int, TrId))) .
     eq subSEConstSortsT(C, 'Rat, TrId) = qid(string(getName(C)) + "." + string(trSorts('Rat, TrId))) .
     eq subSEConstSortsT(C, 'Bool, NonNrwTrId) = qid(string(getName(C)) + "." + string(trSorts('Bool, NonNrwTrId))) .
     eq subSEConstSortsT(C, 'Bool, narrowing) = trBool(C) .
     eq subSEConstSortsT(C, Q, TrId) = C [owise] .
 
     *** Substitute all variables and constants in a TermList with the corresponding term with SMT types
+    *** [NOTE] This function is extended for imported datatypes val structures by the 2nd level transformation
+    *** Example of extension: eq trVal('val['I:Int], TrId) = 'val[convert('I:Int, 'Int, TrId)]
     op trVal : TermList TrType -> TermList .
     eq trVal(empty, TrId)           = empty .
     eq trVal(MConst, TrId)          = subSEConstSortsT(MConst, getType(MConst), TrId) .
     eq trVal(MVar, TrId)            = subSEVarSorts(MVar, getType(MVar), TrId) .
-    ***eq trVal('val[T1], TrId)        = 'val[T1] .
-    --- eq trVal('val['I:Int], TrId)    = 'val[convert('I:Int, 'Int, TrId)] .
-    --- eq trVal('val['R:Rat], TrId)    = 'val[convert('R:Rat, 'Rat, TrId)] .
-    ***eq trVal('val['_/_[T, T']], TrId)    = 'val[convert('_/_[T, T'])] .
-    --- eq trVal('val['B:Bool], TrId)   = 'val[convert('B:Bool, 'Bool, TrId)] .
-    eq trVal('s_['0.Zero], NonNrwTrId)    = '1.Integer .
+    eq trVal('s_['0.Zero], NonNrwTrId)   = '1.Integer .
     eq trVal('s_['0.Zero], narrowing)    = '1.IntFVP .
     ceq trVal(Q['0.Zero], TrId)     = qid(string(rat(substr(Str, 3, sd(length(Str), 3)), 10), 10) + ".Integer")
       if Str := string(Q)
@@ -559,10 +468,12 @@ fmod SEM-TR is
     eq trVal(OpId[NeTL], TrId)      = modSEOpIds(OpId)[trVal(NeTL, TrId)] [owise] .
     eq trVal((T1, NeTL), TrId)      = trVal(T1, TrId), trVal(NeTL, TrId) .
 
+    *** Convert a constant using auxiliary conversion function of the type
     op convert : Constant Type TrType -> Constant .
     eq convert(MConst, T, narrowing) = convertNarrowing(MConst, T) .
     eq convert(MConst, T, TrId) = convertSMT(MConst, T) [owise] .
 
+    *** Convert a variable using auxiliary conversion function of the type
     op convert : Variable Type TrType -> Variable .
     eq convert(MVar, T, narrowing) = convertNarrowing(MVar, T) .
     eq convert(MVar, T, TrId) = convertSMT(MVar, T) [owise] .
@@ -583,66 +494,31 @@ fmod SEM-TR is
     eq convertSMT(MVar, 'Bool) = 'toBoolean[MVar] .
     eq convertSMT(MVar, T) = MVar [owise] .
 
+    *** Convert constant with Maude type to the corresponding narrowing theory type
+    *** [NOTE] This function is extended for imported datatypes by the 2nd level transformation
+    *** Example of extension: eq convertNarrowing(MConst, 'Int) = 'toIntFVP[MConst] .
     op convertNarrowing : Constant Type -> Constant .
-    --- eq convertNarrowing(MConst, 'Zero)  = 'toIntFVP[MConst] .
-    --- eq convertNarrowing(MConst, 'Int)  = 'toIntFVP[MConst] .
-    --- eq convertNarrowing(MConst, 'Bool) = 'toBoolFVP[MConst] .
     eq convertNarrowing(MConst, T) = MConst [owise] .
 
+    *** Convert variable with Maude type to the corresponding narrowing theory type
+    *** [NOTE] This function is extended for imported datatypes by the 2nd level transformation
+    *** Example of extension: eq convertNarrowing(MVar, 'Int) = 'toIntFVP[MVar] .
     op convertNarrowing : Variable Type -> Variable .
-    --- eq convertNarrowing(MVar, 'Zero)  = 'toIntFVP[MVar] .
-    --- eq convertNarrowing(MVar, 'Int)  = 'toIntFVP[MVar] .
-    --- eq convertNarrowing(MVar, 'Bool) = 'toBoolFVP[MVar] .
     eq convertNarrowing(MVar, T) = MVar [owise] .
 
+    *** Transform terms inside val structures (used only in specific situations)
     op trInsideVal : TermList TrType -> TermList .
     eq trInsideVal(empty, TrId)           = empty .
     eq trInsideVal(MConst, TrId)          = subSEConstSortsT(MConst, getType(MConst), TrId) .
     eq trInsideVal(MVar, TrId)            = subSEVarSorts(MVar, getType(MVar), TrId) .
-    ***eq trVal('val[T1], TrId)        = 'val[T1] .
     eq trInsideVal('val[NeTL], TrId)      = 'val[trVal(NeTL, TrId)] .
     eq trInsideVal(OpId[NeTL], TrId)      = OpId[trInsideVal(NeTL, TrId)] [owise] .
     eq trInsideVal((T1, NeTL), TrId)      = trInsideVal(T1, TrId), trInsideVal(NeTL, TrId) .
 
-    *** Recursively transform terms to use symbolic stores and convert constants to SMT values
-    ***op subSETermSTR : Term TrType -> Term .
-    ***eq subSETermSTR(MConst, TrId)          = convert(MConst, getType(MConst), TrId) .
-    ***eq subSETermSTR(MVar, TrId)            = subSEVarSorts(MVar, getType(MVar), TrId) .
-    ***eq subSETermSTR('val[T1], TrId)        = 'val[T1] .
-    ***eq subSETermSTR('s_['0.Zero], TrId)    = '1.Integer .
-    ***ceq subSETermSTR(Q['0.Zero], TrId)     = qid(string(rat(substr(Str, 3, sd(length(Str), 3)), 10), 10) + ".Integer")
-    ***  if Str := string(Q)
-    ***  /\ substr(Str, 0, 3) = "s_^" .
-    ***eq subSETermSTR('_*_[NeTL], narrowing) = '_*_[NeTL] .
-    ***eq subSETermSTR(OpId[NeTL], TrId)      = modSEOpIds(OpId)[modStructTRec(NeTL, TrId)] [owise] .
-
-    ***op modStoreT : Constant Type Qid TrType -> Term .
-    ***op modStoreT : Variable Type Qid TrType -> Term .
+    *** Transform terms so that structures and subterms of imported datatypes use their symbolic representation
+    *** [NOTE] This function is heavily extended for custom structures and imported datatypes by the 2nd level transformation
     op modStructT : Term Qid TrType -> Term .
     op modStructT : Term TrType -> Term .
-    ***eq modStoreT(MConst, 'Stores, TrId) = subSEConstSortsT(MConst, 'Stores, TrId) .
-    ***eq modStoreT(MConst, 'IStore, TrId) = subSEConstSortsT(MConst, 'IStore, TrId) .
-    ***eq modStoreT(MConst, 'RStore, TrId) = subSEConstSortsT(MConst, 'RStore, TrId) .
-    ***eq modStoreT(MConst, 'BStore, TrId) = subSEConstSortsT(MConst, 'BStore, TrId) .
-    ***eq modStoreT(MConst, T, TrId) = MConst [owise] .
-    ***eq modStoreT(MVar, 'Stores, TrId)   = subSEVarSorts(MVar, 'Stores, TrId) .
-    ***eq modStoreT(MVar, 'IStore, TrId)   = subSEVarSorts(MVar, 'IStore, TrId) .
-    ***eq modStoreT(MVar, 'RStore, TrId)   = subSEVarSorts(MVar, 'RStore, TrId) .
-    ***eq modStoreT(MVar, 'BStore, TrId)   = subSEVarSorts(MVar, 'BStore, TrId) .
-    ***eq modStoreT(MVar, T, TrId) = MVar [owise] .
-    ***eq modStoreT(MConst, TrId)                = modStoreT(MConst, getType(MConst), TrId) .
-    ***eq modStoreT(MVar, TrId)                  = modStoreT(MVar, getType(MVar), TrId) .
-    ***eq modStoreT('_|->I_[T1, T2], TrId)       = toSymb('_|->I_)[T1, trVal(T2, TrId)] .
-    ***eq modStoreT('_|->R_[T1, T2], TrId)       = toSymb('_|->R_)[T1, trVal(T2, TrId)] .
-    ***eq modStoreT('_|->B_[T1, T2], TrId)       = toSymb('_|->B_)[T1, trVal(T2, TrId)] .
-    ***eq modStoreT('_`,_[T1, T2], TrId)         = '_`,_[modStoreT(T1, TrId), modStoreT(T2, TrId)] .
-    ***eq modStoreT('insert[T1, MConst, TSTR], TrId)     = 'insert[T1, convert(MConst, getType(MConst), TrId), modStoreT(TSTR, TrId)] .
-    ***eq modStoreT('insert[T1, MVar, TSTR], TrId)       = 'insert[T1, convert(MVar, getType(MVar), TrId), modStoreT(TSTR, TrId)] .
-    *** TODO: getType(...) should be of T1?, reconsider whether this eqs are needed
-    ***eq modStoreT('_==_[T1, MConst], TrId)             = modSEOpIds('_==_)[modStructT(T1, getType(MConst), TrId), trVal(MConst, TrId)] .
-    ***eq modStoreT('_==_[T1, MVar], TrId)               = modSEOpIds('_==_)[modStructT(T1, getType(MVar), TrId), trVal(MVar, TrId)] .
-    ***eq modStoreT('_=/=_[T1, MConst], TrId)            = modSEOpIds('_=/=_)[modStructT(T1, getType(MConst), TrId), trVal(MConst, TrId)] .
-    ***eq modStoreT('_=/=_[T1, MVar], TrId)              = modSEOpIds('_=/=_)[modStructT(T1, getType(MVar), TrId), trVal(MVar, TrId)] .
     eq modStructT('_==_[T1, MConst], TrId)               = modSEOpIds('_==_)[modStructT(T1, getType(MConst), TrId), trVal(MConst, TrId)] .
     eq modStructT('_==_[T1, MVar], TrId)                 = modSEOpIds('_==_)[modStructT(T1, getType(MVar), TrId), trVal(MVar, TrId)] .
     eq modStructT('_=/=_[T1, MConst], TrId)              = modSEOpIds('_=/=_)[modStructT(T1, getType(MConst), TrId), trVal(MConst, TrId)] .
@@ -653,20 +529,17 @@ fmod SEM-TR is
     *** TODO: Check how to handle this (the user may want to evaluate it concretely or symbolically? Only concretely?)
     ***eq modStructT('if_then_else_fi[Trm, T1, T2], TrId)   = 'if_then_else_fi['metaCheck[upTerm(upModule('REAL-INTEGER, false)), modStructT(Trm, TrId)], modStructT(T1, TrId), modStructT(T2, TrId)] .
     eq modStructT('if_then_else_fi[Trm, T1, T2], TrId)   = 'if_then_else_fi[Trm, modStructT(T1, TrId), modStructT(T2, TrId)] .
-    ***eq modStoreT(ValOp[T1], Q, TrId)                     = ValOp[trVal(T1, TrId)] .
-    ***eq modStoreT(ValOp[MConst], Q, TrId)                 = ValOp[convert(MConst, getType(MConst), TrId)] .
-    ***eq modStoreT(ValOp[MVar], Q, TrId)                   = ValOp[convert(MVar, getType(MVar), TrId)] .
-    ***eq modStoreT(OpId[NeTL], Q, TrId)                    = modSEOpIds(OpId)[modStructTRec(NeTL, Q, TrId)] [owise] .
     eq modStructT(OpId[NeTL], TrId)                      = modSEOpIds(OpId)[modStructTRec(NeTL, TrId)] [owise] .
     eq modStructT(V:Variable, Q, TrId)                   = V:Variable [owise] .
     eq modStructT(C:Constant, Q, TrId)                   = C:Constant [owise] .
 
-
-    *** Transform terms in a list to use symbolic stores
+    *** Transform terms in a list to use symbolic structures and datatypes using modStructT
     op modStructTRec : TermList TrType -> TermList .
     eq modStructTRec(empty, TrId)           = empty .
     eq modStructTRec((T1, TermL), TrId)     = modStructT(T1, TrId), modStructTRec(TermL, TrId) .
 
+    *** Determine whether a term has eval functions (used for conditions)
+    *** TODO: Generate eqs for custom evalF operadot Qids at 2nd level transformation
     op hasEval : TermList -> Bool .
     eq hasEval(empty)        = false .
     eq hasEval(MConst)       = false .
@@ -678,48 +551,40 @@ fmod SEM-TR is
     eq hasEval(OpId[NeTL])   = hasEval(NeTL) [owise] .
     eq hasEval((T1, NeTL))  = (hasEval(T1) or hasEval(NeTL)) .
 
-    *** Transform variables and constants within conditions to use SMT types
+    *** Transform conditions outside rewrite rules to use symbolic representations in evaluations
+    *** [NOTE] This function is extended for imported datatypes by the 2nd level transformation
+    *** Example of extension: eq modCond('val['I:Int] := 'iresolve[NeTL], TrId) = ('val[trVal('I:Int, TrId)] := 'iresolve[modStructTRec(NeTL, TrId)]) .
     op modCond : Condition TrType -> Condition .
     op modCond : Condition TrType Term -> Condition .
     eq modCond(nil, TrId) = nil .
     eq modCond(T1 = T2, TrId)        = (modStructTRec(T1, TrId) = trVal(T2, TrId)) .
-    --- eq modCond('val['I:Int] := 'iresolve[NeTL], TrId)       = ('val[trVal('I:Int, TrId)] := 'iresolve[modStructTRec(NeTL, TrId)]) .
-    --- eq modCond('val['R:Rat] := 'rresolve[NeTL], TrId)       = ('val[trVal('R:Rat, TrId)] := 'rresolve[modStructTRec(NeTL, TrId)]) .
-    --- eq modCond('val['B:Bool] := 'bresolve[NeTL], TrId)       = ('val[trVal('B:Bool, TrId)] := 'bresolve[modStructTRec(NeTL, TrId)]) .
     eq modCond(T1 := T2, TrId)       = (T1 := T2) [owise] .
     ***eq modCond(T1 => T2)       = (T1 => T2) .
     ceq modCond((T1 = T2) /\ Cond2, TrId)    = modCond((T1 = T2), TrId) /\ modCond(Cond2, TrId)
       if not isNil?(Cond2) .
     ceq modCond((T1 := T2) /\ Cond2, TrId)    = modCond((T1 := T2), TrId) /\ modCond(Cond2, TrId)
       if not isNil?(Cond2) .
-    ***eq modCond((T1 := T2) /\ (T1' = T2'), TrId)    = modCond((T1 := T2), TrId) /\ modCond(T1' = T2', TrId) .
-    ***eq modCond((T1 := T2) /\ (T1' := T2'), TrId)    = modCond((T1 := T2), TrId) /\ modCond(T1' := T2', TrId) .
     eq modCond(Cond, TrId) = Cond [owise] .
 
-
-    ***op modCond : Condition Qid TrType -> Condition .
-    ******eq modCond(EqC /\ EqC2, TrId)    = modCond(EqC, TrId) /\ modCond(EqC2, TrId) .
-    ***eq modCond(nil, TrId) = nil .
-    ***eq modCond(T1 = T2, TrId) = modEqCond(T1 = T2, TrId) .
-    ***eq modCond(Cond, TrId) = Cond [owise] .
-
+    *** Transform conditions in rewrite rules to use symbolic representations in evaluations
+    *** [NOTE] This function is extended for imported datatypes by the 2nd level transformation
     op modCondRl : Condition TrType -> Condition .
-    eq modCondRl(nil, TrId)            = nil .
-    eq modCondRl(T1 = C, TrId)    = if not hasEval(T1) then
-                                                (convert(T1, 'Bool, TrId) = trVal(C, TrId))
-                                              else
-                                                (modStructTRec(T1, TrId) = trVal(C, TrId))
-                                              fi .
-    eq modCondRl(T1 = V, TrId)      = if not hasEval(T1) then
-                                                (convert(T1, 'Bool, TrId) = trVal(V, TrId))
-                                              else
-                                                (modStructTRec(T1, TrId) = trVal(V, TrId))
-                                              fi .
-    eq modCondRl(T1 = Q[NeTL], TrId)        = if not hasEval(T1) then
-                                                (convert(T1, 'Bool, TrId) = modStructTRec(Q[NeTL], TrId))
-                                              else
-                                                (modStructTRec(T1, TrId) = modStructTRec(Q[NeTL], TrId))
-                                              fi .
+    eq modCondRl(nil, TrId)           = nil .
+    eq modCondRl(T1 = C, TrId)        = if not hasEval(T1) then
+                                          (convert(T1, 'Bool, TrId) = trVal(C, TrId))
+                                        else
+                                          (modStructTRec(T1, TrId) = trVal(C, TrId))
+                                        fi .
+    eq modCondRl(T1 = V, TrId)        = if not hasEval(T1) then
+                                          (convert(T1, 'Bool, TrId) = trVal(V, TrId))
+                                        else
+                                          (modStructTRec(T1, TrId) = trVal(V, TrId))
+                                        fi .
+    eq modCondRl(T1 = Q[NeTL], TrId)  = if not hasEval(T1) then
+                                        (convert(T1, 'Bool, TrId) = modStructTRec(Q[NeTL], TrId))
+                                      else
+                                        (modStructTRec(T1, TrId) = modStructTRec(Q[NeTL], TrId))
+                                      fi .
     ***eq modCondRl(T1 = T2, TrId)        = (modStructTRec(T1, TrId) = trVal(T2, TrId)) [owise] .
     eq modCondRl(T1 := T2, TrId)       = (T1 := T2) .
     ***eq modCondRl(T1 => T2)       = (T1 => T2) .
@@ -730,49 +595,19 @@ fmod SEM-TR is
       if not isNil?(Cond2) .
     eq modCondRl(Cond, TrId) = Cond [owise] .
 
-    *** TODO: Include extra eqs for custom datatype evals
     *** Patch eval function definition to use symbolic stores and convert values
+    *** [NOTE] This function is heavily extended for custom structures and imported datatypes by the 2nd level transformation
+    *** Example of extension: eq patchEvalSESTR(eq 'cieval[NeTL]  = T2 [AttrSet] ., TrId) = (eq modSEOpIds('cieval)[modStructTRec(NeTL, TrId)] = modStructTRec(T2, TrId) [AttrSet] .) .
     op patchEvalSESTR : Equation TrType -> Equation .
-    --- eq patchEvalSESTR(eq 'cbeval[NeTL]   = T2 [AttrSet] ., TrId)        = (eq modSEOpIds('cbeval)[modStructTRec(NeTL, TrId)] = modStructTRec(T2, TrId) [AttrSet] .) .
-    --- eq patchEvalSESTR(eq 'cieval[NeTL]  = T2 [AttrSet] ., TrId)        = (eq modSEOpIds('cieval)[modStructTRec(NeTL, TrId)] = modStructTRec(T2, TrId) [AttrSet] .) .
-    --- eq patchEvalSESTR(eq 'creval[NeTL]  = T2 [AttrSet] ., TrId)        = (eq modSEOpIds('creval)[modStructTRec(NeTL, TrId)] = modStructTRec(T2, TrId) [AttrSet] .) .
-    ***eq patchEvalSESTR(eq 'cbeval[NeTL]  = T2 [AttrSet] .)        = (eq modSEOpIds('cbeval)[modStructTRec(NeTL)] = modStructTRec(T2) [AttrSet] .) .
-    --- eq patchEvalSESTR(ceq 'cbeval[NeTL]  = T2 if EqC [AttrSet] ., TrId) = (ceq modSEOpIds('cbeval)[modStructTRec(NeTL, TrId)] = modStructTRec(T2, TrId) if modCond(EqC, TrId) [AttrSet] .) .
-    --- eq patchEvalSESTR(ceq 'cieval[NeTL] = T2 if EqC [AttrSet] ., TrId) = (ceq modSEOpIds('cieval)[modStructTRec(NeTL, TrId)] = modStructTRec(T2, TrId) if modCond(EqC, TrId) [AttrSet] .) .
-    --- eq patchEvalSESTR(ceq 'creval[NeTL] = T2 if EqC [AttrSet] ., TrId) = (ceq modSEOpIds('creval)[modStructTRec(NeTL, TrId)] = modStructTRec(T2, TrId) if modCond(EqC, TrId) [AttrSet] .) .
-    ***eq patchEvalSESTR(ceq 'cbeval[NeTL] = T2 if EqC [AttrSet] .) = (ceq modSEOpIds('cbeval)[modStructTRec(NeTL)] = modStructTRec(T2) if modCond(EqC) [AttrSet] .) .
     eq patchEvalSESTR(Eq, TrId) = Eq [owise] .
   
-    *** TODO: Include extra eqs for custom datatype evals
     *** Transform the eval functions definition to convert values to SMT types and patch the stores to the symbolic definition
     *** These are special cases for evals with struct refs. 
+    *** [NOTE] This function is heavily extended for custom structures and imported datatypes by the 2nd level transformation
+    *** Example of extension: eq modSEEqs(eq 'cieval[T1, NeTL] = MVar [AttrSet] . EquationSet, TrId) = (eq modSEOpIds('cieval)[modStructTRec((T1, NeTL), TrId)] = convert(MVar, getType(MVar), TrId) [AttrSet] .)
+    ***                                                                                                 modSEEqs(EquationSet, TrId)
     op modSEEqs : EquationSet TrType -> EquationSet .
     eq modSEEqs(none, TrId) = none .
-    ---eq modSEEqs(eq 'cieval[T1, NeTL] = MVar [AttrSet] . EquationSet, TrId)  = (eq modSEOpIds('cieval)[modStructTRec((T1, NeTL), TrId)] = convert(MVar, getType(MVar), TrId) [AttrSet] .)
-    ---                                                                                          modSEEqs(EquationSet, TrId) .
-    ---eq modSEEqs(ceq 'cieval[T1, NeTL] = MVar if EqC [AttrSet] . EquationSet, TrId)  = (ceq modSEOpIds('cieval)[modStructTRec((T1, NeTL), TrId)] = trVal(MVar, TrId) if modCond(EqC, TrId) [AttrSet] .)
-    ---                                                                                          modSEEqs(EquationSet, TrId) .
-    ---eq modSEEqs(eq 'creval[T1, NeTL] = MVar [AttrSet] . EquationSet, TrId)  = (eq modSEOpIds('creval)[modStructTRec((T1, NeTL), TrId)] = convert(MVar, getType(MVar), TrId) [AttrSet] .)
-    ---                                                                                          modSEEqs(EquationSet, TrId) .
-    ---eq modSEEqs(ceq 'creval[T1, NeTL] = MVar if EqC [AttrSet] . EquationSet, TrId)  = (ceq modSEOpIds('creval)[modStructTRec((T1, NeTL), TrId)] = trVal(MVar, TrId) if modCond(EqC, TrId) [AttrSet] .)
-    ---                                                                                          modSEEqs(EquationSet, TrId) .
-    ---eq modSEEqs(eq 'cbeval[T1, NeTL] = MVar [AttrSet] . EquationSet, TrId)  = (eq modSEOpIds('cbeval)[modStructTRec((T1, NeTL), TrId)] = convert(MVar, getType(MVar), TrId) [AttrSet] .)
-    ---                                                                                          modSEEqs(EquationSet, TrId) .
-    ---eq modSEEqs(ceq 'cbeval[T1, NeTL] = MVar if EqC [AttrSet] . EquationSet, TrId)  = (ceq modSEOpIds('cbeval)[modStructTRec((T1, NeTL), TrId)] = trVal(MVar, TrId) if modCond(EqC, TrId) [AttrSet] .)
-    ---                                                                                          modSEEqs(EquationSet, TrId) .
-    ***eq modSEEqs(eq 'creval['val['R:Rat], NeTL] = MVar [AttrSet] . EquationSet, TrId)  = (eq modSEOpIds('creval)[modStructTRec(('val['R:Rat], NeTL), TrId)] = convert(MVar, getType(MVar), TrId) [AttrSet] .)
-    ***                                                                                          modSEEqs(EquationSet, TrId) .
-    ***eq modSEEqs(eq 'cbeval['val['B:Bool], NeTL] = MVar [AttrSet] . EquationSet, TrId) = (eq modSEOpIds('cbeval)[modStructTRec(('val['B:Bool], NeTL), TrId)] = convert(MVar, getType(MVar), TrId) [AttrSet] .)
-    ***                                                                                          modSEEqs(EquationSet, TrId) .
-    ***eq modSEEqs(eq 'cieval[ValOp['I:Int], NeTL] = MVar [AttrSet] . EquationSet, TrId) = (eq modSEOpIds('cieval)[(ValOp['I:Int], modStructTRec(NeTL, TrId))] = convert(MVar, getType(MVar), TrId) [AttrSet] .)
-    ***                                                                                          (eq modSEOpIds('cieval)[(ValOp['I:Integer], modStructTRec(NeTL, TrId))] = trVal(MVar, TrId) [AttrSet] .)
-    ***                                                                                          modSEEqs(EquationSet, TrId) .
-    ***eq modSEEqs(eq 'creval[ValOp['R:Rat], NeTL] = MVar [AttrSet] . EquationSet, TrId) = (eq modSEOpIds('creval)[(ValOp['R:Rat],modStructTRec(NeTL, TrId))] = convert(MVar, getType(MVar), TrId) [AttrSet] .)
-    ***                                                                                          (eq modSEOpIds('creval)[(ValOp['R:Real],modStructTRec(NeTL, TrId))] = trVal(MVar, TrId) [AttrSet] .)
-    ***                                                                                          modSEEqs(EquationSet, TrId) .
-    ***eq modSEEqs(eq 'cbeval[ValOp['B:Bool], NeTL] = MVar [AttrSet] . EquationSet, TrId) = (eq modSEOpIds('cbeval)[(ValOp['B:Bool], modStructTRec(NeTL, TrId))] = convert(MVar, getType(MVar), TrId) [AttrSet] .)
-    ***                                                                                          (eq modSEOpIds('cbeval)[(ValOp['B:Boolean], modStructTRec(NeTL, TrId))] = trVal(MVar, TrId) [AttrSet] .)
-    ***                                                                                          modSEEqs(EquationSet, TrId) .
     eq modSEEqs(Eq EquationSet, TrId) = patchEvalSESTR(Eq, TrId) modSEEqs(EquationSet, TrId) [owise] .
     
     *** Transformation for concolic execution duplicates the equation set and transforms one of the copies with the symbolic execution transformation
@@ -830,9 +665,6 @@ fmod SEM-TR is
                             ***(eq 'insertFirst['Var:Qid, 'R:Rat,  'RSTR:RStore] = 'if_then_else_fi['_==_['_`[_`]['RSTR:RStore, 'Var:Qid], 'undefined.Rat], 'insert['Var:Qid, 'R:Rat, 'RSTR:RStore], 'RSTR:RStore] [none] .)
                             ***(eq 'insertFirst['Var:Qid, 'B:Bool, 'BSTR:BStore] = 'if_then_else_fi['_==_['_`[_`]['BSTR:BStore, 'Var:Qid], 'undefined.Bool], 'insert['Var:Qid, 'B:Bool, 'BSTR:BStore], 'BSTR:BStore] [none] .)
                             
-                            ***(eq 'size['C1:Boolean] = ''s_['0.Nat] [none] .)
-                            ***(eq 'size['_and_['C1:Boolean, 'Constraints:Boolean]] = ''s_['0.Nat] + 'size['Constraints:Boolean] [none] .)
-                            
                             ***(eq 'startC[stateVar(StateOp), 'SVDeclL:PairSVarL]                       = '$startC[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_|_['empty.IStoreS, 'empty.RStoreS, 'empty.BStoreS], 'true.Boolean] [none] .)
                             ***(eq 'startC['_where_[stateVar(StateOp), 'B:Boolean], 'SVDeclL:PairSVarL] = '$startC[stateVar(StateOp), 'SVDeclL:PairSVarL, '_|_|_['empty.IStoreS, 'empty.RStoreS, 'empty.BStoreS], 'B:Boolean] [none] .)
                             
@@ -860,9 +692,9 @@ fmod SEM-TR is
     eq modRl(RlSet, StateOp, conc) = rlToConcolic(RlSet, StateOp) .
     eq modRl(RlSet, StateOp, maudeSE) = rlToSE(RlSet, maudeSE) .
     eq modRl(RlSet, StateOp, narrowing) = rlToNarrowing(RlSet) .
-    ***eq modRl(RlSet, clconc) = rlToClConcolic(RlSet, StateOp) inclClConcCrl(StateOp) .
 
     *** Include extra imports from transformed transformation
+    *** [NOTE] This function is extended for imported datatypes by the 2nd level transformation
     op inclImports : -> ImportList .
     eq inclImports = nil [owise] .
 
@@ -915,6 +747,8 @@ fmod SEM-TR is
 endfm
 
 fmod STRUCT-TR is
+    *** Module that defines the operators used to adapt the transformation for specific structures and imported datatypes
+
     protecting META-LEVEL .
 
     *** Definition of tuple that relates the custom datatype sort with its eval and conversion functions
@@ -952,7 +786,7 @@ fmod STRUCT-TR is
     op genEqsCompTerm : Qid TermList -> EquationSet .
     eq genEqsCompTerm(Q, empty) = none .
     ceq genEqsCompTerm(Q, (OpQ[T] , TL)) =
-        ***       We are using another meta-level (that is why we use upTerm here)
+        *** We are using another meta-level (that is why we use upTerm here)
         (eq 'modStructT['_`[_`][upTerm(OpQ), NeTLasTV]] = '_`[_`][upTerm(OpQ), 'trVal[NeTLasTV]] [owise] .)
         (eq 'subSEVarSorts['V:Variable, Q] = 'qid['_+_['_+_['string['getName['V:Variable]], '"S:".String], 'string['trSorts[Q]]]] [owise] .)
         genEqsCompTerm(Q, TL)
@@ -974,9 +808,11 @@ fmod STRUCT-TR is
     eq generateEqsFromSortSet(none, TL) = none .
     eq generateEqsFromSortSet(S ; SortS, TL) = generateEqs(upTerm(S), TL) generateEqsFromSortSet(SortS, TL) .
 
+    *** Generate term representing a variable of input sort
     op genVWithS : Sort -> Term .
     eq genVWithS(Q) = qid("'VT:" + string(Q) + ".Variable") .
 
+    *** Include transformer eqs using evaluation functions (evalF)
     op inclEvModEqs : QidList -> EquationSet .
     eq inclEvModEqs(nil) = none .
     eq inclEvModEqs(EvQid EvQidL) = *** Include eval function op Qid modification. Same for every symbolic analysis (narrowing or SMT)
@@ -1033,6 +869,7 @@ fmod STRUCT-TR is
                                                                     'trInsideVal['modStructTRec['T2:Term, 'TrId:TrType], 'TrId:TrType], 'modCond['EqC:EqCondition, 'TrId:TrType], 'AttrSet:AttrSet]] [none] .)
                                     inclEvModEqs(EvQidL) .
 
+    *** Include transformer eqs using imported datatypes and structures sorts
     op inclSortModEqs : SortSet Qid -> EquationSet .
     eq inclSortModEqs(none, CnvQid) = none .
     eq inclSortModEqs(S ; SortS', CnvQid) = (eq 'toNRWSorts['__[upTerm(S), 'TL:TypeList]] = '__['toNrw[upTerm(S)], 'toNRWSorts['TL:TypeList]] [owise] .)
@@ -1119,10 +956,6 @@ mod META-STRUCT-TR is
     eq genCompT(Q, nil, N) = Q .
     eq genCompT(Q, Ty TyL, N) = Q[qid("T" + string(N, 10) + ":" + string(Ty)), genTLStr(TyL, N)] .
 
-    ***op genSymbOp : Qid TypeList Sort AttrSet -> OpDecl .
-    ***eq genSymbOp('_`,_, TyL, S, AttrSet) = (op '_`,_ : TyL -> S [AttrSet] .) .
-    ***eq genSymbOp(Q, TyL, S, AttrSet) = (op toSymb(Q) : TyL -> S [AttrSet] .) [owise] .
-
     *** Generate matching (left-hand side) terms corresponding to operators that yield structs
     *** TODO: Revise if NeTyL is correct (included because it was taking constants like EmptyStack, though not empty, and it should take none)
     op genStructOpTL : OpDeclSet SortSet Nat -> TermList .
@@ -1138,9 +971,11 @@ mod META-STRUCT-TR is
     eq genValSName('Int) = 'IVal .
     eq genValSName(S) = qid(string(S) + "Val") [owise] .
 
+    *** Get the resolve function of an imported datatype from the sort name
     op getRsvFQid : OpDeclSet Sort -> Qid .
     eq getRsvFQid((op RsvQid : NeTyL' -> SVal [metadata("rsvF") AttrSet] .) OpDeclSet, SVal) = RsvQid .
 
+    *** Get the rest of evaluation functions of an imported datatype from the sort name
     op getRestEvQidL : OpDeclSet Sort -> QidList .
     eq getRestEvQidL(none, S) = nil .
     eq getRestEvQidL((op Q : NeTyL -> S [metadata("evalF") AttrSet] .) OpDeclSet, S) = Q getRestEvQidL(OpDeclSet, S) .
@@ -1229,11 +1064,6 @@ mod META-STRUCT-TR is
     ***                                  ***getSds(M) getSds(FM)
     ***                                endm .
 
-
-    *** [Deprecated] Function to invoke tr with the SortSet of marked Structs
-    ***op trWithStructs : Module -> Module .
-    ***ceq trWithStructs(M) = tr(M, SortS)
-    ***  if SortS := getStructS(getOps(M)) .
     *** Function to invoke tr with the SortSet of marked Structs and automatically fuses semantics with trasformer
     op trWithStructsPrM : Module Qid -> Module .
     ***ceq trWithStructsPrM(M, Q) = tr(trNrwCustomDataT(M', getDataTS(getOps(M'))), SortS)
@@ -1267,8 +1097,7 @@ endm
 
 mod VERIFICATION-COMMANDS is
 
-    ***pr SEM-TR .
-    pr  META-STRUCT-TR .
+    pr META-STRUCT-TR .
     pr LEXICAL .
 
     vars ModId StateOp PrOp SearchType ValOp TargetSt FoldQ : Qid .
