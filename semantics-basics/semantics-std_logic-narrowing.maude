@@ -5,7 +5,7 @@ load semantics-std_logic-gen.maude
 fmod STDL-FVP is
 	protecting BIT-FVP .
   protecting BOOL-FVP * (
-		sort Bool to BitFVP,
+		sort Bool to BoolFVP,
 		op true to tt,
 		op false to ff
 	) .
@@ -237,14 +237,7 @@ fmod STDL-FVP is
 
   ***eq (A = A) = tt [variant] .
   ***eq (A = B) = ff [owise variant] .
-  eq (0 = 0) = tt [variant] .
-	eq (1 = 1) = tt [variant] .
-  eq (Z = Z) = tt [variant] .
-  eq (L = L) = tt [variant] .
-  eq (H = H) = tt [variant] .
-  eq (U = U) = tt [variant] .
-  eq (X = X) = tt [variant] .
-  eq (- = -) = tt [variant] .
+  eq (A = A) = tt [variant] .
   eq (0 = 1) = ff [variant] .
   eq (1 = 0) = ff [variant] .
   eq (BitFVP = ZWLHFVP) = ff [variant] .
@@ -257,6 +250,10 @@ fmod STDL-FVP is
   eq (- = BitFVP) = ff [variant] .
   eq (ZWLHFVP = U) = ff [variant] .
   eq (U = ZWLHFVP) = ff [variant] .
+  eq (X = U) = ff [variant] .
+  eq (U = X) = ff [variant] .
+  eq (- = U) = ff [variant] .
+  eq (U = -) = ff [variant] .
   eq (ZWLHFVP = X) = ff [variant] .
   eq (X = ZWLHFVP) = ff [variant] .
   eq (ZWLHFVP = -) = ff [variant] .
@@ -283,6 +280,7 @@ fmod STDL-FVP is
   eq resolveStdl(A, -) = X [variant] .
   eq resolveStdl(0, 1) = X [variant] .
   eq resolveStdl(1, 0) = X [variant] .
+  eq resolveStdl(A, A) = A [variant] .
 
 endfm
 

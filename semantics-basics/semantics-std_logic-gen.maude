@@ -102,6 +102,7 @@ fmod STDL is
     eq resolveStdl(ZWLH, W) = W .
     eq resolveStdl(L, H) = W .
     eq resolveStdl(H, L) = W .
+    eq resolveStdl(A, A) = A .
     eq resolveStdl(A, B) = X [owise] .
 
 endfm

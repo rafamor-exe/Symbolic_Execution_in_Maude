@@ -71,12 +71,38 @@ search run(
     end "behaviour" );
   ), nil) =>! State:VHDLCompleteSim .
 
+Stdlassign-sg-val-sch-0delay-inert
+if-else
+Stdlassign-sg-val-sch-0delay-inert
+end-sim-cycle-delta
+Stdlassign-sg-val-sch-0delay-inert
+if-else
+Stdlassign-sg-val-sch-0delay-inert
+end-sim-cycle-delta
+Stdlassign-sg-val-sch-0delay-inert
+if-else
+Stdlassign-sg-val-sch-0delay-inert
 
   reduce in VHDLMOD : cbeval((Stdlsg("A") xor Stdlsg("B")) = val(1), 0 ns, < clk(0 ns) [prev: clk(0 ns)] | nil >< nil || nil > << empty | empty | {sgName Stdlsg("A"), time 0 ns} |->Stdl val(U), {sgName Stdlsg("B"), time 0 ns} |->Stdl val(U), {sgName Stdlsg("B"), time 0 ns + delta(1)} |->Stdl val(0), {sgName
     Stdlsg("C"), time 0 ns} |->Stdl val(U) | empty | empty | empty | empty | empty | empty | empty | empty | empty >> # < sw(Stdlsg("A")) |-> {in $ ('std_logic).StdlType}, sw(Stdlsg("B")) |-> {in $ ('std_logic).StdlType}, sw(Stdlsg("C")) |-> {in $ ('std_logic).StdlType} >{repeat: sw(Stdlsg("A")) |->
     false, sw(Stdlsg("B")) |-> true, sw(Stdlsg("C")) |-> false}{wholeExec: {scheduledInst: time 0 ns, inst Stdlsg("B") <=| inertial (val((0).Bit) or Stdlsg("A")) after ((0).Zero ns) ;} {scheduledInst: time 0 ns, inst (if (Stdlsg("A") xor Stdlsg("B")) = val(1) then Stdlsg("C") <=| inertial (val((
     0).Bit) or Stdlsg("B")) after ((0).Zero ns) ; null else (Stdlsg("A") <=| inertial val((1).Bit) after ((0).Zero ns) ;) end if) ;}}!{inputChangeSimCtrl: false, 0 ns}) .
 
+search run(
+  (
+    (entity "example_and" is
+      port (("A" : in  'std_logic ;)  ("B" : in  'std_logic ;) ("C" : in  'std_logic ;)  ) ;
+    end "example_and" ) ;
+    (architecture "behaviour" of "example_and" is nop ;
+      begin (
+         (if (Stdlsg("A") = val(1)) then
+          (Stdlsg("C") <=| (val((0).Bit) or Stdlsg("B"))) ;
+          else
+         ((Stdlsg("B") <=| (val((0).Bit) or Stdlsg("A"))) ;)
+         end if) ;
+      )
+    end "behaviour" );
+  ), nil) =>! State:VHDLCompleteSim .
 
 rew run(
   (
@@ -309,3 +335,52 @@ search run(
         )
     end "behaviour" );
   )) =>! [run] < SimClock:SimClock | nil >< nil || nil > STR:ValueStores # DescSTR:DescStores {repeat: SgChangeSTR:SgChgStore}{wholeExec: WholeExec:List{ScheduledInst}} InputChangeSimCtrl:InputChangeSimCtrl .
+
+search run(
+      (
+            (entity "multiple_delays" is
+                  port (("A" : in  'std_logic ;)  ("B" : inout  'std_logic ;) ("C" : inout  'std_logic ;) ("D" : inout  'std_logic ;)  ) ;    end "multiple_delays" ) ;
+    (architecture "behaviour" of "multiple_delays" is
+           (
+                    signal "A" : 'std_logic := val((0).Bit) ;
+                    signal "D" : 'std_logic := val((1).Bit) ;
+           )
+        begin (
+            process nil begin
+                (
+                  (
+                    if (Stdlsg("A") = val((1).Bit)) then
+                    (
+                      (Stdlsg("B") <=| (Stdlsg("A"))) ;
+                      (Stdlsg("C") <=| (Stdlsg("B"))) ;
+                    )
+                    else
+                    (
+                    (Stdlsg("A") <=| val((1).Bit) after (3 ns)) ;
+                    (Stdlsg("A") <=| (Stdlsg("D") xor Stdlsg("A")) after (5 ns)) ;
+                    (Stdlsg("B") <=| val((0).Bit) after (6 ns)) ;
+                    (Stdlsg("C") <=| val((0).Bit) after (7 ns)) ;
+                    )
+                    end if
+                   ) ;
+                )
+            end process ;
+        )
+    end "behaviour" );
+  )) =>! [run] < SimClock:SimClock | nil >< nil || nil > STR:ValueStores # DescSTR:DescStores {repeat: SgChangeSTR:SgChgStore}{wholeExec: WholeExec:List{ScheduledInst}} InputChangeSimCtrl:InputChangeSimCtrl .
+
+
+*** ST_LOGIC resolve test
+
+search run(
+  (
+    (entity "example_and" is
+      port (("A" : in 'std_logic ;)  ("B" : inout 'std_logic ;)  ) ;
+    end "example_and" ) ;
+    (architecture "behaviour" of "example_and" is nop ;
+      begin (
+         (Stdlsg("B") <=| val((0).Bit)) ;
+         (Stdlsg("B") <=| val((1).Bit)) ;
+      )
+    end "behaviour" );
+  ), nil) =>! State:VHDLCompleteSim .
